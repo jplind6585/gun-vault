@@ -1,0 +1,3437 @@
+[
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Howa",
+    "Model": 1500,
+    "Caliber": "6.5 Creedmoor",
+    "Serial": "B680891",
+    "Optic Type": "Scope",
+    "Optic Model": "Vortex Strike Eagle (5-25x) MOA",
+    "Other Attachments": "Bipod",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Enfield",
+    "Model": "SMLE Mk III",
+    "Caliber": ".303 British",
+    "Serial": "L56040",
+    "Optic Type": "Iron Sights",
+    "Optic Model": "-",
+    "Other Attachments": "Sling, Bayonet",
+    "Zero Range (yds)": 100,
+    "Zero Date": 45941,
+    "C&R?": false,
+    "Notes": "POI is to the left about 12\" at 100yds"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Anderson",
+    "Model": "AR-15 Rifle",
+    "Caliber": "5.56mm",
+    "Serial": 21226656,
+    "Optic Type": "Red Dot w/ Magnifier",
+    "Optic Model": "Holosun (TBD)",
+    "Other Attachments": "Light, Back Up Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Sig Sauer",
+    "Model": "M18",
+    "Caliber": "9mm",
+    "Serial": "M18A201830",
+    "Optic Type": "Red Dot",
+    "Optic Model": "Cyelee Shark X Pro",
+    "Other Attachments": "Nothing",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pioneer AR-15 Rifle - 6.5 Grendel",
+    "Caliber": "6.5 Grendel ",
+    "Serial": "PAF15-0036",
+    "Optic Type": "Scope",
+    "Optic Model": "Sig Sauer Buck Hunter",
+    "Other Attachments": "Sling",
+    "Zero Range (yds)": 100,
+    "Zero Date": 46004,
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pioneer AR-15 Pistol (green)",
+    "Caliber": "5.56mm",
+    "Serial": "PAF15-0026",
+    "Optic Type": "Red Dot",
+    "Optic Model": "TBD",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Aero",
+    "Model": "AR-15 Rifle",
+    "Caliber": "5.56mm",
+    "Serial": "M4-0612163",
+    "Optic Type": "Red Dot w/ Magnifier",
+    "Optic Model": "TBD",
+    "Other Attachments": "Back Up Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "M&P Performance Center 10mm",
+    "Caliber": "10mm",
+    "Serial": "FJR3669",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Ruger",
+    "Model": "RXM",
+    "Caliber": "9mm",
+    "Serial": "094-60743",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pioneer AR-10 Rifle",
+    "Caliber": ".308 Winchester",
+    "Serial": "PAB10-0004",
+    "Optic Type": "LPVO",
+    "Optic Model": "TBD",
+    "Zero Range (yds)": 100,
+    "Zero Date": 45941,
+    "C&R?": false,
+    "Notes": "FTE so need to fix (try buffer and then gas) and sight in better. Seems to be a bit low and left of aim"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pionner AR-15 Rifle (M16A2)",
+    "Caliber": "5.56mm",
+    "Serial": "PAF15-0054",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Shotgun",
+    "Manufacturer": "Benelli",
+    "Model": "M2",
+    "Caliber": "12 Gauge",
+    "Serial": "M0186033J",
+    "Optic Type": "Iron Sights",
+    "Other Attachments": "Sling",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": "19X",
+    "Caliber": "9mm",
+    "Serial": "CEGS151",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": 47,
+    "Caliber": "9mm",
+    "Serial": "CFAN388",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "M&P 2.0 9mm",
+    "Caliber": "9mm",
+    "Serial": "FJK5234",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": 21,
+    "Caliber": ".45 ACP",
+    "Serial": "AKHF475GA",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": 20,
+    "Caliber": "10mm",
+    "Serial": "AKRY291",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Kimber",
+    "Model": "Shadow Ghost 1911",
+    "Caliber": ".45 ACP",
+    "Serial": "K9695668",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "586-8",
+    "Caliber": ".357 Magnum",
+    "Serial": "EES1837",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": 42,
+    "Caliber": ".380 ACP",
+    "Serial": "AKRK043",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Canik",
+    "Model": "TTI",
+    "Caliber": "9mm",
+    "Serial": "T6472-24 CZ 68110",
+    "Optic Type": "Red Dot",
+    "Optic Model": "TBD",
+    "C&R?": false
+  },
+  {
+    "Type": "Shotgun",
+    "Manufacturer": "Mossberg",
+    "Model": "Shockwave 590s",
+    "Caliber": "12 Gauge",
+    "Serial": "V2059143",
+    "Optic Type": "Iron Sights",
+    "Other Attachments": "Laser, Light",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Springfield Armory",
+    "Model": "M1A Scout",
+    "Caliber": ".308 Winchester",
+    "Serial": 574702,
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Rossi",
+    "Model": "Lever Action R95",
+    "Caliber": ".357 Magnum",
+    "Serial": "7CR17481OT",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Shotgun",
+    "Manufacturer": "MAC",
+    "Model": "Marine Tactical (M4 Clone)",
+    "Caliber": "12 Gauge",
+    "Serial": "751-H24YT-15391",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Canik",
+    "Model": "Mete MC9",
+    "Caliber": "9mm",
+    "Serial": "24CT52902",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "M&P 15-22",
+    "Caliber": ".22 LR",
+    "Serial": "FHX4369",
+    "Optic Type": "Red Dot",
+    "Optic Model": "TBD",
+    "Other Attachments": "Back Up Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Bernadelli",
+    "Model": "Model 60",
+    "Caliber": ".22 LR",
+    "Serial": "BW6005",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "Victory",
+    "Caliber": ".22 LR",
+    "Serial": "UER9329",
+    "Optic Type": "Iron Sights",
+    "Optic Model": "TBD",
+    "Zero Range (yds)": 17,
+    "Zero Date": 46383,
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "M&P 45",
+    "Caliber": ".45 ACP",
+    "Serial": "FJP3352",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Smith & Wesson",
+    "Model": "Bodyguard 2.0",
+    "Caliber": ".380 ACP",
+    "Serial": "EJP7036",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Ruger",
+    "Model": "Ruger 57",
+    "Caliber": "5.7 x 28",
+    "Serial": "643-89818",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Sig Sauer",
+    "Model": "P365",
+    "Caliber": "9mm",
+    "Serial": "66G677291",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Sig Sauer",
+    "Model": "P322",
+    "Caliber": ".22 LR",
+    "Serial": "73A179509",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Rock Island Armory",
+    "Model": 1911,
+    "Caliber": "10mm",
+    "Serial": "RIA2856888",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Savage",
+    "Model": "Mark II BTV",
+    "Caliber": ".22 LR",
+    "Serial": 4685329,
+    "Optic Type": "Scope",
+    "Optic Model": "Vortex Strike Eagle (5-25x) MOA",
+    "Other Attachments": "Bipod",
+    "Zero Range (yds)": 50,
+    "Zero Date": 46075,
+    "C&R?": false,
+    "Notes": "Replaced stock with MDT Field Stock to get a floating barrel"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Winchester",
+    "Model": "Safari Model 70",
+    "Caliber": ".375 H&H",
+    "Serial": "G1015357",
+    "Optic Type": "Scope",
+    "Optic Model": "Leupold 1-4x",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Ruger",
+    "Model": "Mini 14",
+    "Caliber": "5.56mm",
+    "Serial": "187-31798",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Marlin",
+    "Model": 1895,
+    "Caliber": "45-70 Govt.",
+    "Serial": "RM0124001",
+    "Optic Type": "Scope",
+    "Optic Model": "Bushnell Banner 1.5-4.5x",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Springfield Armory",
+    "Model": "M1 Garand",
+    "Caliber": ".30-06",
+    "Serial": 4347832,
+    "Optic Type": "Iron Sights",
+    "Other Attachments": "Sling",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Springfield Armory",
+    "Model": "Springfield 1895 Krag",
+    "Caliber": ".30-40 Krag",
+    "Serial": 154845,
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pioneer AR-15 Rifle (frame)",
+    "Serial": "PAF15-0079",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Fixed Mag",
+    "Model": "Pioneer AR-15 Rifle (frame)",
+    "Serial": "PAF15-0080",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "STC",
+    "Model": "Glock 43 build (OD Green)",
+    "Caliber": "9mm",
+    "Serial": "AAC0017586",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "STC",
+    "Model": "Glock 43 build (Black)",
+    "Caliber": "9mm",
+    "Serial": "AACOO23501",
+    "C&R?": false
+  },
+  {
+    "Type": "Shotgun",
+    "Manufacturer": "Mossberg",
+    "Model": "500 Retro (28\" Barrel)",
+    "Caliber": "12 Gauge",
+    "Serial": "V2101383",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Ruger",
+    "Model": "Wrangler 2053",
+    "Caliber": ".22 LR",
+    "Serial": "207-57920",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Canik",
+    "Model": "SFX Rival-S",
+    "Caliber": "9mm",
+    "Serial": "24CS25709",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Walther",
+    "Model": "PPK/S",
+    "Caliber": ".380 ACP",
+    "Serial": 1596,
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Smith & Wesson",
+    "Model": 29,
+    "Caliber": ".44 Mag",
+    "Serial": "EEY9012",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Ruger",
+    "Model": "New Model Blackhawk",
+    "Caliber": ".44 Mag",
+    "Serial": "81-44022",
+    "Optic Type": "Iron Sights",
+    "C&R?": true
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Heckler & Koch",
+    "Model": "HK4",
+    "Caliber": ".380 ACP",
+    "Serial": "HR 01596",
+    "Optic Type": "Iron Sights",
+    "C&R?": true
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Beretta",
+    "Model": "U22 Neos",
+    "Caliber": ".22 LR",
+    "Serial": 141699,
+    "Optic Type": "Scope",
+    "Optic Model": "TBD",
+    "Zero Range (yds)": 17,
+    "Zero Date": 46383,
+    "C&R?": false
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Harrington & Richardson",
+    "Model": "DA/SA top break",
+    "Caliber": ".32 S&W",
+    "Serial": 365288,
+    "Optic Type": "Iron Sights",
+    "C&R?": true,
+    "Notes": "Old C&R revolver to practice restoration"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Milsurp (General)",
+    "Model": "Ankara Mauser",
+    "Caliber": "8mm Mauser",
+    "Serial": 15662,
+    "Optic Type": "Iron Sights",
+    "C&R?": true,
+    "Notes": "Old C&R rifle to practice restoration"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Milsurp (General)",
+    "Model": "Swiss 1911",
+    "Caliber": "7.5 x 55mm Swiss",
+    "Serial": 458974,
+    "Optic Type": "Iron Sights",
+    "C&R?": true,
+    "Notes": "Good milsurp rifle"
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Iver Johnson",
+    "Model": 1900,
+    "Caliber": ".32 S&W",
+    "Serial": 68817,
+    "Optic Type": "Iron Sights",
+    "C&R?": true,
+    "Notes": "Old C&R revolver to practice restoration"
+  },
+  {
+    "Type": "Revolver",
+    "Manufacturer": "Iver Johnson",
+    "Model": "DA top break",
+    "Caliber": ".32 S&W",
+    "Serial": 52024,
+    "Optic Type": "Iron Sights",
+    "C&R?": true,
+    "Notes": "Old C&R revolver to practice restoration"
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Milsurp (General)",
+    "Model": "Mosin-Nagant",
+    "Caliber": "7.62x54r",
+    "Serial": 9130404750,
+    "Optic Type": "Iron Sights",
+    "C&R?": true
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Milsurp (General)",
+    "Model": "SKS",
+    "Caliber": "7.62x39",
+    "Serial": "ЛE2405",
+    "Optic Type": "Iron Sights",
+    "C&R?": true
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Beretta",
+    "Model": "92FS",
+    "Caliber": "9mm",
+    "Serial": "BER892430",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": 19,
+    "Caliber": "9mm",
+    "Serial": "CFYZ296",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Glock",
+    "Model": "19x",
+    "Caliber": "9mm",
+    "Serial": "CEUE970",
+    "Optic Type": "Iron Sights",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Tikka",
+    "Model": "T3x UPR",
+    "Caliber": ".308 Winchester",
+    "Optic Type": "Scope",
+    "Optic Model": "Vortex Strike Eagle (5-25x) MIL",
+    "C&R?": false
+  },
+  {
+    "Type": "Pistol",
+    "Manufacturer": "Sig Sauer",
+    "Model": "M17",
+    "Caliber": "9mm",
+    "Serial": "M17A093986",
+    "Optic Type": "Iron Sights",
+    "C&R?": false,
+    "Notes": "DPP base"
+  },
+  {
+    "Type": "Shotgun",
+    "Manufacturer": "Rock Island Armory",
+    "Model": "VR80",
+    "Caliber": "12 Gauge",
+    "C&R?": false
+  },
+  {
+    "Type": "Rifle",
+    "Manufacturer": "Beretta",
+    "Model": "CX4",
+    "Caliber": "9mm",
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  },
+  {
+    "C&R?": false
+  }
+]

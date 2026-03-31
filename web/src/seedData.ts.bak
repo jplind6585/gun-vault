@@ -1,0 +1,652 @@
+// Generated from Gun Library spreadsheet (65 guns)
+import type { Gun } from './types';
+
+export const seedGuns: Omit<Gun, 'id' | 'createdAt' | 'updatedAt' | 'roundCount'>[] = [
+  {
+    "make": "Howa",
+    "model": "1500",
+    "caliber": "6.5 Creedmoor",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "B680891",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Vortex Strike Eagle (5-25x) MOA. Attachments: Bipod"
+  },
+  {
+    "make": "Enfield",
+    "model": "SMLE Mk III",
+    "caliber": ".303 British",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "L56040",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Attachments: Sling, Bayonet. POI is to the left about 12\" at 100yds"
+  },
+  {
+    "make": "Anderson",
+    "model": "AR-15 Rifle",
+    "caliber": "5.56mm",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "21226656",
+    "status": "Active",
+    "notes": "Optic: Red Dot w/ Magnifier. Model: Holosun (TBD). Attachments: Light, Back Up Iron Sights"
+  },
+  {
+    "make": "Sig Sauer",
+    "model": "M18",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "M18A201830",
+    "status": "Active",
+    "notes": "Optic: Red Dot. Model: Cyelee Shark X Pro"
+  },
+  {
+    "make": "Fixed Mag",
+    "model": "Pioneer AR-15 Rifle - 6.5 Grendel",
+    "caliber": "6.5 Grendel ",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "PAF15-0036",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Sig Sauer Buck Hunter. Attachments: Sling"
+  },
+  {
+    "make": "Fixed Mag",
+    "model": "Pioneer AR-15 Pistol (green)",
+    "caliber": "5.56mm",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "PAF15-0026",
+    "status": "Active",
+    "notes": "Optic: Red Dot"
+  },
+  {
+    "make": "Aero",
+    "model": "AR-15 Rifle",
+    "caliber": "5.56mm",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "M4-0612163",
+    "status": "Active",
+    "notes": "Optic: Red Dot w/ Magnifier. Attachments: Back Up Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "M&P Performance Center 10mm",
+    "caliber": "10mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "FJR3669",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Ruger",
+    "model": "RXM",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "094-60743",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Fixed Mag",
+    "model": "Pioneer AR-10 Rifle",
+    "caliber": ".308 Winchester",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "PAB10-0004",
+    "status": "Active",
+    "notes": "Optic: LPVO. FTE so need to fix (try buffer and then gas) and sight in better. Seems to be a bit low and left of aim"
+  },
+  {
+    "make": "Fixed Mag",
+    "model": "Pionner AR-15 Rifle (M16A2)",
+    "caliber": "5.56mm",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "PAF15-0054",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Benelli",
+    "model": "M2",
+    "caliber": "12 Gauge",
+    "action": "Semi-Auto",
+    "type": "Shotgun",
+    "serialNumber": "M0186033J",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Attachments: Sling"
+  },
+  {
+    "make": "Glock",
+    "model": "19X",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "CEGS151",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "47",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "CFAN388",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "M&P 2.0 9mm",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "FJK5234",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "21",
+    "caliber": ".45 ACP",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "AKHF475GA",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "20",
+    "caliber": "10mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "AKRY291",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Kimber",
+    "model": "Shadow Ghost 1911",
+    "caliber": ".45 ACP",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "K9695668",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "586-8",
+    "caliber": ".357 Magnum",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "EES1837",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "42",
+    "caliber": ".380 ACP",
+    "action": "Revolver",
+    "type": "Pistol",
+    "serialNumber": "AKRK043",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Canik",
+    "model": "TTI",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "T6472-24 CZ 68110",
+    "status": "Active",
+    "notes": "Optic: Red Dot"
+  },
+  {
+    "make": "Mossberg",
+    "model": "Shockwave 590s",
+    "caliber": "12 Gauge",
+    "action": "Semi-Auto",
+    "type": "Shotgun",
+    "serialNumber": "V2059143",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Attachments: Laser, Light"
+  },
+  {
+    "make": "Springfield Armory",
+    "model": "M1A Scout",
+    "caliber": ".308 Winchester",
+    "action": "Semi-Auto",
+    "type": "Rifle",
+    "serialNumber": "574702",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Rossi",
+    "model": "Lever Action R95",
+    "caliber": ".357 Magnum",
+    "action": "Lever",
+    "type": "Rifle",
+    "serialNumber": "7CR17481OT",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "MAC",
+    "model": "Marine Tactical (M4 Clone)",
+    "caliber": "12 Gauge",
+    "action": "Semi-Auto",
+    "type": "Shotgun",
+    "serialNumber": "751-H24YT-15391",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Canik",
+    "model": "Mete MC9",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "24CT52902",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "M&P 15-22",
+    "caliber": ".22 LR",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "FHX4369",
+    "status": "Active",
+    "notes": "Optic: Red Dot. Attachments: Back Up Iron Sights"
+  },
+  {
+    "make": "Bernadelli",
+    "model": "Model 60",
+    "caliber": ".22 LR",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "BW6005",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "Victory",
+    "caliber": ".22 LR",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "UER9329",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "M&P 45",
+    "caliber": ".45 ACP",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "FJP3352",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "Bodyguard 2.0",
+    "caliber": ".380 ACP",
+    "action": "Revolver",
+    "type": "Pistol",
+    "serialNumber": "EJP7036",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Ruger",
+    "model": "Ruger 57",
+    "caliber": "5.7 x 28",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "643-89818",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Sig Sauer",
+    "model": "P365",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "66G677291",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Sig Sauer",
+    "model": "P322",
+    "caliber": ".22 LR",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "73A179509",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Rock Island Armory",
+    "model": "1911",
+    "caliber": "10mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "RIA2856888",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Savage",
+    "model": "Mark II BTV",
+    "caliber": ".22 LR",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "4685329",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Vortex Strike Eagle (5-25x) MOA. Attachments: Bipod. Replaced stock with MDT Field Stock to get a floating barrel"
+  },
+  {
+    "make": "Winchester",
+    "model": "Safari Model 70",
+    "caliber": ".375 H&H",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "G1015357",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Leupold 1-4x"
+  },
+  {
+    "make": "Ruger",
+    "model": "Mini 14",
+    "caliber": "5.56mm",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "187-31798",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Marlin",
+    "model": "1895",
+    "caliber": "45-70 Govt.",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "RM0124001",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Bushnell Banner 1.5-4.5x"
+  },
+  {
+    "make": "Springfield Armory",
+    "model": "M1 Garand",
+    "caliber": ".30-06",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "4347832",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Attachments: Sling"
+  },
+  {
+    "make": "Springfield Armory",
+    "model": "Springfield 1895 Krag",
+    "caliber": ".30-40 Krag",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "154845",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "STC",
+    "model": "Glock 43 build (OD Green)",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "AAC0017586",
+    "status": "Active",
+    "notes": ""
+  },
+  {
+    "make": "STC",
+    "model": "Glock 43 build (Black)",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "AACOO23501",
+    "status": "Active",
+    "notes": ""
+  },
+  {
+    "make": "Mossberg",
+    "model": "500 Retro (28\" Barrel)",
+    "caliber": "12 Gauge",
+    "action": "Pump",
+    "type": "Shotgun",
+    "serialNumber": "V2101383",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Ruger",
+    "model": "Wrangler 2053",
+    "caliber": ".22 LR",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "207-57920",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Canik",
+    "model": "SFX Rival-S",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "24CS25709",
+    "status": "Active",
+    "notes": ""
+  },
+  {
+    "make": "Walther",
+    "model": "PPK/S",
+    "caliber": ".380 ACP",
+    "action": "Revolver",
+    "type": "Pistol",
+    "serialNumber": "1596",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Smith & Wesson",
+    "model": "29",
+    "caliber": ".44 Mag",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "EEY9012",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Ruger",
+    "model": "New Model Blackhawk",
+    "caliber": ".44 Mag",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "81-44022",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Heckler & Koch",
+    "model": "HK4",
+    "caliber": ".380 ACP",
+    "action": "Revolver",
+    "type": "Pistol",
+    "serialNumber": "HR 01596",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Beretta",
+    "model": "U22 Neos",
+    "caliber": ".22 LR",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "141699",
+    "status": "Active",
+    "notes": "Optic: Scope"
+  },
+  {
+    "make": "Harrington & Richardson",
+    "model": "DA/SA top break",
+    "caliber": ".32 S&W",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "365288",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Old C&R revolver to practice restoration"
+  },
+  {
+    "make": "Milsurp (General)",
+    "model": "Ankara Mauser",
+    "caliber": "8mm Mauser",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "15662",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Old C&R rifle to practice restoration"
+  },
+  {
+    "make": "Milsurp (General)",
+    "model": "Swiss 1911",
+    "caliber": "7.5 x 55mm Swiss",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "458974",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Good milsurp rifle"
+  },
+  {
+    "make": "Iver Johnson",
+    "model": "1900",
+    "caliber": ".32 S&W",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "68817",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Old C&R revolver to practice restoration"
+  },
+  {
+    "make": "Iver Johnson",
+    "model": "DA top break",
+    "caliber": ".32 S&W",
+    "action": "Semi-Auto",
+    "type": "Revolver",
+    "serialNumber": "52024",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. Old C&R revolver to practice restoration"
+  },
+  {
+    "make": "Milsurp (General)",
+    "model": "Mosin-Nagant",
+    "caliber": "7.62x54r",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "9130404750",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Milsurp (General)",
+    "model": "SKS",
+    "caliber": "7.62x39",
+    "action": "Bolt",
+    "type": "Rifle",
+    "serialNumber": "ЛE2405",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Beretta",
+    "model": "92FS",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "BER892430",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "19",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "CFYZ296",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Glock",
+    "model": "19x",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "CEUE970",
+    "status": "Active",
+    "notes": "Optic: Iron Sights"
+  },
+  {
+    "make": "Tikka",
+    "model": "T3x UPR",
+    "caliber": ".308 Winchester",
+    "action": "Bolt",
+    "type": "Rifle",
+    "status": "Active",
+    "notes": "Optic: Scope. Model: Vortex Strike Eagle (5-25x) MIL"
+  },
+  {
+    "make": "Sig Sauer",
+    "model": "M17",
+    "caliber": "9mm",
+    "action": "Semi-Auto",
+    "type": "Pistol",
+    "serialNumber": "M17A093986",
+    "status": "Active",
+    "notes": "Optic: Iron Sights. DPP base"
+  },
+  {
+    "make": "Rock Island Armory",
+    "model": "VR80",
+    "caliber": "12 Gauge",
+    "action": "Semi-Auto",
+    "type": "Shotgun",
+    "status": "Active",
+    "notes": ""
+  },
+  {
+    "make": "Beretta",
+    "model": "CX4",
+    "caliber": "9mm",
+    "action": "Bolt",
+    "type": "Rifle",
+    "status": "Active",
+    "notes": ""
+  }
+];

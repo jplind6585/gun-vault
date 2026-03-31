@@ -1,0 +1,237 @@
+// Core data types
+export type SessionPurpose = 'Warmup' | 'Drills' | 'Zeroing' | 'Qualification' | 'Competition' | 'Fun' | 'Carry Eval';
+export type IssueType = 'FTF' | 'FTE' | 'Double Feed' | 'Stovepipe' | 'Trigger Reset' | 'Accuracy' | 'Sighting' | 'Other';
+
+export interface TargetPhotoAnalysis {
+  groupSize?: string;
+  accuracy?: string;
+  pattern?: string;
+  issues?: string[];
+  recommendations?: string[];
+  drills?: string[];
+  ammoNotes?: string;
+  equipmentWarnings?: string[];
+  rawResponse: string;
+  analyzedAt: string;
+}
+
+export interface TargetPhoto {
+  id: string;
+  dataUrl: string;
+  distanceYards?: number;
+  analysis?: TargetPhotoAnalysis;
+  capturedAt: string;
+}
+export type GunPurpose = 'Plinking' | 'Self Defense' | 'EDC' | 'Hunting' | 'Competition' | 'Home Defense' | 'Duty' | 'Collector';
+export type GunStatus  = 'Active' | 'Stored' | 'Loaned Out' | 'Awaiting Repair' | 'Sold' | 'Transferred';
+
+export interface GunAccessories {
+  optic?: string;           // e.g. "Trijicon MRO"
+  opticMagnification?: string; // e.g. "1x" / "3-9x"
+  sling?: string;           // e.g. "Blue Force Gear VCAS"
+  bipod?: string;           // e.g. "Harris 9-13\""
+  muzzleDevice?: string;    // e.g. "SureFire Warcomp"
+  suppressor?: string;      // e.g. "SureFire SOCOM762-RC2"
+  weaponLight?: string;     // e.g. "SureFire X300U"
+  laser?: string;           // e.g. "Streamlight TLR-2"
+  foregrip?: string;        // e.g. "BCM GUNFIGHTER"
+  magazineUpgrade?: string; // e.g. "Magpul PMAG 30"
+  stockGrip?: string;       // e.g. "Magpul STR"
+  other?: string;           // Anything else
+}
+
+export interface Gun {
+  id: string;
+  make: string;
+  model: string;
+  caliber: string;
+  action: 'Semi-Auto' | 'Bolt' | 'Lever' | 'Pump' | 'Revolver' | 'Break' | 'Single Shot';
+  type: 'Pistol' | 'Rifle' | 'Shotgun' | 'Suppressor' | 'NFA';
+  serialNumber?: string;
+  acquiredDate?: string;
+  acquiredPrice?: number;
+  acquiredFrom?: string;
+  condition?: 'New' | 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor';
+  status: GunStatus;
+  roundCount?: number;
+  barrelLength?: number;
+  overallLength?: number;
+  weight?: number;
+  finish?: string;
+  stockGrip?: string;
+  notes?: string;
+  imageUrl?: string;
+  insuranceValue?: number;
+  estimatedFMV?: number;
+  fmvUpdated?: string;
+  nfaItem?: boolean;
+  nfaApprovalDate?: string;
+  suppressorHost?: boolean;
+  // New fields
+  capacity?: number;                // Magazine/cylinder capacity
+  purpose?: GunPurpose[];           // How you use this gun
+  crFlag?: boolean;                 // Curio & Relic eligible
+  // Maintenance tracking
+  lastCleanedDate?: string;         // ISO date
+  lastCleanedRoundCount?: number;   // Lifetime round count at last cleaning
+  lastZeroDate?: string;            // ISO date
+  lastZeroDistance?: number;        // Yards
+  openIssues?: string;              // Current known issues
+  // Accessories
+  accessories?: GunAccessories;
+  soldDate?: string;
+  soldPrice?: number;
+  receiptImageUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Session {
+  id: string;
+  gunId: string;
+  date: string;
+  roundsExpended: number;
+  location?: string;
+  indoorOutdoor?: 'Indoor' | 'Outdoor';
+  purpose?: SessionPurpose[];
+  distanceYards?: number;
+  issues?: boolean;
+  issueTypes?: IssueType[];
+  issueDescription?: string;
+  notes?: string;
+  aiNarrative?: string;
+  ammoLotId?: string;
+  sessionCost?: number;
+  isCarryGun?: boolean;
+  rangeDayId?: string;
+  targetPhotos?: TargetPhoto[];
+  createdAt?: string;
+}
+
+export interface AmmoLot {
+  id: string;
+  caliber: string;
+  brand: string;
+  productLine: string;
+  grainWeight: number;
+  bulletType: string;
+  quantity: number;
+
+  // Ballistics
+  advertisedFPS?: number;
+  actualFPS?: number; // From chrono sessions
+  muzzleEnergy?: number; // Calculated from grain + velocity
+  ballisticCoefficient?: number;
+  standardDeviation?: number; // From chrono data
+
+  // Purchase tracking
+  quantityPurchased?: number;
+  purchaseDate?: string;
+  purchasePricePerRound?: number;
+  averageCostPerRound?: number; // Calculated from all purchases
+
+  // Organization
+  category: 'Match' | 'Practice' | 'Self Defense' | 'Hunting' | 'Test';
+  storageLocation?: string;
+  lotNumber?: string;
+
+  // Flags
+  isHandload: boolean;
+  reloadBatchId?: string;
+  assignedGunIds?: string[]; // Guns this ammo is assigned to
+  isFavorite?: boolean;
+  minStockAlert?: number;
+  reserved?: number;
+
+  // Purchase history (for price trend tracking)
+  purchaseHistory?: Array<{
+    date: string;
+    quantity: number;
+    pricePerRound: number;
+  }>;
+
+  // Metadata
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Cartridge {
+  id: string;
+  name: string; // e.g., ".308 Winchester"
+  alternateNames?: string[]; // e.g., ["7.62x51mm NATO"] for .308
+
+  // Classification
+  type: 'Rifle' | 'Pistol' | 'Shotgun' | 'Revolver';
+  standardization: 'SAAMI' | 'CIP' | 'Military' | 'Wildcat' | 'Proprietary';
+  productionStatus: 'Active' | 'Limited' | 'Obsolete' | 'Military Surplus';
+  availability: 'Abundant' | 'Common' | 'Moderate' | 'Limited' | 'Scarce' | 'Collector Only';
+
+  // History
+  yearIntroduced: number;
+  inventor?: string;
+  manufacturer?: string;
+  countryOfOrigin: string;
+  parentCase?: string; // ID of parent cartridge
+  derivedFrom?: string; // Historical description
+
+  // Technical Specifications (metric and imperial stored, display based on user preference)
+  bulletDiameterInch: number;
+  bulletDiameterMM: number;
+  neckDiameterInch?: number;
+  neckDiameterMM?: number;
+  baseDiameterInch: number;
+  baseDiameterMM: number;
+  rimDiameterInch: number;
+  rimDiameterMM: number;
+  caseLengthInch: number;
+  caseLengthMM: number;
+  overallLengthInch: number;
+  overallLengthMM: number;
+  caseCapacityGrains?: number;
+  maxPressurePSI?: number;
+  maxPressureCUP?: number;
+
+  // Ballistic Performance (typical ranges)
+  commonBulletWeights: number[]; // grains
+  velocityRangeFPS: { min: number; max: number };
+  energyRangeFTLBS: { min: number; max: number };
+  effectiveRangeYards?: number;
+  maxRangeYards?: number;
+
+  // Use Cases
+  primaryUse: ('Target' | 'Hunting' | 'Self Defense' | 'Military' | 'Competition' | 'Varmint' | 'Plinking')[];
+  huntingGameSize?: ('Small Game' | 'Varmint' | 'Medium Game' | 'Large Game' | 'Dangerous Game')[];
+
+  // Military & LE Adoption
+  militaryAdoption?: {
+    country: string;
+    years: string; // e.g., "1952-1980"
+    conflicts?: string[];
+  }[];
+  currentMilitaryUse?: string[]; // Countries still using
+  lawEnforcementUse?: boolean;
+
+  // Similar Cartridges
+  similarCartridges?: string[]; // IDs of similar cartridges
+  modernEquivalent?: string; // ID if this is obsolete
+  supersededBy?: string; // What replaced it
+
+  // Personal tracking
+  ownGunForThis: boolean; // Do I have a gun chambered for this
+  ownAmmoForThis: boolean; // Do I have ammo for this
+  onWishlist: boolean;
+
+  // Encyclopedia content
+  description?: string;
+  history?: string;
+  notableFirearms?: string[]; // Famous guns chambered in this
+  trivia?: string;
+  imageUrl?: string; // Photo of the cartridge
+  diagramUrl?: string; // Technical diagram
+
+  // Metadata
+  createdAt?: string;
+  updatedAt?: string;
+  userNotes?: string;
+}

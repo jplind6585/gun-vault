@@ -24,6 +24,13 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="add-gun"
+        options={{
+          title: 'Add Firearm',
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }

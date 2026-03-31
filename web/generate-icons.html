@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate PWA Icons</title></head>
+<body style="font-family:monospace; background:#07071a; color:#ffd43b; padding:24px;">
+<h2>Gun Vault — Icon Generator</h2>
+<p>Click each button to download the PNG icon, then drop it in <code>web/public/</code></p>
+<button onclick="gen(192)">Download icon-192.png</button>
+<button onclick="gen(512)" style="margin-left:12px;">Download icon-512.png</button>
+<br><br>
+<canvas id="c" style="border:1px solid #333; display:block; margin-top:12px;"></canvas>
+
+<script>
+function gen(size) {
+  const c = document.getElementById('c');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#07071a';
+  ctx.fillRect(0, 0, size, size);
+
+  // Rounded square card
+  const m = size * 0.12;
+  ctx.fillStyle = '#0e0e2a';
+  ctx.beginPath();
+  ctx.roundRect(m, m, size - m*2, size - m*2, size * 0.14);
+  ctx.fill();
+
+  // Vault circle
+  ctx.strokeStyle = '#ffd43b';
+  ctx.lineWidth = size * 0.05;
+  ctx.beginPath();
+  ctx.arc(size/2, size * 0.48, size * 0.24, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Center dot
+  ctx.fillStyle = '#ffd43b';
+  ctx.beginPath();
+  ctx.arc(size/2, size * 0.48, size * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Spokes
+  ctx.strokeStyle = '#ffd43b';
+  ctx.lineWidth = size * 0.035;
+  for (let a = 0; a < 4; a++) {
+    const angle = (a / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(size/2 + Math.cos(angle) * size * 0.08, size * 0.48 + Math.sin(angle) * size * 0.08);
+    ctx.lineTo(size/2 + Math.cos(angle) * size * 0.22, size * 0.48 + Math.sin(angle) * size * 0.22);
+    ctx.stroke();
+  }
+
+  // "GV" text
+  ctx.fillStyle = '#ffd43b';
+  ctx.font = `bold ${size * 0.12}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('VAULT', size/2, size * 0.82);
+
+  // Download
+  const a = document.createElement('a');
+  a.download = `icon-${size}.png`;
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { theme, spacing } from '../../constants/theme';
 import { initDatabase, getAllGuns } from '../../lib/database';
 import { GunCard } from '../../components/gun-vault/GunCard';
@@ -18,17 +19,24 @@ import type { Gun } from '../../db/schema';
 type ViewMode = 'card' | 'table';
 
 export default function GunVault() {
+  const router = useRouter();
   const [guns, setGuns] = useState<Gun[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
 
   useEffect(() => {
-    loadGuns();
+    initDatabase().then(loadGuns);
   }, []);
+
+  // Refresh list when returning from Add Gun screen
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading) loadGuns();
+    }, [loading])
+  );
 
   async function loadGuns() {
     try {
-      await initDatabase();
       const allGuns = await getAllGuns();
       setGuns(allGuns);
     } catch (error) {
@@ -44,8 +52,7 @@ export default function GunVault() {
   }
 
   function handleAddGun() {
-    // TODO: Navigate to add gun screen
-    console.log('Add gun pressed');
+    router.push('/add-gun');
   }
 
   if (loading) {
