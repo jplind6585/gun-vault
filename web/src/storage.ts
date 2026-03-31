@@ -30,7 +30,7 @@ function initializeSeedData(): void {
 
   if (localStorage.getItem(INITIALIZED_KEY)) return;
 
-  console.log('🔫 Initializing Gun Vault with 65 firearms from spreadsheet...');
+  console.log('🔫 Initializing Lindcott Armory with 65 firearms from spreadsheet...');
 
   const now = new Date().toISOString();
   const gunsWithIds: Gun[] = seedGuns.map(gun => {

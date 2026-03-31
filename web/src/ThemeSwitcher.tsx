@@ -55,7 +55,7 @@ export function ThemeSwitcher({ onClose, onSelectTheme }: { onClose: () => void;
             margin: 0,
             fontFamily: 'monospace'
           }}>
-            Choose a visual style for your Gun Vault • Click to preview • Select to apply
+            Choose a visual style for Lindcott Armory • Click to preview • Select to apply
           </p>
         </div>
 
@@ -298,7 +298,7 @@ export function ThemeSwitcher({ onClose, onSelectTheme }: { onClose: () => void;
             fontFamily: 'monospace',
             lineHeight: '1.6'
           }}>
-            <strong style={{ color: theme.accent }}>NOTE:</strong> Theme changes apply to all pages (Homepage, Arsenal, Gun Vault, Caliber Database).
+            <strong style={{ color: theme.accent }}>NOTE:</strong> Theme changes apply to all pages (Homepage, Arsenal, Vault, Caliber Database).
             Your selection is saved locally and will persist across sessions. Hover over themes to preview, click to select.
           </p>
         </div>

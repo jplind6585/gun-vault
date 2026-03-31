@@ -210,10 +210,10 @@ export const techDataTheme: ThemeVariant = {
   }
 };
 
-// Default theme (current Gun Vault theme)
+// Default theme (Lindcott Armory default)
 export const defaultTheme: ThemeVariant = {
-  name: 'Gun Vault Default',
-  description: 'Original Gun Vault design',
+  name: 'Lindcott Armory Default',
+  description: 'Original Lindcott Armory design',
   colors: {
     bg: '#0F0F10',
     surface: '#18181B',

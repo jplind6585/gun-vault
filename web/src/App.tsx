@@ -123,7 +123,7 @@ function App() {
   if (currentView === 'home') {
     return (
       <>
-        <AppHeader title="Gun Vault" />
+        <AppHeader title="Lindcott Armory" />
         <HomePage
           onNavigateToVault={() => setCurrentView('vault')}
           onNavigateToArsenal={() => setCurrentView('arsenal')}

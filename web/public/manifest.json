@@ -1,7 +1,7 @@
 {
-  "name": "Gun Vault",
-  "short_name": "Gun Vault",
-  "description": "Personal firearm management — vault, ammo, range sessions.",
+  "name": "Lindcott Armory",
+  "short_name": "Lindcott",
+  "description": "Lindcott Armory — personal firearm management, ammo, range sessions, and more.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07071a",
