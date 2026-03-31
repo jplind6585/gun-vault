@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { theme } from './theme';
-import { getAllGuns, getAllSessions, getAllAmmo, resetAllData } from './storage';
+import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
 import type { Gun, Session, AmmoLot } from './types';
 
 interface HomePageProps {
@@ -18,6 +18,7 @@ interface HomePageProps {
   onAddGun: () => void;
   onNavigateToStyleDemo?: () => void;
   onSearchOpen: () => void;
+  onDevTools?: () => void;
 }
 
 type TimePeriod = 'week' | 'month' | 'year';
@@ -44,6 +45,7 @@ export function HomePage({
   onLogSession,
   onAddGun,
   onSearchOpen,
+  onDevTools,
 }: HomePageProps) {
   const [guns, setGuns]       = useState<Gun[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -70,7 +72,7 @@ export function HomePage({
   const periodSessions = sessions.filter(s => inPeriod(s.date));
 
   // ── Gun breakdown ─────────────────────────────────────────────────────────
-  const allActiveGuns = guns.filter(g => g.status !== 'Decommissioned');
+  const allActiveGuns = guns.filter(g => g.status !== 'Sold' && g.status !== 'Transferred');
   const gunHandguns  = allActiveGuns.filter(g => g.type === 'Pistol').length;
   const gunRifles    = allActiveGuns.filter(g => g.type === 'Rifle').length;
   const gunShotguns  = allActiveGuns.filter(g => g.type === 'Shotgun').length;
@@ -163,24 +165,14 @@ export function HomePage({
 
   const periodBtn = (active: boolean): React.CSSProperties => ({
     padding: '5px 14px',
-    backgroundColor: active ? theme.textPrimary : 'transparent',
-    border: `0.5px solid ${active ? theme.textPrimary : theme.border}`,
+    backgroundColor: active ? theme.accent : 'transparent',
+    border: `0.5px solid ${active ? theme.accent : theme.border}`,
     borderRadius: '3px',
     color: active ? theme.bg : theme.textMuted,
     fontFamily: 'monospace', fontSize: '10px',
     letterSpacing: '0.8px', fontWeight: active ? 700 : 400,
     cursor: 'pointer',
   });
-
-  const actionBtn: React.CSSProperties = {
-    flex: 1, padding: '13px 8px',
-    backgroundColor: theme.surface,
-    border: `0.5px solid ${theme.border}`,
-    borderRadius: '6px', color: theme.textPrimary,
-    fontFamily: 'monospace', fontSize: '11px',
-    letterSpacing: '0.5px', fontWeight: 600,
-    cursor: 'pointer', textTransform: 'uppercase' as const,
-  };
 
   return (
     <div style={{
@@ -193,32 +185,36 @@ export function HomePage({
       boxSizing: 'border-box',
     }}>
 
-      {/* ── HEADER ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-        <h1 style={{
-          fontFamily: 'monospace', fontSize: '20px',
-          fontWeight: 700, letterSpacing: '2px',
-          color: theme.accent, margin: 0, whiteSpace: 'nowrap',
-        }}>
-          GUN VAULT
-        </h1>
+      {/* ── SEARCH ROW ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
         <button onClick={onSearchOpen} style={{
-          flex: 1, padding: '8px 12px',
+          flex: 1, padding: '10px 14px',
           backgroundColor: theme.surface,
           border: `0.5px solid ${theme.border}`,
           borderRadius: '6px', color: theme.textMuted,
-          fontFamily: 'monospace', fontSize: '11px',
+          fontFamily: 'monospace', fontSize: '12px',
           textAlign: 'left', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '8px',
         }}>
-          Search...
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          Search guns, ammo, sessions...
         </button>
-      </div>
-
-      {/* ── QUICK ACTIONS ── */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-        <button style={actionBtn} onClick={onLogSession}>Sessions</button>
-        <button style={actionBtn} onClick={onNavigateToVault}>Gun Vault</button>
-        <button style={actionBtn} onClick={onNavigateToArsenal}>Arsenal</button>
+        {onDevTools && (
+          <button onClick={onDevTools} style={{
+            width: '40px', height: '40px', flexShrink: 0,
+            backgroundColor: theme.surface,
+            border: `0.5px solid ${theme.border}`,
+            borderRadius: '6px', color: theme.textMuted,
+            cursor: 'pointer', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            fontSize: '16px',
+          }}>
+            ⚙
+          </button>
+        )}
       </div>
 
       {/* ── GUNS + AMMO CARD ── */}
@@ -308,8 +304,8 @@ export function HomePage({
             { val: periodSessions.length.toString(),              lbl: 'Sessions'       },
             { val: periodShots.toLocaleString(),                  lbl: 'Rounds Fired'   },
             { val: avgRounds > 0 ? avgRounds.toString() : '—',   lbl: 'Avg/Session'    },
-            { val: daysSinceLast !== null ? `${daysSinceLast}d` : '—', lbl: 'Since Last Range' },
-            { val: sessions.reduce((s,x) => s + x.roundsExpended, 0).toLocaleString(), lbl: 'All-Time Rounds' },
+            { val: daysSinceLast !== null ? `${daysSinceLast}d` : '—', lbl: 'Last Session' },
+            { val: sessions.reduce((s,x) => s + x.roundsExpended, 0).toLocaleString(), lbl: 'Total Rounds' },
             { val: sessionsPerMonth,                              lbl: 'Sessions/Mo'    },
           ].map(item => (
             <div key={item.lbl}>
@@ -414,26 +410,11 @@ export function HomePage({
 
       </div>
 
-      {/* ── RESET (dev) ── */}
-      <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        <button
-          onClick={() => { if (window.prompt('Type "RESET" to confirm') === 'RESET') resetAllData(); }}
-          style={{
-            padding: '4px 10px', backgroundColor: 'transparent',
-            color: theme.textMuted, border: `0.5px solid ${theme.border}`,
-            borderRadius: '4px', fontFamily: 'monospace',
-            fontSize: '9px', cursor: 'pointer',
-          }}
-        >
-          RESET DATA
-        </button>
-      </div>
-
       {/* ── FAB ── */}
       {showFab && <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setShowFab(false)} />}
       {showFab && (
         <div style={{
-          position: 'fixed', bottom: '88px', right: '20px',
+          position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: '20px',
           zIndex: 999, display: 'flex', flexDirection: 'column',
           gap: '8px', alignItems: 'flex-end',
         }}>
@@ -460,7 +441,7 @@ export function HomePage({
       <button
         onClick={() => setShowFab(f => !f)}
         style={{
-          position: 'fixed', bottom: '24px', right: '20px',
+          position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom))', right: '20px',
           zIndex: 1000, width: '52px', height: '52px',
           borderRadius: '50%', backgroundColor: theme.accent,
           border: 'none', color: theme.bg, fontSize: '26px',

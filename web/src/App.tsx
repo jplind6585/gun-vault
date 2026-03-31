@@ -37,6 +37,7 @@ function App() {
   const [selectedGun, setSelectedGun] = useState<Gun | null>(null);
   // Gun pre-selected when launching session log
   const [sessionLogGun, setSessionLogGun] = useState<Gun | null>(null);
+  const [devOpen, setDevOpen] = useState(false);
 
   useEffect(() => { loadGuns(); }, []);
 
@@ -122,7 +123,7 @@ function App() {
   if (currentView === 'home') {
     return (
       <>
-        <AppHeader title="Gun Vault" onSearch={() => setShowSmartSearch(true)} />
+        <AppHeader title="Gun Vault" />
         <HomePage
           onNavigateToVault={() => setCurrentView('vault')}
           onNavigateToArsenal={() => setCurrentView('arsenal')}
@@ -137,6 +138,7 @@ function App() {
           onLogSession={() => openSessionLog()}
           onAddGun={() => setShowAddForm(true)}
           onSearchOpen={() => setShowSmartSearch(true)}
+          onDevTools={() => setDevOpen(o => !o)}
           onNavigateToStyleDemo={() => setCurrentView('style-demo')}
         />
         {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => setShowAddForm(false)} />}
@@ -304,7 +306,7 @@ function App() {
 
   return (
     <>
-      <DevToolbar />
+      <DevToolbar open={devOpen} onToggle={() => setDevOpen(o => !o)} />
       {renderView()}
     </>
   );

@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { theme } from './theme';
 import { resetAllData } from './storage';
 
-export function DevToolbar() {
+export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
@@ -73,31 +72,8 @@ export function DevToolbar() {
         </button>
       )}
 
-      {/* Collapsed toggle */}
-      <button
-        onClick={() => setExpanded(e => !e)}
-        style={{
-          pointerEvents: 'all',
-          width: '28px',
-          height: '28px',
-          backgroundColor: expanded ? theme.surface : 'rgba(14,14,42,0.8)',
-          border: `0.5px solid ${theme.border}`,
-          borderRadius: '4px',
-          color: theme.textMuted,
-          fontFamily: 'monospace',
-          fontSize: '14px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-        }}
-      >
-        ⚙
-      </button>
-
       {/* Expanded panel */}
-      {expanded && (
+      {open && (
         <div style={{
           pointerEvents: 'all',
           backgroundColor: theme.surface,
