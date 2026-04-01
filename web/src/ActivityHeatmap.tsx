@@ -5,6 +5,7 @@ import type { Session } from './types';
 
 interface ActivityHeatmapProps {
   sessions: Session[];
+  weekCount?: number; // default 52; pass 12 for collapsed view
 }
 
 function getRoundColor(rounds: number): string {
@@ -15,7 +16,7 @@ function getRoundColor(rounds: number): string {
   return theme.accent;
 }
 
-export function ActivityHeatmap({ sessions }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapProps) {
   const [tooltip, setTooltip] = useState<{ date: string; rounds: number; x: number; y: number } | null>(null);
 
   // Build a map of date → total rounds
@@ -25,18 +26,17 @@ export function ActivityHeatmap({ sessions }: ActivityHeatmapProps) {
     roundsByDate.set(s.date, prev + s.roundsExpended);
   });
 
-  // Build 52 weeks ending today
+  // Build weeks ending today
   const today = new Date();
-  // Start from Sunday 52 weeks ago
   const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (52 * 7) + 1);
+  startDate.setDate(startDate.getDate() - (weekCount * 7) + 1);
   // Align to Sunday
   startDate.setDate(startDate.getDate() - startDate.getDay());
 
   const weeks: Array<Array<{ dateStr: string; rounds: number }>> = [];
   let current = new Date(startDate);
 
-  for (let w = 0; w < 53; w++) {
+  for (let w = 0; w < weekCount + 1; w++) {
     const week: Array<{ dateStr: string; rounds: number }> = [];
     for (let d = 0; d < 7; d++) {
       const dateStr = current.toISOString().split('T')[0];
@@ -83,7 +83,8 @@ export function ActivityHeatmap({ sessions }: ActivityHeatmapProps) {
       </div>
 
       {/* Grid */}
-      <div style={{ display: 'flex', gap: `${GAP}px`, overflowX: 'auto', paddingBottom: '4px' }}>
+      <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: `${GAP}px`, overflowX: weekCount <= 12 ? 'hidden' : 'auto', paddingBottom: '4px' }}>
         {weeks.map((week, wi) => (
           <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px` }}>
             {week.map(({ dateStr, rounds }) => {
@@ -111,6 +112,15 @@ export function ActivityHeatmap({ sessions }: ActivityHeatmapProps) {
             })}
           </div>
         ))}
+      </div>
+      {/* Right-edge fade for 12-week view hinting more data */}
+      {weekCount <= 12 && (
+        <div style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0,
+          width: '24px', pointerEvents: 'none',
+          background: 'linear-gradient(to right, transparent, rgba(7,7,26,0.9))',
+        }} />
+      )}
       </div>
 
       {/* Legend */}

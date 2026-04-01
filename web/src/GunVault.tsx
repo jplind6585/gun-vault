@@ -718,7 +718,8 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           <div style={{
             fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
             color: theme.textPrimary,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}>
             {gun.make} {gun.model}
           </div>
@@ -773,12 +774,16 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           style={{
             padding: '0', backgroundColor: theme.accent,
             border: 'none', borderRadius: '4px', color: theme.bg,
-            fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
+            fontFamily: 'monospace', fontWeight: 700,
             cursor: 'pointer', lineHeight: 1,
             minWidth: '44px', minHeight: '44px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: '1px',
           }}
-        >+</button>
+        >
+          <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: '7px', letterSpacing: '0.5px' }}>LOG</span>
+        </button>
       </div>
       {/* Nav chevron */}
       <div style={{ color: theme.textMuted, fontSize: '16px', flexShrink: 0, alignSelf: 'center', opacity: 0.45, paddingLeft: '2px' }}>›</div>

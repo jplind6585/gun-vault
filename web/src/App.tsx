@@ -39,7 +39,18 @@ function App() {
   // Gun pre-selected when launching session log
   const [sessionLogGun, setSessionLogGun] = useState<Gun | null>(null);
   const [devOpen, setDevOpen] = useState(false);
+  const [devUnlocked, setDevUnlocked] = useState(false);
+  const [devTapCount, setDevTapCount] = useState(0);
   const [vaultSection, setVaultSection] = useState<'guns' | 'ammo'>('guns');
+
+  function handleVersionTap() {
+    const next = devTapCount + 1;
+    setDevTapCount(next);
+    if (next >= 7) {
+      setDevUnlocked(true);
+      setDevTapCount(0);
+    }
+  }
 
   useEffect(() => { loadGuns(); }, []);
 
@@ -136,7 +147,9 @@ function App() {
         onLogSession={(gun) => openSessionLog(gun)}
         onAddGun={() => setShowAddForm(true)}
         onSearchOpen={() => setShowSmartSearch(true)}
-        onDevTools={() => setDevOpen(o => !o)}
+        onDevTools={devUnlocked ? () => setDevOpen(o => !o) : undefined}
+        onVersionTap={handleVersionTap}
+        devTapCount={devTapCount}
       />
     );
     if (currentView === 'vault' || currentView === 'arsenal') {

@@ -51,6 +51,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   // Receipt
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   const isValid = make.trim() && model.trim() && caliber.trim() && type && action;
 
@@ -228,6 +229,27 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AUTO</span>
                 )}
               </div>
+              {/* Contextual caliber suggestions based on selected type */}
+              {!caliber && (() => {
+                const suggestions: string[] =
+                  type === 'Pistol' ? ['9mm', '.45 ACP', '.40 S&W', '10mm', '.380 ACP'] :
+                  type === 'Rifle' ? ['5.56mm', '.308 Win', '6.5 Creedmoor', '.223 Rem', '.300 Win Mag'] :
+                  type === 'Shotgun' ? ['12 Gauge', '20 Gauge', '.410 Bore'] :
+                  ['9mm', '5.56mm', '.308 Win', '12 Gauge', '.22 LR'];
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '6px' }}>
+                    {suggestions.map(s => (
+                      <button key={s} type="button" onClick={() => { setCaliber(s); setAutoFilled(false); }} style={{
+                        padding: '5px 10px', borderRadius: '3px', border: `0.5px solid ${theme.border}`,
+                        backgroundColor: theme.surface, color: theme.textSecondary,
+                        fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                      }}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </Field>
 
             <Field label="Type *">
@@ -297,18 +319,34 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   }}>×</button>
                 </div>
               ) : (
-                <button type="button" onClick={() => receiptRef.current?.click()} style={{
-                  width: '100%', padding: '10px',
-                  backgroundColor: theme.surface, border: `1px dashed ${theme.border}`,
-                  borderRadius: '6px', color: theme.textMuted,
-                  fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
-                  textAlign: 'center',
-                }}>
-                  📷 Take photo or upload receipt
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" onClick={() => receiptRef.current?.click()} style={{
+                    flex: 1, padding: '10px',
+                    backgroundColor: theme.surface, border: `1px dashed ${theme.border}`,
+                    borderRadius: '6px', color: theme.textMuted,
+                    fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                    textAlign: 'center',
+                  }}>
+                    📷 Take Photo
+                  </button>
+                  <button type="button" onClick={() => galleryRef.current?.click()} style={{
+                    flex: 1, padding: '10px',
+                    backgroundColor: theme.surface, border: `1px dashed ${theme.border}`,
+                    borderRadius: '6px', color: theme.textMuted,
+                    fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                    textAlign: 'center',
+                  }}>
+                    🖼 Choose from Library
+                  </button>
+                </div>
               )}
               <input
                 ref={receiptRef} type="file" accept="image/*" capture="environment"
+                style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleReceiptFile(f); }}
+              />
+              <input
+                ref={galleryRef} type="file" accept="image/*"
                 style={{ display: 'none' }}
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleReceiptFile(f); }}
               />
@@ -366,7 +404,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               onToggle={setSuppressorHost}
             />
 
-            <div style={{ marginTop: '16px', padding: '10px 12px', backgroundColor: theme.surface, borderRadius: '6px', border: `0.5px solid ${theme.border}` }}>
+            <div style={{ marginTop: '16px' }}>
               <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, lineHeight: '1.6' }}>
                 Everything can be updated after adding — accessories, maintenance logs, market value, and more are all editable from the gun's detail page.
               </div>
@@ -455,14 +493,14 @@ function ToggleRow({ label, sublabel, value, onToggle }: {
         <div style={{ fontSize: '11px', color: theme.textMuted }}>{sublabel}</div>
       </div>
       <button type="button" onClick={() => onToggle(!value)} style={{
-        width: '44px', height: '24px', borderRadius: '12px', border: 'none',
+        width: '50px', height: '30px', borderRadius: '15px', border: 'none',
         backgroundColor: value ? theme.accent : theme.surfaceAlt,
         cursor: 'pointer', position: 'relative', flexShrink: 0,
         transition: 'background-color 0.2s',
       }} aria-checked={value} role="switch">
         <div style={{
-          position: 'absolute', top: '3px', left: value ? '23px' : '3px',
-          width: '18px', height: '18px', borderRadius: '50%',
+          position: 'absolute', top: '4px', left: value ? '24px' : '4px',
+          width: '22px', height: '22px', borderRadius: '50%',
           backgroundColor: value ? theme.bg : theme.textMuted,
           transition: 'left 0.2s',
         }} />

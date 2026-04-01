@@ -29,97 +29,112 @@ export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => 
   }
 
   function handleReloadSeed() {
-    // Remove initialized flag so seed data reloads on next render
     localStorage.removeItem('gunvault_initialized');
     localStorage.removeItem('gunvault_version');
     window.location.reload();
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      zIndex: 9998,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
-      gap: '4px',
-      padding: '6px',
-      pointerEvents: 'none',
-    }}>
+    <>
       {/* Update badge — always visible when update is available */}
-      {updateAvailable && (
-        <button
-          onClick={handleUpdate}
-          style={{
-            pointerEvents: 'all',
-            padding: '6px 12px',
-            backgroundColor: '#51cf66',
-            border: 'none',
-            borderRadius: '4px',
-            color: '#000',
-            fontFamily: 'monospace',
-            fontSize: '10px',
-            fontWeight: 700,
-            letterSpacing: '0.5px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-            animation: 'pulse 2s infinite',
-          }}
-        >
-          ↑ UPDATE AVAILABLE
-        </button>
+      {updateAvailable && !open && (
+        <div style={{ position: 'fixed', top: 6, right: 6, zIndex: 9999, pointerEvents: 'all' }}>
+          <button
+            onClick={handleUpdate}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#51cf66',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#000',
+              fontFamily: 'monospace',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              animation: 'pulse 2s infinite',
+            }}
+          >
+            ↑ UPDATE AVAILABLE
+          </button>
+        </div>
       )}
 
-      {/* Expanded panel */}
+      {/* Backdrop + panel */}
       {open && (
-        <div style={{
-          pointerEvents: 'all',
-          backgroundColor: theme.surface,
-          border: `0.5px solid ${theme.border}`,
-          borderRadius: '6px',
-          padding: '10px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-          minWidth: '160px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-        }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '2px' }}>
-            DEV TOOLS
-          </div>
-
-          <ToolButton
-            label={confirmClear ? 'TAP AGAIN TO CONFIRM' : 'CLEAR ALL DATA'}
-            color={confirmClear ? '#ff6b6b' : theme.textMuted}
-            borderColor={confirmClear ? '#ff6b6b' : theme.border}
-            onClick={handleClearData}
-          />
-
-          <ToolButton
-            label="RELOAD SEED DATA"
-            color={theme.textMuted}
-            borderColor={theme.border}
-            onClick={handleReloadSeed}
-          />
-
-          <ToolButton
-            label={isOutdoorMode() ? 'SWITCH TO NIGHT MODE' : 'SWITCH TO DAY MODE'}
-            color={theme.textMuted}
-            borderColor={theme.border}
-            onClick={toggleOutdoorMode}
-          />
-
-          <ToolButton
-            label="CHECK FOR UPDATE"
-            color={updateAvailable ? '#51cf66' : theme.textMuted}
-            borderColor={updateAvailable ? '#51cf66' : theme.border}
-            onClick={updateAvailable ? handleUpdate : () => {
-              navigator.serviceWorker?.getRegistration().then(reg => reg?.update());
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={onToggle}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9997,
+              backgroundColor: 'rgba(0,0,0,0.5)',
             }}
           />
-        </div>
+          {/* Panel */}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            zIndex: 9998,
+            backgroundColor: theme.surface,
+            border: `0.5px solid ${theme.border}`,
+            borderBottomLeftRadius: '8px',
+            padding: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            minWidth: '200px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+          }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', fontWeight: 700 }}>
+                DEV TOOLS
+              </div>
+              <button
+                onClick={onToggle}
+                style={{
+                  background: 'none', border: 'none', color: theme.textMuted,
+                  cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 0 0 8px',
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <ToolButton
+              label={confirmClear ? 'TAP AGAIN TO CONFIRM' : 'CLEAR ALL DATA'}
+              color={confirmClear ? '#ff6b6b' : theme.textMuted}
+              borderColor={confirmClear ? '#ff6b6b' : theme.border}
+              onClick={handleClearData}
+            />
+
+            <ToolButton
+              label="RELOAD SEED DATA"
+              color={theme.textMuted}
+              borderColor={theme.border}
+              onClick={handleReloadSeed}
+            />
+
+            <ToolButton
+              label={isOutdoorMode() ? 'SWITCH TO NIGHT MODE' : 'SWITCH TO DAY MODE'}
+              color={theme.textMuted}
+              borderColor={theme.border}
+              onClick={toggleOutdoorMode}
+            />
+
+            <ToolButton
+              label="CHECK FOR UPDATE"
+              color={updateAvailable ? '#51cf66' : theme.textMuted}
+              borderColor={updateAvailable ? '#51cf66' : theme.border}
+              onClick={updateAvailable ? handleUpdate : () => {
+                navigator.serviceWorker?.getRegistration().then(reg => reg?.update());
+              }}
+            />
+          </div>
+        </>
       )}
 
       <style>{`
@@ -128,7 +143,7 @@ export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => 
           50% { opacity: 0.7; }
         }
       `}</style>
-    </div>
+    </>
   );
 }
 

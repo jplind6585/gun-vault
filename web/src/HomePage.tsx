@@ -12,6 +12,8 @@ interface HomePageProps {
   onAddGun: () => void;
   onSearchOpen: () => void;
   onDevTools?: () => void;
+  onVersionTap?: () => void;
+  devTapCount?: number;
 }
 
 type TimePeriod = 'week' | 'month' | 'year';
@@ -39,6 +41,8 @@ export function HomePage({
   onAddGun,
   onSearchOpen,
   onDevTools,
+  onVersionTap,
+  devTapCount = 0,
 }: HomePageProps) {
   const [guns, setGuns]       = useState<Gun[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -419,6 +423,20 @@ export function HomePage({
           }
         </div>
 
+      {/* Version tap target — 7 taps unlocks dev tools */}
+      <div style={{ paddingBottom: '8px', textAlign: 'center' }}>
+        <span
+          onClick={onVersionTap}
+          style={{
+            fontFamily: 'monospace', fontSize: '9px',
+            color: devTapCount > 0 ? theme.accent : theme.textMuted,
+            opacity: devTapCount > 0 ? 1 : 0.4,
+            cursor: 'default', userSelect: 'none',
+            letterSpacing: '0.5px',
+          }}
+        >
+          {devTapCount > 0 ? `${devTapCount}/7` : 'LINDCOTT ARMORY v1.0'}
+        </span>
       </div>
 
     </div>

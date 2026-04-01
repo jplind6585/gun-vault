@@ -5,7 +5,7 @@ import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
 
 type ViewMode = 'calibers' | 'lots';
-type CategoryFilter = 'all' | 'Match' | 'Practice' | 'Self Defense' | 'Hunting' | 'Test';
+type CategoryFilter = 'all' | 'Match' | 'Practice' | 'Self Defense' | 'Hunting';
 
 // ============================================================================
 // CALIBER CONSOLIDATION
@@ -121,7 +121,6 @@ function exportShoppingList(allAmmo: AmmoLot[], gunCalibers: Set<string>) {
   });
 
   if (lowLots.length === 0) {
-    alert('No low stock items to export!');
     return;
   }
 
@@ -241,7 +240,9 @@ export function Arsenal() {
   const [useSheetLot, setUseSheetLot] = useState<AmmoLot | null>(null);
   const [useSheetAmount, setUseSheetAmount] = useState('');
   const [caliberSearch, setCaliberSearch] = useState('');
-  const [caliberSort, setCaliberSort] = useState<'rounds-desc' | 'rounds-asc' | 'alpha'>('rounds-desc');
+  const [sortField, setSortField] = useState<'rounds' | 'velocity' | 'energy' | 'price' | 'alpha'>('rounds');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+  const [showSortSheet, setShowSortSheet] = useState(false);
 
   const [ignoredAlerts, setIgnoredAlerts] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('gunvault_ignored_alerts') || '[]')); }
@@ -251,6 +252,7 @@ export function Arsenal() {
     try { return JSON.parse(localStorage.getItem('gunvault_snoozed_alerts') || '{}'); }
     catch { return {}; }
   });
+  const [showInvestedTooltip, setShowInvestedTooltip] = useState(false);
 
   useEffect(() => {
     loadAmmo();
@@ -293,10 +295,25 @@ export function Arsenal() {
 
   // Apply sort
   const sortedCalibersAll = [...sortedCalibersBase].sort((a, b) => {
-    if (caliberSort === 'rounds-asc') return a[1].totalRounds - b[1].totalRounds;
-    if (caliberSort === 'alpha') return normalizeCaliberLabel(a[0]).localeCompare(normalizeCaliberLabel(b[0]));
-    // rounds-desc (default)
-    return b[1].totalRounds - a[1].totalRounds;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortField === 'alpha') return dir * normalizeCaliberLabel(a[0]).localeCompare(normalizeCaliberLabel(b[0]));
+    if (sortField === 'velocity') {
+      const va = a[1].lots[0]?.advertisedFPS ?? 0;
+      const vb = b[1].lots[0]?.advertisedFPS ?? 0;
+      return dir * (va - vb);
+    }
+    if (sortField === 'energy') {
+      const ea = a[1].lots[0]?.muzzleEnergy ?? 0;
+      const eb = b[1].lots[0]?.muzzleEnergy ?? 0;
+      return dir * (ea - eb);
+    }
+    if (sortField === 'price') {
+      const pa = a[1].lots[0]?.purchasePricePerRound ?? 0;
+      const pb = b[1].lots[0]?.purchasePricePerRound ?? 0;
+      return dir * (pa - pb);
+    }
+    // rounds (default)
+    return dir * (a[1].totalRounds - b[1].totalRounds);
   });
 
   // Apply search filter + category filter (Task 3)
@@ -488,14 +505,25 @@ export function Arsenal() {
         {/* Task 9: Total Invested stat */}
         <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px', position: 'relative' }}>
             TOTAL INVESTED{' '}
             <span
-              onClick={() => alert('based on purchase quantities & prices recorded')}
+              onClick={() => setShowInvestedTooltip(v => !v)}
               style={{ cursor: 'pointer', fontSize: '9px' }}
             >
               ⓘ
             </span>
+            {showInvestedTooltip && (
+              <span onClick={() => setShowInvestedTooltip(false)} style={{
+                position: 'absolute', bottom: '16px', left: 0,
+                backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+                borderRadius: '4px', padding: '5px 8px', fontSize: '9px',
+                color: theme.textSecondary, whiteSpace: 'nowrap', zIndex: 10,
+                fontFamily: 'monospace', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}>
+                Based on purchase quantities &amp; prices recorded
+              </span>
+            )}
           </span>
           <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textMuted, fontFamily: 'monospace' }}>
             {totalInvested > 0
@@ -597,7 +625,7 @@ export function Arsenal() {
         marginBottom: '16px',
         flexWrap: 'wrap'
       }}>
-        {(['all', 'Match', 'Practice', 'Self Defense', 'Hunting', 'Test'] as const).map(cat => (
+        {(['all', 'Match', 'Practice', 'Self Defense', 'Hunting'] as const).map(cat => (
           <button
             key={cat}
             onClick={() => setCategoryFilter(cat)}
@@ -641,26 +669,24 @@ export function Arsenal() {
                 outline: 'none'
               }}
             />
-            <select
-              value={caliberSort}
-              onChange={(e) => setCaliberSort(e.target.value as typeof caliberSort)}
+            <button
+              onClick={() => setShowSortSheet(true)}
               style={{
                 backgroundColor: theme.surface,
                 border: `0.5px solid ${theme.border}`,
-                color: theme.textPrimary,
+                color: theme.textSecondary,
                 fontFamily: 'monospace',
-                fontSize: '11px',
-                padding: '8px',
+                fontSize: '10px',
+                padding: '8px 12px',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 marginLeft: 'auto',
-                flexShrink: 0
+                flexShrink: 0,
+                letterSpacing: '0.5px',
               }}
             >
-              <option value="rounds-desc">Most Rounds</option>
-              <option value="rounds-asc">Least Rounds</option>
-              <option value="alpha">A–Z</option>
-            </select>
+              {sortDir === 'desc' ? '↓' : '↑'} {sortField === 'alpha' ? 'A–Z' : sortField === 'rounds' ? 'ROUNDS' : sortField === 'velocity' ? 'FPS' : sortField === 'energy' ? 'FT-LBS' : 'PRICE'}
+            </button>
           </div>
           {/* Task 6: Stock level legend */}
           <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', marginBottom: '8px' }}>
@@ -847,22 +873,6 @@ export function Arsenal() {
                       </div>
                     )}
 
-                    {/* RESEARCH ONLY badge for calibers without a gun */}
-                    {!hasGun && (
-                      <div style={{
-                        marginTop: '6px',
-                        display: 'inline-block',
-                        padding: '2px 6px',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        borderRadius: '3px',
-                        fontSize: '8px',
-                        color: theme.textMuted,
-                        fontFamily: 'monospace',
-                        letterSpacing: '0.5px'
-                      }}>
-                        RESEARCH ONLY
-                      </div>
-                    )}
                   </div>
                 );
               })
@@ -1162,6 +1172,64 @@ export function Arsenal() {
           </div>
         </>
       )}
+
+      {/* Sort Bottom Sheet */}
+      {showSortSheet && (
+        <>
+          <div onClick={() => setShowSortSheet(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2500 }} />
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '480px', backgroundColor: theme.bg,
+            borderTop: `0.5px solid ${theme.border}`, borderRadius: '12px 12px 0 0',
+            zIndex: 2501, padding: '12px 20px calc(env(safe-area-inset-bottom) + 24px)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              <div style={{ width: '32px', height: '4px', borderRadius: '2px', backgroundColor: theme.border }} />
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '12px', fontWeight: 700 }}>SORT BY</div>
+            {([
+              { field: 'rounds', label: 'Rounds' },
+              { field: 'velocity', label: 'Velocity (fps)' },
+              { field: 'energy', label: 'Muzzle Energy' },
+              { field: 'price', label: 'Price Per Round' },
+              { field: 'alpha', label: 'A–Z' },
+            ] as const).map(({ field, label }) => {
+              const active = sortField === field;
+              return (
+                <button key={field} onClick={() => setSortField(field)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '11px 4px',
+                  backgroundColor: 'transparent', border: 'none',
+                  borderBottom: `0.5px solid ${theme.border}`, cursor: 'pointer',
+                  textAlign: 'left',
+                }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '13px', color: active ? theme.accent : theme.textSecondary, fontWeight: active ? 700 : 400 }}>
+                    {label}
+                  </span>
+                  {active && (
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: theme.accent, flexShrink: 0 }} />
+                  )}
+                </button>
+              );
+            })}
+            {/* ASC / DESC toggle */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              {(['desc', 'asc'] as const).map(d => (
+                <button key={d} onClick={() => setSortDir(d)} style={{
+                  flex: 1, padding: '10px',
+                  backgroundColor: sortDir === d ? theme.accent : 'transparent',
+                  color: sortDir === d ? theme.bg : theme.textSecondary,
+                  border: `0.5px solid ${sortDir === d ? theme.accent : theme.border}`,
+                  borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px',
+                  fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px',
+                }}>
+                  {d === 'desc' ? '↓ HIGH → LOW' : '↑ LOW → HIGH'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1206,15 +1274,17 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
         </div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           <div style={{
-            padding: '2px 4px',
+            padding: '2px 6px',
             backgroundColor: getCategoryColor(lot.category),
             borderRadius: '2px',
             fontSize: '7px',
             fontWeight: 600,
             color: theme.bg,
-            letterSpacing: '0.3px'
+            letterSpacing: '0.3px',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}>
-            {lot.category === 'Match' ? 'MATCH' : lot.category === 'Self Defense' ? 'SD' : lot.category === 'Practice' ? 'PRAC' : lot.category === 'Hunting' ? 'HUNT' : lot.category.substring(0, 4).toUpperCase()}
+            {lot.category === 'Match' ? 'MATCH' : lot.category === 'Self Defense' ? 'SD' : lot.category === 'Practice' ? 'PRAC' : lot.category === 'Hunting' ? 'HUNT' : lot.category.toUpperCase()}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(lot); }}
@@ -1297,6 +1367,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
   const [productLine, setProductLine] = useState('');
   const [grainWeight, setGrainWeight] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [formError, setFormError] = useState('');
   const [category, setCategory] = useState<AmmoLot['category']>('Practice');
   const [bulletType, setBulletType] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
@@ -1307,9 +1378,10 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
 
   function handleSubmit() {
     if (!caliber || !brand || !grainWeight || !quantity) {
-      alert('Please fill in required fields');
+      setFormError('Please fill in all required fields: caliber, brand, grain weight, and quantity.');
       return;
     }
+    setFormError('');
 
     const grain = parseInt(grainWeight);
     const qty = parseInt(quantity);
@@ -1397,7 +1469,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
           <div>
             <label style={labelStyle}>Category *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-              {(['Practice', 'Match', 'Self Defense', 'Hunting', 'Test'] as const).map(cat => (
+              {(['Practice', 'Match', 'Self Defense', 'Hunting'] as const).map(cat => (
                 <button key={cat} onClick={() => setCategory(cat)} style={{
                   padding: '8px',
                   backgroundColor: category === cat ? theme.accent : 'transparent',
@@ -1439,17 +1511,24 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-          <button onClick={onClose} style={{
-            flex: 1, padding: '11px', backgroundColor: 'transparent', color: theme.textPrimary,
-            border: `0.5px solid ${theme.border}`, borderRadius: '4px', fontFamily: 'monospace',
-            fontSize: '11px', letterSpacing: '0.8px', cursor: 'pointer'
-          }}>CANCEL</button>
-          <button onClick={handleSubmit} style={{
-            flex: 1, padding: '11px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
-            borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.8px',
-            cursor: 'pointer', fontWeight: 600
-          }}>ADD TO INVENTORY</button>
+        <div style={{ marginTop: '20px' }}>
+          {formError && (
+            <div style={{ color: theme.red, fontFamily: 'monospace', fontSize: '10px', marginBottom: '8px', padding: '6px 8px', backgroundColor: 'rgba(255,107,107,0.08)', borderRadius: '4px', border: `0.5px solid ${theme.red}` }}>
+              {formError}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={onClose} style={{
+              flex: 1, padding: '11px', backgroundColor: 'transparent', color: theme.textPrimary,
+              border: `0.5px solid ${theme.border}`, borderRadius: '4px', fontFamily: 'monospace',
+              fontSize: '11px', letterSpacing: '0.8px', cursor: 'pointer'
+            }}>CANCEL</button>
+            <button onClick={handleSubmit} style={{
+              flex: 1, padding: '11px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
+              borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.8px',
+              cursor: 'pointer', fontWeight: 600
+            }}>ADD TO INVENTORY</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1643,6 +1722,7 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
   // Task 11: purchase history state
   const [showAddPurchase, setShowAddPurchase] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchaseError, setPurchaseError] = useState('');
   const [purchaseQty, setPurchaseQty] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
 
@@ -1688,10 +1768,11 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
   }
 
   const [customAdj, setCustomAdj] = useState('');
+  const [customAdjSign, setCustomAdjSign] = useState<1 | -1>(1);
   function handleCustomApply() {
     const n = parseInt(customAdj, 10);
-    if (!isNaN(n)) {
-      updateAmmo(currentLot.id, { quantity: Math.max(0, currentLot.quantity - n) });
+    if (!isNaN(n) && n > 0) {
+      updateAmmo(currentLot.id, { quantity: Math.max(0, currentLot.quantity + customAdjSign * n) });
       reloadLot();
       setCustomAdj('');
     }
@@ -1730,9 +1811,10 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
     const qty = parseInt(purchaseQty, 10);
     const price = parseFloat(purchasePrice);
     if (isNaN(qty) || qty <= 0 || isNaN(price) || price < 0) {
-      alert('Please enter valid quantity and price');
+      setPurchaseError('Enter a valid quantity (> 0) and price (≥ 0).');
       return;
     }
+    setPurchaseError('');
     const newEntry = { date: purchaseDate || new Date().toISOString().slice(0, 10), quantity: qty, pricePerRound: price };
     const existingHistory = currentLot.purchaseHistory || [];
     const newHistory = [...existingHistory, newEntry];
@@ -1850,33 +1932,74 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
           border: `0.5px solid ${theme.border}`, marginBottom: '14px'
         }}>
           <span style={sectionLabel}>QUICK ADJUST</span>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            {[-10, -25, -50, -100].map(n => (
-              <button
-                key={n}
-                onClick={() => handleAdjust(n)}
-                style={{
-                  padding: '6px 12px', backgroundColor: 'transparent', color: theme.textSecondary,
-                  border: `0.5px solid ${theme.border}`, borderRadius: '4px',
-                  fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', fontWeight: 600
-                }}
-              >
-                {n} rds
-              </button>
-            ))}
+
+          {/* ADD */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '8px', color: theme.green, fontFamily: 'monospace', letterSpacing: '0.6px', marginBottom: '5px', fontWeight: 700 }}>ADD</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[20, 25, 50, 500, 1000].map(n => (
+                <button
+                  key={`add-${n}`}
+                  onClick={() => handleAdjust(n)}
+                  style={{
+                    padding: '8px 10px', backgroundColor: 'rgba(81,207,102,0.08)', color: theme.green,
+                    border: `0.5px solid ${theme.green}`, borderRadius: '4px',
+                    fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', fontWeight: 600, minWidth: '44px'
+                  }}
+                >
+                  +{n}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Separator */}
+          <div style={{ height: '0.5px', backgroundColor: theme.border, marginBottom: '10px' }} />
+
+          {/* REMOVE */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '8px', color: theme.red, fontFamily: 'monospace', letterSpacing: '0.6px', marginBottom: '5px', fontWeight: 700 }}>REMOVE</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[1, 5, 10, 20, 50].map(n => (
+                <button
+                  key={`rem-${n}`}
+                  onClick={() => handleAdjust(-n)}
+                  style={{
+                    padding: '8px 10px', backgroundColor: 'rgba(255,107,107,0.08)', color: theme.red,
+                    border: `0.5px solid ${theme.red}`, borderRadius: '4px',
+                    fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', fontWeight: 600, minWidth: '44px'
+                  }}
+                >
+                  -{n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom */}
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCustomAdjSign(s => s === 1 ? -1 : 1)}
+              style={{
+                padding: '8px 10px', backgroundColor: customAdjSign === 1 ? 'rgba(81,207,102,0.08)' : 'rgba(255,107,107,0.08)',
+                color: customAdjSign === 1 ? theme.green : theme.red,
+                border: `0.5px solid ${customAdjSign === 1 ? theme.green : theme.red}`, borderRadius: '4px',
+                fontFamily: 'monospace', fontSize: '13px', cursor: 'pointer', fontWeight: 700, minWidth: '36px'
+              }}
+            >
+              {customAdjSign === 1 ? '+' : '−'}
+            </button>
             <input
               type="number"
-              placeholder="custom amount"
+              placeholder="custom"
               value={customAdj}
               onChange={(e) => setCustomAdj(e.target.value)}
-              style={{ ...inputStyle, width: '120px' }}
+              style={{ ...inputStyle, flex: 1 }}
             />
             <button
               onClick={handleCustomApply}
               style={{
-                padding: '6px 12px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
+                padding: '8px 12px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
                 borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 600
               }}
             >
@@ -2197,6 +2320,11 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
                 placeholder="Quantity (rounds)" style={{ ...inputStyle, width: '100%' }} />
               <input type="number" step="0.001" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)}
                 placeholder="Price per round ($0.350)" style={{ ...inputStyle, width: '100%' }} />
+              {purchaseError && (
+                <div style={{ color: theme.red, fontFamily: 'monospace', fontSize: '9px', padding: '4px 6px', backgroundColor: 'rgba(255,107,107,0.08)', borderRadius: '3px', border: `0.5px solid ${theme.red}` }}>
+                  {purchaseError}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button onClick={handleSavePurchase} style={{
                   flex: 1, padding: '7px', backgroundColor: theme.accent, color: theme.bg, border: 'none',

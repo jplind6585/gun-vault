@@ -36,6 +36,11 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   const [apiKeyInput, setApiKeyInput] = useState(getClaudeApiKey());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [heatmapExpanded, setHeatmapExpanded] = useState(false);
+  const [gunSearch, setGunSearch] = useState('');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterIssues, setFilterIssues] = useState<'all' | 'issues' | 'clean'>('all');
 
   function reload() {
     setSessions(getAllSessions().sort((a, b) => b.date.localeCompare(a.date)));
@@ -51,6 +56,14 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   const filtered = sessions.filter(s => {
     if (filterGunId !== 'all' && s.gunId !== filterGunId) return false;
     if (filterPurpose !== 'all' && !s.purpose?.includes(filterPurpose as SessionPurpose)) return false;
+    if (gunSearch.trim()) {
+      const gun = guns.find(g => g.id === s.gunId);
+      const q = gunSearch.toLowerCase();
+      if (!gun || !(`${gun.make} ${gun.model}`.toLowerCase().includes(q))) return false;
+    }
+    if (filterLocation !== 'all' && s.location !== filterLocation) return false;
+    if (filterIssues === 'issues' && !s.issues) return false;
+    if (filterIssues === 'clean' && s.issues) return false;
     return true;
   });
   const displayed = filtered.filter(s => s.id !== pendingDeleteId);
@@ -81,8 +94,10 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   }, {} as Record<string, Session[]>);
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-  // All purposes used
+  // All purposes and locations used
   const allPurposes = [...new Set(sessions.flatMap(s => s.purpose || []))];
+  const allLocations = [...new Set(sessions.map(s => s.location).filter(Boolean))] as string[];
+  const activeFilters = (filterGunId !== 'all' ? 1 : 0) + (filterIssues !== 'all' ? 1 : 0) + (filterLocation !== 'all' ? 1 : 0) + (gunSearch.trim() ? 1 : 0);
 
   function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T12:00:00');
@@ -204,12 +219,26 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           borderRadius: '6px',
           padding: '12px 14px',
           marginBottom: '16px',
-          overflowX: 'auto',
+          overflow: 'hidden',
         }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px', marginBottom: '10px', textTransform: 'uppercase' }}>
-            Range Activity — Past Year
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              Range Activity
+            </div>
+            <button
+              onClick={() => setHeatmapExpanded(e => !e)}
+              style={{
+                background: 'none', border: `0.5px solid ${theme.border}`, borderRadius: '3px',
+                color: theme.textMuted, fontFamily: 'monospace', fontSize: '8px',
+                cursor: 'pointer', padding: '2px 7px', letterSpacing: '0.5px',
+              }}
+            >
+              {heatmapExpanded ? '12 WK' : '52 WK'}
+            </button>
           </div>
-          <ActivityHeatmap sessions={sessions} />
+          <div style={{ overflowX: heatmapExpanded ? 'auto' : 'hidden' }}>
+            <ActivityHeatmap sessions={sessions} weekCount={heatmapExpanded ? 52 : 12} />
+          </div>
         </div>
       )}
 
@@ -234,27 +263,38 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
       )}
 
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
           {displayed.length} sessions · {displayed.reduce((s, x) => s + x.roundsExpended, 0).toLocaleString()} rds
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button
-            onClick={() => setShowApiKeyModal(true)}
-            style={{
-              padding: '6px 10px',
-              backgroundColor: hasClaudeApiKey() ? 'rgba(116,192,252,0.1)' : theme.surface,
-              border: `0.5px solid ${hasClaudeApiKey() ? theme.blue : theme.border}`,
-              borderRadius: '4px',
-              color: hasClaudeApiKey() ? theme.blue : theme.textMuted,
-              fontFamily: 'monospace',
-              fontSize: '9px',
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-            }}
-          >
-            {hasClaudeApiKey() ? 'AI ON' : 'AI OFF'}
-          </button>
+          {/* AI button — invite when off, subtle dot when on */}
+          {hasClaudeApiKey() ? (
+            <div
+              onClick={() => setShowApiKeyModal(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            >
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: theme.accent, flexShrink: 0 }} />
+              <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AI</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowApiKeyModal(true)}
+              style={{
+                padding: '6px 10px',
+                backgroundColor: theme.surface,
+                border: `0.5px solid ${theme.border}`,
+                borderRadius: '4px',
+                color: theme.textMuted,
+                fontFamily: 'monospace',
+                fontSize: '9px',
+                cursor: 'pointer',
+                letterSpacing: '0.5px',
+              }}
+            >
+              ✦ AI INSIGHTS
+            </button>
+          )}
           <button
             onClick={() => onLogSession()}
             style={{
@@ -276,15 +316,43 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto' }}>
-        <FilterChip label="All Guns" active={filterGunId === 'all'} onClick={() => setFilterGunId('all')} />
-        {guns
-          .filter(g => sessions.some(s => s.gunId === g.id))
-          .map(g => (
-            <FilterChip key={g.id} label={`${g.make} ${g.model}`} active={filterGunId === g.id} onClick={() => setFilterGunId(g.id)} />
-          ))
-        }
+      {/* Gun search + filter row */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
+        <input
+          type="text"
+          placeholder="Search guns..."
+          value={gunSearch}
+          onChange={e => setGunSearch(e.target.value)}
+          style={{
+            flex: 1, padding: '8px 12px',
+            backgroundColor: theme.surface,
+            border: `0.5px solid ${theme.border}`,
+            borderRadius: '6px',
+            color: theme.textPrimary,
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={() => setShowFilterSheet(true)}
+          style={{
+            padding: '8px 12px',
+            backgroundColor: activeFilters > 0 ? theme.accent : theme.surface,
+            border: `0.5px solid ${activeFilters > 0 ? theme.accent : theme.border}`,
+            borderRadius: '6px',
+            color: activeFilters > 0 ? theme.bg : theme.textSecondary,
+            fontFamily: 'monospace',
+            fontSize: '10px',
+            cursor: 'pointer',
+            letterSpacing: '0.5px',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          ≡ {activeFilters > 0 ? activeFilters : 'FILTER'}
+        </button>
       </div>
 
       {allPurposes.length > 0 && (
@@ -353,7 +421,17 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {hasIssues && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: '#ff6b6b' }}>ISSUES</span>}
+                    {hasIssues && (
+                      <span
+                        onClick={() => {
+                          const firstIssueSession = daySessions.find(s => s.issues);
+                          if (firstIssueSession) setExpandedId(firstIssueSession.id);
+                        }}
+                        style={{ fontFamily: 'monospace', fontSize: '9px', color: '#ff6b6b', cursor: 'pointer', padding: '1px 4px', border: '0.5px solid rgba(255,107,107,0.4)', borderRadius: '3px' }}
+                      >
+                        ISSUES
+                      </span>
+                    )}
                     <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
                       {dayRounds} rds
                     </span>
@@ -506,6 +584,73 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Filter bottom sheet */}
+      {showFilterSheet && (
+        <>
+          <div onClick={() => setShowFilterSheet(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2500 }} />
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '480px', backgroundColor: theme.bg,
+            borderTop: `0.5px solid ${theme.border}`, borderRadius: '12px 12px 0 0',
+            zIndex: 2501, padding: '12px 20px calc(env(safe-area-inset-bottom) + 28px)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+              <div style={{ width: '32px', height: '4px', borderRadius: '2px', backgroundColor: theme.border }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '1px', fontWeight: 700 }}>FILTER</span>
+              <button onClick={() => { setFilterGunId('all'); setFilterLocation('all'); setFilterIssues('all'); setGunSearch(''); }} style={{ background: 'none', border: 'none', color: theme.accent, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer' }}>CLEAR ALL</button>
+            </div>
+
+            {/* Location */}
+            {allLocations.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '8px' }}>LOCATION</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(['all', ...allLocations] as string[]).map(loc => (
+                    <button key={loc} onClick={() => setFilterLocation(loc)} style={{
+                      padding: '6px 12px', borderRadius: '3px',
+                      backgroundColor: filterLocation === loc ? theme.accent : 'transparent',
+                      color: filterLocation === loc ? theme.bg : theme.textSecondary,
+                      border: `0.5px solid ${filterLocation === loc ? theme.accent : theme.border}`,
+                      fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 600,
+                    }}>
+                      {loc === 'all' ? 'ALL' : loc}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Issues */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '8px' }}>ISSUES</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {([['all', 'All'], ['issues', 'Issues Only'], ['clean', 'No Issues']] as const).map(([val, label]) => (
+                  <button key={val} onClick={() => setFilterIssues(val)} style={{
+                    flex: 1, padding: '8px 6px', borderRadius: '3px',
+                    backgroundColor: filterIssues === val ? theme.accent : 'transparent',
+                    color: filterIssues === val ? theme.bg : theme.textSecondary,
+                    border: `0.5px solid ${filterIssues === val ? theme.accent : theme.border}`,
+                    fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer', fontWeight: 600,
+                  }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={() => setShowFilterSheet(false)} style={{
+              width: '100%', padding: '11px', backgroundColor: theme.accent,
+              border: 'none', borderRadius: '6px', color: theme.bg,
+              fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+            }}>
+              APPLY
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
