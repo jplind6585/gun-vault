@@ -187,10 +187,13 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginTop: '2px' }}>
-            {filtered.length === guns.length
-              ? `${guns.length} firearm${guns.length !== 1 ? 's' : ''}`
-              : `${filtered.length} of ${guns.length} firearms`}
+          <div style={{ fontFamily: 'monospace', fontSize: '42px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1 }}>
+            {typeFilter === 'All' ? guns.length : filtered.length}
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '1px', marginTop: '2px' }}>
+            {typeFilter === 'All'
+              ? 'FIREARMS'
+              : `${filtered.length} of ${guns.length} FIREARMS`}
           </div>
           {guns.length > 0 && (() => {
             const totalFMV = filtered.reduce((sum, g) => sum + (g.estimatedFMV || 0), 0);
@@ -287,25 +290,30 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         {/* Chips — scrollable, don't overflow into FILTERS */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, scrollbarWidth: 'none' }}>
-          {(['All', 'Pistol', 'Rifle', 'Shotgun'] as TypeFilter[])
-            .filter(t => t === 'All' || typeCounts[t] > 0)
-            .map(t => (
-              <button key={t} onClick={() => { setTypeFilter(t); setCaliberFilter(''); setActionFilter(''); }}
-                style={{
-                  padding: '6px 11px',
-                  backgroundColor: typeFilter === t ? theme.accent : 'transparent',
-                  border: `0.5px solid ${typeFilter === t ? theme.accent : theme.border}`,
-                  borderRadius: '20px',
-                  color: typeFilter === t ? theme.bg : theme.textMuted,
-                  fontFamily: 'monospace', fontSize: '10px',
-                  letterSpacing: '0.5px',
-                  fontWeight: typeFilter === t ? 700 : 400,
-                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                }}
-              >
-                {t} – {t !== 'All' ? typeCounts[t] : typeCounts.All}
-              </button>
-            ))}
+          {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
+            .filter(t => typeCounts[t] > 0)
+            .map(t => {
+              const label = t === 'Pistol' ? 'Handgun' : t;
+              const active = typeFilter === t;
+              return (
+                <button key={t}
+                  onClick={() => { setTypeFilter(active ? 'All' : t); setCaliberFilter(''); setActionFilter(''); }}
+                  style={{
+                    padding: '6px 11px',
+                    backgroundColor: active ? theme.accent : 'transparent',
+                    border: `0.5px solid ${active ? theme.accent : theme.border}`,
+                    borderRadius: '20px',
+                    color: active ? theme.bg : theme.textMuted,
+                    fontFamily: 'monospace', fontSize: '10px',
+                    letterSpacing: '0.5px',
+                    fontWeight: active ? 700 : 400,
+                    cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  }}
+                >
+                  {label} – {typeCounts[t]}
+                </button>
+              );
+            })}
         </div>
         {/* FILTERS — pinned right, visually distinct */}
         <button

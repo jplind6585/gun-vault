@@ -1,17 +1,14 @@
 // Bottom tab bar — primary navigation on mobile
 import { theme } from './theme';
 
-type NavView = 'home' | 'vault' | 'arsenal' | 'sessions' | 'target-analysis';
+type NavView = 'home' | 'vault' | 'sessions' | 'target-analysis';
 
 interface MobileNavProps {
   currentView: string;
   onNavigateToHome: () => void;
   onNavigateToVault: () => void;
-  onNavigateToArsenal: () => void;
   onNavigateToSessions: () => void;
   onNavigateToTargetAnalysis: () => void;
-  // kept for backwards compat, unused
-  onNavigateToCaliber?: () => void;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -47,25 +44,6 @@ function VaultIcon({ active }: { active: boolean }) {
   );
 }
 
-function AmmoIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M9 2H15V10L12 14L9 10V2Z"
-        stroke="currentColor" strokeWidth="1.5"
-        strokeLinejoin="round"
-        fill={active ? 'currentColor' : 'none'}
-        fillOpacity={active ? 0.2 : 0}
-      />
-      <rect x="9" y="14" width="6" height="8" rx="1"
-        stroke="currentColor" strokeWidth="1.5"
-        fill={active ? 'currentColor' : 'none'}
-        fillOpacity={active ? 0.2 : 0}
-      />
-      <path d="M9 10H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
 
 function SessionIcon({ active }: { active: boolean }) {
   return (
@@ -96,7 +74,6 @@ function TargetIcon({ active }: { active: boolean }) {
 const TABS: { id: NavView; label: string; Icon: React.FC<{ active: boolean }> }[] = [
   { id: 'home',            label: 'Home',     Icon: HomeIcon },
   { id: 'vault',           label: 'Vault',    Icon: VaultIcon },
-  { id: 'arsenal',         label: 'Ammo',     Icon: AmmoIcon },
   { id: 'sessions',        label: 'Sessions', Icon: SessionIcon },
   { id: 'target-analysis', label: 'Analyze',  Icon: TargetIcon },
 ];
@@ -107,14 +84,12 @@ export function MobileNav({
   currentView,
   onNavigateToHome,
   onNavigateToVault,
-  onNavigateToArsenal,
   onNavigateToSessions,
   onNavigateToTargetAnalysis,
 }: MobileNavProps) {
   const handlers: Record<NavView, () => void> = {
     home:              onNavigateToHome,
     vault:             onNavigateToVault,
-    arsenal:           onNavigateToArsenal,
     sessions:          onNavigateToSessions,
     'target-analysis': onNavigateToTargetAnalysis,
   };

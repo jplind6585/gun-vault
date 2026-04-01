@@ -39,6 +39,7 @@ function App() {
   // Gun pre-selected when launching session log
   const [sessionLogGun, setSessionLogGun] = useState<Gun | null>(null);
   const [devOpen, setDevOpen] = useState(false);
+  const [vaultSection, setVaultSection] = useState<'guns' | 'ammo'>('guns');
 
   useEffect(() => { loadGuns(); }, []);
 
@@ -111,11 +112,10 @@ function App() {
 
   function renderHeader() {
     if (currentView === 'home')         return <AppHeader title="Lindcott Armory" />;
-    if (currentView === 'vault')        return <AppHeader title="Gun Vault" onSearch={() => setShowSmartSearch(true)} />;
+    if (currentView === 'vault' || currentView === 'arsenal') return <AppHeader title="Vault" onSearch={() => setShowSmartSearch(true)} />;
     if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
     if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
     if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
-    if (currentView === 'arsenal')      return <AppHeader title="Arsenal" />;
     if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('home')} backLabel="Home" />;
     if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('home')} backLabel="Home" />;
     if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
@@ -130,7 +130,7 @@ function App() {
     if (currentView === 'home') return (
       <HomePage
         onNavigateToVault={() => setCurrentView('vault')}
-        onNavigateToArsenal={() => setCurrentView('arsenal')}
+        onNavigateToArsenal={() => { setCurrentView('vault'); setVaultSection('ammo'); }}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
         onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
         onLogSession={(gun) => openSessionLog(gun)}
@@ -139,12 +139,54 @@ function App() {
         onDevTools={() => setDevOpen(o => !o)}
       />
     );
-    if (currentView === 'vault') return (
-      <GunVault
-        onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
-        onAddGun={() => setShowAddForm(true)}
-      />
-    );
+    if (currentView === 'vault' || currentView === 'arsenal') {
+      // If we got here via the old 'arsenal' view, show ammo section
+      const section = currentView === 'arsenal' ? 'ammo' : vaultSection;
+      return (
+        <div>
+          {/* GUNS / AMMO toggle — sticky at top of content */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '10px 16px',
+            backgroundColor: theme.bg,
+            borderBottom: `0.5px solid ${theme.border}`,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+          }}>
+            {(['guns', 'ammo'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => { setVaultSection(s); if (currentView === 'arsenal') setCurrentView('vault'); }}
+                style={{
+                  flex: 1,
+                  padding: '9px',
+                  backgroundColor: section === s ? theme.accent : 'transparent',
+                  border: `0.5px solid ${section === s ? theme.accent : theme.border}`,
+                  borderRadius: '6px',
+                  color: section === s ? theme.bg : theme.textSecondary,
+                  fontFamily: 'monospace',
+                  fontSize: '11px',
+                  letterSpacing: '0.8px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {s === 'guns' ? 'GUNS' : 'AMMO'}
+              </button>
+            ))}
+          </div>
+          {section === 'guns'
+            ? <GunVault
+                onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
+                onAddGun={() => setShowAddForm(true)}
+              />
+            : <Arsenal />
+          }
+        </div>
+      );
+    }
     if (currentView === 'gun-detail' && selectedGun) return (
       <GunDetail
         gun={selectedGun}
@@ -155,7 +197,6 @@ function App() {
     );
     if (currentView === 'sessions')    return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} />;
     if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} />;
-    if (currentView === 'arsenal')     return <Arsenal />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis />;
@@ -167,8 +208,11 @@ function App() {
     return null;
   }
 
-  const activeNavView = (['home','vault','arsenal','sessions','target-analysis'] as const).find(v =>
-    currentView === v || (currentView === 'gun-detail' && v === 'vault') || (currentView === 'session-log' && v === 'sessions')
+  const activeNavView = (['home','vault','sessions','target-analysis'] as const).find(v =>
+    currentView === v ||
+    (currentView === 'gun-detail' && v === 'vault') ||
+    (currentView === 'session-log' && v === 'sessions') ||
+    (currentView === 'arsenal' && v === 'vault')
   ) ?? 'home';
 
   return (
@@ -188,8 +232,7 @@ function App() {
       <MobileNav
         currentView={activeNavView}
         onNavigateToHome={() => setCurrentView('home')}
-        onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); }}
-        onNavigateToArsenal={() => setCurrentView('arsenal')}
+        onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
         onNavigateToSessions={() => setCurrentView('sessions')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
       />
@@ -203,7 +246,7 @@ function App() {
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 
       {/* ── GLOBAL FAB ── shown on main views only */}
-      {(['home','vault','arsenal','sessions'] as AppView[]).includes(currentView) && (
+      {(['home','vault','sessions'] as AppView[]).includes(currentView) && (
         <>
           {showFab && (
             <div
@@ -225,7 +268,7 @@ function App() {
               {[
                 { label: 'Log Session', action: () => { setShowFab(false); openSessionLog(); } },
                 { label: 'Add Gun',     action: () => { setShowFab(false); setShowAddForm(true); } },
-                { label: 'Add Ammo',    action: () => { setShowFab(false); setCurrentView('arsenal'); } },
+                { label: 'Add Ammo',    action: () => { setShowFab(false); setCurrentView('vault'); setVaultSection('ammo'); } },
               ].map(item => (
                 <button key={item.label} onClick={item.action} style={{
                   padding: '10px 16px',
