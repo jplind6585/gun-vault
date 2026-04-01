@@ -8,7 +8,7 @@ interface HomePageProps {
   onNavigateToArsenal: () => void;
   onNavigateToTargetAnalysis: () => void;
   onNavigateToGun: (gun: Gun) => void;
-  onLogSession: () => void;
+  onLogSession: (gun?: Gun) => void;
   onAddGun: () => void;
   onSearchOpen: () => void;
   onDevTools?: () => void;
@@ -347,14 +347,35 @@ export function HomePage({
                   </span>
                 </div>
 
-                {/* Rounds — fixed width, right-aligned */}
-                <span style={{
-                  fontFamily: 'monospace', fontSize: '12px',
-                  fontWeight: 600, color: theme.textSecondary,
-                  flexShrink: 0, textAlign: 'right', width: '60px', paddingTop: '1px',
-                }}>
-                  {rounds.toLocaleString()} rds
-                </span>
+                {/* Rounds + LOG button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  <span style={{
+                    fontFamily: 'monospace', fontSize: '12px',
+                    fontWeight: 600, color: theme.textSecondary,
+                    textAlign: 'right',
+                  }}>
+                    {rounds.toLocaleString()} rds
+                  </span>
+                  <button
+                    onClick={() => onLogSession(gun!)}
+                    style={{
+                      padding: '4px 10px',
+                      backgroundColor: 'transparent',
+                      border: `0.5px solid ${theme.border}`,
+                      borderRadius: '3px',
+                      color: theme.textMuted,
+                      fontFamily: 'monospace',
+                      fontSize: '9px',
+                      letterSpacing: '0.5px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      minHeight: '28px',
+                    }}
+                  >
+                    LOG
+                  </button>
+                </div>
               </div>
             ))}
           </div>

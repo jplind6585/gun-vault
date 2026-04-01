@@ -133,7 +133,7 @@ function App() {
         onNavigateToArsenal={() => setCurrentView('arsenal')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
         onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
-        onLogSession={() => openSessionLog()}
+        onLogSession={(gun) => openSessionLog(gun)}
         onAddGun={() => setShowAddForm(true)}
         onSearchOpen={() => setShowSmartSearch(true)}
         onDevTools={() => setDevOpen(o => !o)}

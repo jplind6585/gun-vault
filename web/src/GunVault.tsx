@@ -654,6 +654,8 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
     ? Math.floor((new Date().getTime() - new Date(lastShot + 'T12:00:00').getTime()) / 86400000)
     : null;
 
+  const [pressed, setPressed] = useState(false);
+
   // Flag guns that might need attention
   const needsAttention =
     (gun.roundCount || 0) - (gun.lastCleanedRoundCount || 0) >= 500;
@@ -661,15 +663,22 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
   return (
     <div
       onClick={onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      onTouchCancel={() => setPressed(false)}
       style={{
         width: '100%',
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: '12px 14px',
-        backgroundColor: theme.surface,
-        border: `0.5px solid ${theme.border}`,
+        backgroundColor: pressed ? theme.bg : theme.surface,
+        border: `0.5px solid ${pressed ? theme.accent : theme.border}`,
         borderRadius: '8px',
         borderLeft: `3px solid ${accent}`,
         cursor: 'pointer', textAlign: 'left', boxSizing: 'border-box',
+        transition: 'background-color 0.1s, border-color 0.1s',
       }}
     >
       {/* Silhouette */}
@@ -750,6 +759,8 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           }}
         >+</button>
       </div>
+      {/* Nav chevron */}
+      <div style={{ color: theme.textMuted, fontSize: '16px', flexShrink: 0, alignSelf: 'center', opacity: 0.45, paddingLeft: '2px' }}>›</div>
     </div>
   );
 }

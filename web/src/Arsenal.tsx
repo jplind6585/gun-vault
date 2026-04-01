@@ -760,14 +760,41 @@ export function Arsenal() {
                       )}
                     </div>
 
-                    <div style={{
-                      fontSize: '22px',
-                      fontWeight: 700,
-                      color: isLowStock ? theme.red : theme.accent,
-                      fontFamily: 'monospace',
-                      marginBottom: '4px'
-                    }}>
-                      {stats.totalRounds.toLocaleString()}
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                      <div style={{
+                        fontSize: '22px',
+                        fontWeight: 700,
+                        color: isLowStock ? theme.red : theme.accent,
+                        fontFamily: 'monospace',
+                      }}>
+                        {stats.totalRounds.toLocaleString()}
+                      </div>
+                      {hasGun && caliberThreshold > 0 && (
+                        <div style={{
+                          fontSize: '8px',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          letterSpacing: '0.5px',
+                          padding: '2px 5px',
+                          borderRadius: '2px',
+                          backgroundColor: fillPct >= 100 ? theme.green : fillPct >= 25 ? theme.orange : theme.red,
+                          color: theme.bg,
+                          flexShrink: 0,
+                        }}>
+                          {fillPct >= 100 ? 'STOCKED' : fillPct >= 25 ? 'LOW' : 'CRITICAL'}
+                        </div>
+                      )}
+                      {hasGun && caliberThreshold === 0 && (
+                        <div style={{
+                          fontSize: '8px',
+                          fontWeight: 400,
+                          fontFamily: 'monospace',
+                          color: theme.textMuted,
+                          flexShrink: 0,
+                        }}>
+                          no target set
+                        </div>
+                      )}
                     </div>
 
                     <div style={{

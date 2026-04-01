@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { theme } from './theme';
 import type { Gun, SessionPurpose, IssueType, TargetPhoto, SessionString } from './types';
 import {
-  logSession, updateSession, getAllGuns,
+  logSession, updateSession, getAllGuns, getAllSessions,
   getAmmoByCaliber, updateAmmo, getRecentLocations,
 } from './storage';
 import { generateSessionNarrative, hasClaudeApiKey, analyzeTargetPhoto } from './claudeApi';
@@ -172,7 +172,17 @@ interface StringPickerProps {
 function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPickerProps) {
   const [gunSearch, setGunSearch] = useState('');
   const [selectedGun, setSelectedGun] = useState<Gun | null>(preselectedGun || null);
-  const [distanceYards, setDistanceYards] = useState<number | ''>('');
+  const lastDistanceKey = 'gunvault_last_distances';
+  const savedDistances: Record<string, number> = (() => {
+    try { return JSON.parse(localStorage.getItem(lastDistanceKey) || '{}'); }
+    catch { return {}; }
+  })();
+  const [distanceYards, setDistanceYards] = useState<number | ''>(() => {
+    if (preselectedGun && savedDistances[preselectedGun.type]) {
+      return savedDistances[preselectedGun.type];
+    }
+    return '';
+  });
   const [rounds, setRounds] = useState('');
   const [ammoLotId, setAmmoLotId] = useState('');
   const [stringNotes, setStringNotes] = useState('');
@@ -188,6 +198,14 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
   function handleAdd() {
     if (!selectedGun || !rounds || parseInt(rounds) <= 0) return;
     haptic('medium');
+    // Save last-used distance for this gun type
+    if (distanceYards && selectedGun) {
+      try {
+        const existing: Record<string, number> = JSON.parse(localStorage.getItem(lastDistanceKey) || '{}');
+        existing[selectedGun.type] = distanceYards as number;
+        localStorage.setItem(lastDistanceKey, JSON.stringify(existing));
+      } catch {}
+    }
     onAdd({
       id: generateStringId(),
       gunId: selectedGun.id,
@@ -243,7 +261,14 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
             {filteredGuns.map(gun => (
               <button
                 key={gun.id}
-                onClick={() => { setSelectedGun(gun); setAmmoLotId(''); setPickerStep('details'); }}
+                onClick={() => {
+                  setSelectedGun(gun);
+                  setAmmoLotId('');
+                  setPickerStep('details');
+                  const lastDist = savedDistances[gun.type];
+                  if (lastDist) setDistanceYards(lastDist);
+                  else setDistanceYards('');
+                }}
                 style={{
                   padding: '12px 14px',
                   backgroundColor: theme.surface,
@@ -491,12 +516,23 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
 export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLogViewProps) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const allGuns = getAllGuns().filter(g => g.status === 'Active' || g.status === 'Stored');
   const recentLocations = getRecentLocations();
+  const _allSessions = getAllSessions().sort((a, b) => b.date.localeCompare(a.date));
+  const recentGunIds = [...new Set(_allSessions.map(s => s.gunId))];
+  const allGuns = getAllGuns()
+    .filter(g => g.status === 'Active' || g.status === 'Stored')
+    .sort((a, b) => {
+      const ai = recentGunIds.indexOf(a.id);
+      const bi = recentGunIds.indexOf(b.id);
+      if (ai === -1 && bi === -1) return a.make.localeCompare(b.make);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
 
   // Session header state
   const [date, setDate] = useState(today);
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(recentLocations[0] || '');
   const [indoorOutdoor, setIndoorOutdoor] = useState<'Indoor' | 'Outdoor'>('Outdoor');
   const [purposes, setPurposes] = useState<SessionPurpose[]>([]);
   const [notes, setNotes] = useState('');

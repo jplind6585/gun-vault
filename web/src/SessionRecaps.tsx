@@ -34,6 +34,8 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'insights'>('list');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getClaudeApiKey());
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function reload() {
     setSessions(getAllSessions().sort((a, b) => b.date.localeCompare(a.date)));
@@ -51,6 +53,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
     if (filterPurpose !== 'all' && !s.purpose?.includes(filterPurpose as SessionPurpose)) return false;
     return true;
   });
+  const displayed = filtered.filter(s => s.id !== pendingDeleteId);
 
   // Stats
   const now = new Date();
@@ -87,9 +90,29 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   }
 
   function handleDelete(id: string) {
-    deleteSession(id);
+    // Clear any in-flight pending delete first
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      if (pendingDeleteId) {
+        deleteSession(pendingDeleteId);
+        reload();
+      }
+    }
     setExpandedId(null);
-    reload();
+    setPendingDeleteId(id);
+    undoTimerRef.current = setTimeout(() => {
+      deleteSession(id);
+      setPendingDeleteId(null);
+      undoTimerRef.current = null;
+      reload();
+    }, 3500);
+  }
+
+  function handleUndo() {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    haptic(10);
+    setPendingDeleteId(null);
   }
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -213,7 +236,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
-          {filtered.length} sessions · {filtered.reduce((s, x) => s + x.roundsExpended, 0).toLocaleString()} rds
+          {displayed.length} sessions · {displayed.reduce((s, x) => s + x.roundsExpended, 0).toLocaleString()} rds
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
@@ -376,6 +399,48 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Undo delete toast */}
+      {pendingDeleteId && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'calc(72px + env(safe-area-inset-bottom) + 10px)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: theme.surface,
+          border: `0.5px solid ${theme.border}`,
+          borderRadius: '6px',
+          padding: '11px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 1500,
+          maxWidth: '360px',
+          width: 'calc(100% - 32px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, flex: 1 }}>
+            Session deleted
+          </span>
+          <button
+            onClick={handleUndo}
+            style={{
+              padding: '5px 14px',
+              backgroundColor: theme.accent,
+              color: theme.bg,
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            UNDO
+          </button>
         </div>
       )}
 
