@@ -987,15 +987,16 @@ export function TargetAnalysis() {
                 Load a target photo to begin analysis
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '260px', margin: '0 auto' }}>
-                <label htmlFor="ta-camera-input" style={{
+                <label style={{
                   display: 'block', padding: '14px 20px', textAlign: 'center',
                   backgroundColor: theme.accent, color: theme.bg,
                   borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px',
                   fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px',
                 }}>
                   📷 Take Photo
+                  <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
                 </label>
-                <label htmlFor="ta-file-input" style={{
+                <label style={{
                   display: 'block', padding: '14px 20px', textAlign: 'center',
                   backgroundColor: 'transparent', color: theme.textPrimary,
                   border: `0.5px solid ${theme.border}`, borderRadius: '8px',
@@ -1003,6 +1004,7 @@ export function TargetAnalysis() {
                   cursor: 'pointer', letterSpacing: '0.5px',
                 }}>
                   🖼 Choose from Library
+                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                 </label>
               </div>
             </div>
@@ -1051,23 +1053,6 @@ export function TargetAnalysis() {
               </div>
             </div>
           )}
-          <input
-            id="ta-file-input"
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            style={{ display: 'none' }}
-          />
-          <input
-            id="ta-camera-input"
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleImageUpload}
-            style={{ display: 'none' }}
-          />
         </div>
 
         {/* Right: Controls & Statistics */}

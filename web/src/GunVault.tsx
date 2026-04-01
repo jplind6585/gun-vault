@@ -177,12 +177,10 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
 
   return (
     <div style={{
-      minHeight: '100vh',
       backgroundColor: theme.bg,
       padding: '16px',
-      paddingBottom: '100px',
-      maxWidth: '480px',
-      margin: '0 auto',
+      paddingBottom: '24px',
+      overflowX: 'hidden',
       boxSizing: 'border-box',
     }}>
 

@@ -115,7 +115,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: theme.bg, padding: '16px', paddingBottom: '80px', maxWidth: '480px', margin: '0 auto' }}>
+    <div style={{ backgroundColor: theme.bg, padding: '16px', paddingBottom: '24px', overflowX: 'hidden' }}>
 
       {/* Training gap nudge */}
       {gapDays >= 14 && gapDays !== Infinity && (
