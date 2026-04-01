@@ -56,8 +56,8 @@ export function HomePage({
 
   function inPeriod(dateStr: string): boolean {
     const d = new Date(dateStr);
-    if (period === 'week')  { const c = new Date(now); c.setDate(now.getDate() - 7); return d >= c; }
-    if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (period === 'week')  { const c = new Date(now); c.setDate(now.getDate() - 7);   return d >= c; }
+    if (period === 'month') { const c = new Date(now); c.setDate(now.getDate() - 30);  return d >= c; }
     return d.getFullYear() === now.getFullYear();
   }
 
