@@ -142,7 +142,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
           <button style={styles.closeBtn} onClick={onCancel} aria-label="Close">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           <div style={styles.body}>
 
             {/* ── IDENTIFICATION ── */}
