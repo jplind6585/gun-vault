@@ -308,6 +308,8 @@ function App() {
               justifyContent: 'center',
               transform: showFab ? 'rotate(45deg)' : 'rotate(0)',
               transition: 'transform 0.2s',
+              outline: 'none',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             +
