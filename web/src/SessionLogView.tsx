@@ -17,7 +17,23 @@ interface SessionLogViewProps {
 
 const PURPOSES: SessionPurpose[] = ['Warmup', 'Drills', 'Zeroing', 'Qualification', 'Competition', 'Fun', 'Carry Eval'];
 const ISSUE_TYPES: IssueType[] = ['FTF', 'FTE', 'Double Feed', 'Stovepipe', 'Trigger Reset', 'Accuracy', 'Sighting', 'Other'];
-const DISTANCES = [7, 15, 25, 50, 100, 200, 300];
+function getDistancesForGun(gun: Gun | null): number[] {
+  if (!gun) return [7, 15, 25, 50, 100, 200, 300];
+  switch (gun.type) {
+    case 'Pistol':
+      return [3, 7, 10, 15, 25];
+    case 'Shotgun':
+      return [16, 21, 25, 35, 40];
+    case 'Rifle':
+      // Precision/PRS keywords
+      if (/prs|precision|bolt/i.test(gun.action || '') || /precision/i.test(gun.model || '')) {
+        return [100, 200, 300, 500, 600];
+      }
+      return [50, 100, 200, 300, 500];
+    default:
+      return [7, 15, 25, 50, 100, 200, 300];
+  }
+}
 
 function generateStringId() {
   return `${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
@@ -330,7 +346,7 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
           <div>
             <span style={labelStyle}>Distance</span>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-              {DISTANCES.map(d => (
+              {getDistancesForGun(selectedGun).map(d => (
                 <Chip
                   key={d}
                   label={`${d}yd`}

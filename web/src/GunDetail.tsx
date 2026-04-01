@@ -37,6 +37,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
   const [zeroDistInput, setZeroDistInput]   = useState('');
   const [editingIssues, setEditingIssues]   = useState(false);
   const [issuesDraft, setIssuesDraft]       = useState(gun.openIssues || '');
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   const blurb   = getGunBlurb(gun);
   const accent  = typeAccent[gun.type] || theme.textMuted;
@@ -782,11 +783,14 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
               </div>
             ) : (
               sessions.map(session => (
-                <div key={session.id} style={{
-                  backgroundColor: theme.surface,
-                  border: `0.5px solid ${session.issues ? theme.red : theme.border}`,
-                  borderRadius: '8px', padding: '12px 14px',
-                }}>
+                <div key={session.id}
+                  onClick={() => setSelectedSession(session)}
+                  style={{
+                    backgroundColor: theme.surface,
+                    border: `0.5px solid ${session.issues ? theme.red : theme.border}`,
+                    borderRadius: '8px', padding: '12px 14px',
+                    cursor: 'pointer',
+                  }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>{formatDate(session.date)}</span>
                     <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: accent }}>{session.roundsExpended} rds</span>
@@ -812,6 +816,84 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
 
       </div>
 
+      {/* Session Detail Sheet */}
+      {selectedSession && (
+        <>
+          <div
+            onClick={() => setSelectedSession(null)}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 3000 }}
+          />
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '480px',
+            backgroundColor: theme.surface, borderTop: `0.5px solid ${theme.border}`,
+            borderRadius: '12px 12px 0 0', zIndex: 3001, padding: '16px 20px 48px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+              <div style={{ width: '32px', height: '4px', borderRadius: '2px', backgroundColor: theme.border }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textPrimary }}>
+                {formatDate(selectedSession.date)}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: accent }}>
+                {selectedSession.roundsExpended} rds
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {selectedSession.location && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px' }}>LOCATION</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary }}>{selectedSession.location}</span>
+                </div>
+              )}
+              {selectedSession.distanceYards && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px' }}>DISTANCE</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary }}>{selectedSession.distanceYards} yd</span>
+                </div>
+              )}
+              {selectedSession.indoorOutdoor && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px' }}>ENVIRONMENT</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary }}>{selectedSession.indoorOutdoor.toUpperCase()}</span>
+                </div>
+              )}
+              {selectedSession.purpose && selectedSession.purpose.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px' }}>PURPOSE</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, textAlign: 'right' }}>{selectedSession.purpose.join(', ')}</span>
+                </div>
+              )}
+              {selectedSession.notes && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', padding: '10px 12px', backgroundColor: theme.bg, borderRadius: '6px' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px' }}>NOTES</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, lineHeight: 1.5 }}>{selectedSession.notes}</span>
+                </div>
+              )}
+              {selectedSession.issues && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', padding: '10px 12px', backgroundColor: theme.bg, borderRadius: '6px', border: `0.5px solid ${theme.red}` }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red, letterSpacing: '0.5px' }}>ISSUE REPORTED</span>
+                  {selectedSession.issueDescription && (
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.red, lineHeight: 1.5 }}>{selectedSession.issueDescription}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setSelectedSession(null)}
+              style={{
+                marginTop: '20px', width: '100%', padding: '12px',
+                backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`,
+                borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace',
+                fontSize: '11px', letterSpacing: '0.8px', cursor: 'pointer',
+              }}
+            >
+              CLOSE
+            </button>
+          </div>
+        </>
+      )}
       {showLogSession && (
         <SessionLoggingModal
           gun={gun}

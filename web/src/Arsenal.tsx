@@ -243,6 +243,15 @@ export function Arsenal() {
   const [caliberSearch, setCaliberSearch] = useState('');
   const [caliberSort, setCaliberSort] = useState<'rounds-desc' | 'rounds-asc' | 'alpha'>('rounds-desc');
 
+  const [ignoredAlerts, setIgnoredAlerts] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('gunvault_ignored_alerts') || '[]')); }
+    catch { return new Set(); }
+  });
+  const [snoozedAlerts, setSnoozedAlerts] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('gunvault_snoozed_alerts') || '{}'); }
+    catch { return {}; }
+  });
+
   useEffect(() => {
     loadAmmo();
   }, []);
@@ -327,12 +336,16 @@ export function Arsenal() {
   const totalRounds = allAmmo.reduce((sum, lot) => sum + lot.quantity, 0);
   const totalLots = allAmmo.length;
 
-  // Low stock: only count lots that have a gun
+  // Low stock: only count lots that have a gun, excluding ignored/snoozed
+  const nowMs2 = Date.now();
   const lowStockLots = allAmmo.filter(lot => {
     const threshold = getSmartThreshold(lot);
     if (!(threshold > 0 && lot.quantity < threshold)) return false;
     const hasGun = gunCalibers.has(lot.caliber.toLowerCase()) || gunCalibers.has(normalizeCaliberLabel(lot.caliber).toLowerCase());
-    return hasGun;
+    if (!hasGun) return false;
+    if (ignoredAlerts.has(lot.id)) return false;
+    if (snoozedAlerts[lot.id] && snoozedAlerts[lot.id] > nowMs2) return false;
+    return true;
   });
 
   const replacementCost = allAmmo.reduce((sum, lot) =>
@@ -365,6 +378,29 @@ export function Arsenal() {
     loadAmmo();
   }
 
+  function ignoreAlert(lotId: string) {
+    const newSet = new Set([...ignoredAlerts, lotId]);
+    setIgnoredAlerts(newSet);
+    localStorage.setItem('gunvault_ignored_alerts', JSON.stringify([...newSet]));
+    loadAmmo();
+  }
+
+  function snoozeAlert(lotId: string) {
+    const until = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const newSnooze = { ...snoozedAlerts, [lotId]: until };
+    setSnoozedAlerts(newSnooze);
+    localStorage.setItem('gunvault_snoozed_alerts', JSON.stringify(newSnooze));
+    loadAmmo();
+  }
+
+  function unignoreAlert(lotId: string) {
+    const newSet = new Set([...ignoredAlerts]);
+    newSet.delete(lotId);
+    setIgnoredAlerts(newSet);
+    localStorage.setItem('gunvault_ignored_alerts', JSON.stringify([...newSet]));
+    loadAmmo();
+  }
+
   // Task 8: inventory mix distribution
   const inventoryMix = (() => {
     if (allAmmo.length === 0) return null;
@@ -389,28 +425,6 @@ export function Arsenal() {
       maxWidth: '480px',
       margin: '0 auto'
     }}>
-      {/* Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: '28px',
-          fontWeight: 700,
-          letterSpacing: '2px',
-          color: theme.accent,
-          margin: '0 0 4px 0'
-        }}>
-          ARSENAL
-        </h1>
-        <p style={{
-          fontSize: '12px',
-          color: theme.textSecondary,
-          margin: 0,
-          fontFamily: 'monospace'
-        }}>
-          Ammo inventory &amp; tracking
-        </p>
-      </div>
-
       {/* Stats Bar */}
       <div style={{
         display: 'flex',
@@ -953,6 +967,9 @@ export function Arsenal() {
           lowStockLots={lowStockLots}
           getSmartThreshold={getSmartThreshold}
           onClose={() => setShowLowStockModal(false)}
+          onLotSelect={(lot) => { setShowLowStockModal(false); setSelectedLot(lot); }}
+          onIgnore={ignoreAlert}
+          onSnooze={snoozeAlert}
         />
       )}
 
@@ -1000,32 +1017,76 @@ export function Arsenal() {
             <div style={{ fontSize: '11px', color: theme.textSecondary, fontFamily: 'monospace', marginBottom: '16px' }}>
               {useSheetLot.quantity.toLocaleString()} rds remaining
             </div>
-            {/* Preset buttons */}
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              {[10, 25, 50, 100, 250].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setUseSheetAmount(String(n))}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: useSheetAmount === String(n) ? theme.accent : 'transparent',
-                    color: useSheetAmount === String(n) ? theme.bg : theme.textSecondary,
-                    border: `0.5px solid ${useSheetAmount === String(n) ? theme.accent : theme.border}`,
-                    borderRadius: '4px',
-                    fontFamily: 'monospace',
-                    fontSize: '10px',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  -{n}
-                </button>
-              ))}
+            {/* REMOVE section */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '6px' }}>REMOVE</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[1, 5, 10, 20, 50].map(n => {
+                  const val = String(-n);
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setUseSheetAmount(val)}
+                      style={{
+                        padding: '8px 14px',
+                        backgroundColor: useSheetAmount === val ? theme.red : 'transparent',
+                        color: useSheetAmount === val ? '#fff' : theme.textSecondary,
+                        border: `0.5px solid ${useSheetAmount === val ? theme.red : theme.border}`,
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        minHeight: '40px',
+                      }}
+                    >
+                      -{n}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            {/* Number input */}
+
+            {/* Divider */}
+            <div style={{ height: '0.5px', backgroundColor: theme.border, marginBottom: '12px' }} />
+
+            {/* ADD section */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '6px' }}>ADD</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[20, 25, 50, 500, 1000].map(n => {
+                  const val = String(n);
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setUseSheetAmount(val)}
+                      style={{
+                        padding: '8px 14px',
+                        backgroundColor: useSheetAmount === val ? theme.green : 'transparent',
+                        color: useSheetAmount === val ? '#fff' : theme.textSecondary,
+                        border: `0.5px solid ${useSheetAmount === val ? theme.green : theme.border}`,
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        minHeight: '40px',
+                      }}
+                    >
+                      +{n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ height: '0.5px', backgroundColor: theme.border, marginBottom: '12px' }} />
+
+            {/* Manual entry */}
             <input
               type="number"
-              placeholder="rounds used"
+              placeholder="custom amount (negative to remove)"
               value={useSheetAmount}
               onChange={(e) => setUseSheetAmount(e.target.value)}
               style={{
@@ -1036,7 +1097,7 @@ export function Arsenal() {
                 borderRadius: '6px',
                 color: theme.textPrimary,
                 fontFamily: 'monospace',
-                fontSize: '18px',
+                fontSize: '16px',
                 textAlign: 'center',
                 marginBottom: '16px',
                 boxSizing: 'border-box'
@@ -1056,10 +1117,11 @@ export function Arsenal() {
               </button>
               <button
                 onClick={() => {
-                  const used = parseInt(useSheetAmount || '0', 10);
-                  updateAmmo(useSheetLot!.id, { quantity: Math.max(0, useSheetLot!.quantity - used) });
+                  const delta = parseInt(useSheetAmount || '0', 10);
+                  updateAmmo(useSheetLot!.id, { quantity: Math.max(0, useSheetLot!.quantity + delta) });
                   loadAmmo();
                   setUseSheetLot(null);
+                  setUseSheetAmount('');
                 }}
                 style={{
                   flex: 1, padding: '11px', backgroundColor: theme.accent, color: theme.bg,
@@ -1125,7 +1187,7 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
             color: theme.bg,
             letterSpacing: '0.3px'
           }}>
-            {lot.category.substring(0, 4).toUpperCase()}
+            {lot.category === 'Match' ? 'MATCH' : lot.category === 'Self Defense' ? 'SD' : lot.category === 'Practice' ? 'PRAC' : lot.category === 'Hunting' ? 'HUNT' : lot.category.substring(0, 4).toUpperCase()}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(lot); }}
@@ -1141,51 +1203,51 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
         {lot.brand} {lot.productLine && `• ${lot.productLine}`}
       </div>
 
-      {/* Quantity */}
-      <div style={{
-        fontSize: '24px',
-        fontWeight: 700,
-        color: isLowStock ? theme.red : theme.accent,
-        fontFamily: 'monospace',
-        marginBottom: '4px',
-        lineHeight: 1
-      }}>
-        {lot.quantity.toLocaleString()}
-        <span style={{ fontSize: '10px', color: theme.textMuted, marginLeft: '4px' }}>rds</span>
-        {lot.purchasePricePerRound && (
-          <span style={{ fontSize: '10px', color: theme.textMuted, marginLeft: '8px' }}>
-            · {(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd
-          </span>
-        )}
+      {/* Quantity row — inline with USE button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 700,
+          color: isLowStock ? theme.red : theme.accent,
+          fontFamily: 'monospace',
+          lineHeight: 1
+        }}>
+          {lot.quantity.toLocaleString()}
+          <span style={{ fontSize: '10px', color: theme.textMuted, marginLeft: '4px' }}>rds</span>
+          {lot.purchasePricePerRound && (
+            <span style={{ fontSize: '10px', color: theme.textMuted, marginLeft: '8px' }}>
+              · {(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd
+            </span>
+          )}
+        </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUse(lot);
+            }}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'transparent',
+              color: theme.textSecondary,
+              border: `0.5px solid ${theme.border}`,
+              borderRadius: '3px',
+              fontFamily: 'monospace',
+              fontSize: '10px',
+              letterSpacing: '0.5px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              minHeight: '32px',
+            }}
+          >
+            USE
+          </button>
+        </div>
       </div>
 
-      {/* Single-line ballistics — Task 10: GR acronym + BulletTypeDisplay */}
-      <div style={{ fontSize: '11px', color: theme.textSecondary, marginBottom: '6px' }}>
+      {/* Single-line ballistics */}
+      <div style={{ fontSize: '11px', color: theme.textSecondary, marginBottom: '4px' }}>
         {lot.grainWeight}<AmmoAcronym term="GR" /> <BulletTypeDisplay value={lot.bulletType || ''} />{lot.advertisedFPS ? ` · ${lot.advertisedFPS} fps` : ''}{lot.purchasePricePerRound ? ` · ${(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd` : ''}
-      </div>
-
-      {/* Bottom row: USE button (Task 2) */}
-      <div onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onUse(lot);
-          }}
-          style={{
-            padding: '4px 10px',
-            backgroundColor: 'transparent',
-            color: theme.textSecondary,
-            border: `0.5px solid ${theme.border}`,
-            borderRadius: '3px',
-            fontFamily: 'monospace',
-            fontSize: '9px',
-            letterSpacing: '0.5px',
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          -USE
-        </button>
       </div>
     </div>
   );
@@ -1374,11 +1436,17 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
 function LowStockModal({
   lowStockLots,
   getSmartThreshold,
-  onClose
+  onClose,
+  onLotSelect,
+  onIgnore,
+  onSnooze,
 }: {
   lowStockLots: AmmoLot[];
   getSmartThreshold: (lot: AmmoLot) => number;
   onClose: () => void;
+  onLotSelect: (lot: AmmoLot) => void;
+  onIgnore: (lotId: string) => void;
+  onSnooze: (lotId: string) => void;
 }) {
   return (
     <div
@@ -1411,8 +1479,11 @@ function LowStockModal({
             return (
               <div key={lot.id} style={{
                 padding: '14px', backgroundColor: theme.surfaceAlt, borderRadius: '6px',
-                border: `1.5px solid ${pct < 25 ? theme.red : theme.orange}`
-              }}>
+                border: `1.5px solid ${pct < 25 ? theme.red : theme.orange}`,
+                cursor: 'pointer',
+              }}
+                onClick={() => onLotSelect(lot)}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
                   <div>
                     <div style={{ color: theme.textPrimary, fontFamily: 'monospace', fontSize: '13px', fontWeight: 600 }}>
@@ -1430,7 +1501,7 @@ function LowStockModal({
                   </div>
                 </div>
 
-                <div style={{ width: '100%', height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+                <div style={{ width: '100%', height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden', marginBottom: '8px' }}>
                   <div style={{
                     width: `${Math.min(pct, 100)}%`, height: '100%',
                     backgroundColor: pct < 25 ? theme.red : theme.orange,
@@ -1438,10 +1509,71 @@ function LowStockModal({
                   }} />
                 </div>
 
-                <div style={{ fontSize: '9px', color: theme.textSecondary, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '9px', color: theme.textSecondary, fontFamily: 'monospace', marginBottom: '10px' }}>
                   <strong style={{ color: pct < 25 ? theme.red : theme.orange }}>{pct < 25 ? 'CRITICAL' : 'LOW'}</strong>
                   {' · '}{lot.category}
                   {lot.storageLocation ? ` · ${lot.storageLocation}` : ''}
+                </div>
+
+                {/* Action buttons row */}
+                <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
+                  <a
+                    href={getAmmoSeekUrl(lot)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      backgroundColor: theme.accent,
+                      color: theme.bg,
+                      border: 'none',
+                      borderRadius: '3px',
+                      fontFamily: 'monospace',
+                      fontSize: '9px',
+                      letterSpacing: '0.5px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      textAlign: 'center',
+                      display: 'block',
+                    }}
+                  >
+                    FIND AMMO ↗
+                  </a>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSnooze(lot.id); }}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: 'transparent',
+                      color: theme.textMuted,
+                      border: `0.5px solid ${theme.border}`,
+                      borderRadius: '3px',
+                      fontFamily: 'monospace',
+                      fontSize: '9px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    SNOOZE 30D
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onIgnore(lot.id); }}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: 'transparent',
+                      color: theme.textMuted,
+                      border: `0.5px solid ${theme.border}`,
+                      borderRadius: '3px',
+                      fontFamily: 'monospace',
+                      fontSize: '9px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    IGNORE
+                  </button>
                 </div>
               </div>
             );

@@ -187,9 +187,6 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <h1 style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, letterSpacing: '2px', color: theme.textPrimary, margin: 0 }}>
-            GUN VAULT
-          </h1>
           <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginTop: '2px' }}>
             {filtered.length === guns.length
               ? `${guns.length} firearm${guns.length !== 1 ? 's' : ''}`
@@ -296,8 +293,8 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
               <button key={t} onClick={() => { setTypeFilter(t); setCaliberFilter(''); setActionFilter(''); }}
                 style={{
                   padding: '6px 11px',
-                  backgroundColor: typeFilter === t ? theme.textPrimary : 'transparent',
-                  border: `0.5px solid ${typeFilter === t ? theme.textPrimary : theme.border}`,
+                  backgroundColor: typeFilter === t ? theme.accent : 'transparent',
+                  border: `0.5px solid ${typeFilter === t ? theme.accent : theme.border}`,
                   borderRadius: '20px',
                   color: typeFilter === t ? theme.bg : theme.textMuted,
                   fontFamily: 'monospace', fontSize: '10px',
@@ -706,14 +703,14 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           )}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.caliberRed }}>{gun.caliber}</span>
-          <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{gun.action}</span>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.caliberRed }}>{gun.caliber}</span>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>{gun.action}</span>
           {gun.capacity && (
-            <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{gun.capacity}+1</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>{gun.capacity}+1</span>
           )}
           {gun.status && gun.status !== 'Active' && (
             <span style={{
-              fontFamily: 'monospace', fontSize: '8px', color: theme.orange,
+              fontFamily: 'monospace', fontSize: '12px', color: theme.orange,
               padding: '1px 5px', border: `0.5px solid ${theme.orange}`, borderRadius: '3px',
             }}>
               {gun.status.toUpperCase()}
@@ -728,26 +725,28 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1 }}>
             {(gun.roundCount || 0).toLocaleString()}
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginTop: '2px', letterSpacing: '0.5px' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px', letterSpacing: '0.5px' }}>
             ROUNDS
           </div>
         </div>
         {daysSince === 0 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.green, textAlign: 'right', flexShrink: 0 }}>today</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.green, textAlign: 'right', flexShrink: 0 }}>today</div>
         ) : daysSince === 1 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>yesterday</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>yesterday</div>
         ) : daysSince !== null && daysSince <= 30 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
         ) : daysSince !== null && daysSince > 30 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.red, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.red, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
         ) : null}
         <button
           onClick={onQuickLog}
           style={{
-            padding: '3px 10px', backgroundColor: theme.accent,
+            padding: '0', backgroundColor: theme.accent,
             border: 'none', borderRadius: '4px', color: theme.bg,
-            fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
-            cursor: 'pointer', lineHeight: 1.4,
+            fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
+            cursor: 'pointer', lineHeight: 1,
+            minWidth: '44px', minHeight: '44px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >+</button>
       </div>
