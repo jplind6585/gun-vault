@@ -170,7 +170,7 @@ export function HomePage({
     borderRadius: '3px',
     color: active ? theme.bg : theme.textMuted,
     fontFamily: 'monospace', fontSize: '10px',
-    letterSpacing: '0.8px', fontWeight: active ? 700 : 400,
+    letterSpacing: '0.8px', fontWeight: 700,
     cursor: 'pointer',
   });
 
@@ -328,30 +328,30 @@ export function HomePage({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {top3.map(({ gun, rounds }, i) => (
               <div key={gun!.id} style={{
-                display: 'flex', alignItems: 'center',
+                display: 'flex', alignItems: 'flex-start',
                 justifyContent: 'space-between', gap: '8px',
               }}>
                 {/* Rank */}
                 <span style={{
                   fontFamily: 'monospace', fontSize: '10px',
                   color: i === 0 ? theme.accent : theme.textMuted,
-                  fontWeight: 700, width: '20px', flexShrink: 0,
+                  fontWeight: 700, width: '20px', flexShrink: 0, paddingTop: '1px',
                 }}>
                   #{i + 1}
                 </span>
 
-                {/* Name + caliber — takes remaining space */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                {/* Name + caliber — wraps on narrow screens */}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{
                     fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
                     color: i === 0 ? theme.accent : theme.textPrimary,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {gun!.make} {gun!.model}
                   </span>
+                  {' '}
                   <span style={{
                     fontFamily: 'monospace', fontSize: '10px',
-                    color: theme.caliberRed, whiteSpace: 'nowrap', flexShrink: 0,
+                    color: theme.caliberRed,
                   }}>
                     {gun!.caliber}
                   </span>
@@ -361,7 +361,7 @@ export function HomePage({
                 <span style={{
                   fontFamily: 'monospace', fontSize: '12px',
                   fontWeight: 600, color: theme.textSecondary,
-                  flexShrink: 0, textAlign: 'right', width: '60px',
+                  flexShrink: 0, textAlign: 'right', width: '60px', paddingTop: '1px',
                 }}>
                   {rounds.toLocaleString()} rds
                 </span>
@@ -414,7 +414,7 @@ export function HomePage({
       {showFab && <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setShowFab(false)} />}
       {showFab && (
         <div style={{
-          position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'fixed', bottom: 'calc(136px + env(safe-area-inset-bottom))', right: '20px',
           zIndex: 999, display: 'flex', flexDirection: 'column',
           gap: '8px', alignItems: 'flex-end',
         }}>
