@@ -71,8 +71,11 @@ export function TargetAnalysis() {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
 
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   // Load sessions from localStorage
@@ -86,6 +89,21 @@ export function TargetAnalysis() {
       console.error('Failed to load sessions:', e);
     }
   }, []);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // Scale pointer/touch position from CSS pixels → canvas logical pixels
+  const getCanvasCoords = (clientX: number, clientY: number): { x: number; y: number } => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
 
   // Save session
   const saveSession = () => {
@@ -598,98 +616,98 @@ export function TargetAnalysis() {
     reader.readAsDataURL(file);
   };
 
-  // Handle canvas click
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const placeOrCalibrate = (x: number, y: number) => {
     if (isCalibrating) {
       const newPoints = [...calibrationPoints, { x, y }];
       setCalibrationPoints(newPoints);
-
       if (newPoints.length === 2) {
-        // Calculate calibration
         const dx = newPoints[1].x - newPoints[0].x;
         const dy = newPoints[1].y - newPoints[0].y;
         const pixelDistance = Math.sqrt(dx * dx + dy * dy);
         const inches = parseFloat(referenceSize) || 1;
-        const pixelsPerInch = pixelDistance / inches;
-
-        setCalibration({
-          pixelsPerInch,
-          referenceInches: inches
-        });
+        setCalibration({ pixelsPerInch: pixelDistance / inches, referenceInches: inches });
         setIsCalibrating(false);
         setCalibrationPoints([]);
       }
     } else {
-      // Add shot
-      const newShot: Shot = {
-        id: Date.now(),
-        x,
-        y
-      };
-      setShots([...shots, newShot]);
+      setShots(prev => [...prev, { id: Date.now(), x, y }]);
     }
+  };
+
+  // Handle canvas click
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+    placeOrCalibrate(x, y);
   };
 
   // Handle shot drag
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isCalibrating) return;
-    if (!canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Check if clicking on a shot
+    if (isCalibrating || !canvasRef.current) return;
+    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
     const shotIndex = shots.findIndex(shot => {
-      const dx = shot.x - x;
-      const dy = shot.y - y;
+      const dx = shot.x - x; const dy = shot.y - y;
       return Math.sqrt(dx * dx + dy * dy) <= 10;
     });
-
-    if (shotIndex !== -1) {
-      setDraggedShot(shotIndex);
-    }
+    if (shotIndex !== -1) setDraggedShot(shotIndex);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (draggedShot === null || !canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
     const newShots = [...shots];
     newShots[draggedShot] = { ...newShots[draggedShot], x, y };
     setShots(newShots);
   };
 
-  const handleMouseUp = () => {
-    setDraggedShot(null);
-  };
+  const handleMouseUp = () => { setDraggedShot(null); };
 
   // Handle right click to remove shot
   const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!canvasRef.current || isCalibrating) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
     const shotIndex = shots.findIndex(shot => {
-      const dx = shot.x - x;
-      const dy = shot.y - y;
+      const dx = shot.x - x; const dy = shot.y - y;
       return Math.sqrt(dx * dx + dy * dy) <= 10;
     });
-
     if (shotIndex !== -1) {
       setShots(shots.filter((_, i) => i !== shotIndex));
     }
+  };
+
+  // Touch handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+    if (!isCalibrating) {
+      const shotIndex = shots.findIndex(shot => {
+        const dx = shot.x - x; const dy = shot.y - y;
+        return Math.sqrt(dx * dx + dy * dy) <= 20;
+      });
+      if (shotIndex !== -1) { setDraggedShot(shotIndex); return; }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (draggedShot === null || !canvasRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+    const newShots = [...shots];
+    newShots[draggedShot] = { ...newShots[draggedShot], x, y };
+    setShots(newShots);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (draggedShot !== null) { setDraggedShot(null); return; }
+    if (!canvasRef.current) return;
+    const touch = e.changedTouches[0];
+    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+    placeOrCalibrate(x, y);
   };
 
   // Calculate analysis
@@ -953,60 +971,54 @@ export function TargetAnalysis() {
       {/* Main Layout: Split View */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
         gap: '24px',
         alignItems: 'start'
       }}>
         {/* Left: Canvas/Image Area */}
         <div style={cardStyle}>
           {!targetImage ? (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.currentTarget.style.borderColor = theme.accent;
-              }}
-              onDragLeave={(e) => {
-                e.currentTarget.style.borderColor = theme.border;
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.style.borderColor = theme.border;
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                  const input = fileInputRef.current;
-                  if (input) {
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    input.files = dataTransfer.files;
-                    handleImageUpload({ target: input } as any);
-                  }
-                }
-              }}
-              style={{
-                border: `2px dashed ${theme.border}`,
-                borderRadius: '8px',
-                padding: '80px 40px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s'
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>📸</div>
+            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '20px', opacity: 0.3 }}>🎯</div>
               <div style={{
-                fontFamily: 'monospace',
-                fontSize: '13px',
-                color: theme.textSecondary,
-                marginBottom: '8px'
+                fontFamily: 'monospace', fontSize: '13px',
+                color: theme.textSecondary, marginBottom: '24px'
               }}>
-                Click to upload or drag & drop target photo
+                Load a target photo to begin analysis
               </div>
-              <div style={{
-                fontFamily: 'monospace',
-                fontSize: '10px',
-                color: theme.textMuted
-              }}>
-                Supports JPG, PNG, HEIC
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '260px', margin: '0 auto' }}>
+                <button
+                  onClick={() => cameraInputRef.current?.click()}
+                  style={{
+                    padding: '14px 20px',
+                    backgroundColor: theme.accent, color: theme.bg,
+                    border: 'none', borderRadius: '8px',
+                    fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
+                    cursor: 'pointer', letterSpacing: '0.5px',
+                  }}
+                >
+                  📷 Take Photo
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = theme.accent; }}
+                  onDragLeave={(e) => { e.currentTarget.style.borderColor = theme.border; }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.borderColor = theme.border;
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleImageUpload({ target: { files: [file] } } as any);
+                  }}
+                  style={{
+                    padding: '14px 20px',
+                    backgroundColor: 'transparent', color: theme.textPrimary,
+                    border: `0.5px solid ${theme.border}`, borderRadius: '8px',
+                    fontFamily: 'monospace', fontSize: '13px',
+                    cursor: 'pointer', letterSpacing: '0.5px',
+                  }}
+                >
+                  🖼 Choose from Library
+                </button>
               </div>
             </div>
           ) : (
@@ -1019,6 +1031,9 @@ export function TargetAnalysis() {
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
                 onContextMenu={handleContextMenu}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 style={{
                   border: `0.5px solid ${theme.border}`,
                   borderRadius: '4px',
@@ -1036,9 +1051,18 @@ export function TargetAnalysis() {
                 color: theme.textMuted,
                 fontFamily: 'monospace'
               }}>
-                <div>• Click to place shots</div>
-                <div>• Drag to reposition</div>
-                <div>• Right-click to remove</div>
+                {isMobile ? (
+                  <>
+                    <div>• Tap to place shots</div>
+                    <div>• Drag to reposition</div>
+                  </>
+                ) : (
+                  <>
+                    <div>• Click to place shots</div>
+                    <div>• Drag to reposition</div>
+                    <div>• Right-click to remove</div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1046,6 +1070,14 @@ export function TargetAnalysis() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: 'none' }}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             onChange={handleImageUpload}
             style={{ display: 'none' }}
           />
