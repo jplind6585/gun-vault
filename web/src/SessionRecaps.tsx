@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
+import { haptic } from './haptic';
 import { getAllSessions, getAllGuns, getAllAmmo, deleteSession, updateSession } from './storage';
 import {
   getMaintenanceAlerts, getAmmoCorrelation, getTrainingGapDays,
@@ -30,7 +31,6 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   const [filterPurpose, setFilterPurpose] = useState<SessionPurpose | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'insights'>('list');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getClaudeApiKey());
@@ -88,7 +88,6 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
 
   function handleDelete(id: string) {
     deleteSession(id);
-    setConfirmDeleteId(null);
     setExpandedId(null);
     reload();
   }
@@ -340,10 +339,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
                       expanded={expandedId === session.id}
                       onToggle={() => setExpandedId(expandedId === session.id ? null : session.id)}
                       onEdit={() => setEditingId(session.id)}
-                      onDelete={() => setConfirmDeleteId(session.id)}
-                      confirmingDelete={confirmDeleteId === session.id}
-                      onConfirmDelete={() => handleDelete(session.id)}
-                      onCancelDelete={() => setConfirmDeleteId(null)}
+                      onDelete={() => handleDelete(session.id)}
                       onLogSimilar={() => onLogSession(gunMap.get(session.gunId))}
                     />
                   ))}
@@ -477,32 +473,90 @@ interface SessionCardProps {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  confirmingDelete: boolean;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
   onLogSimilar: () => void;
 }
 
 function SessionCard({
   session, gun, ammoLot, expanded, onToggle,
-  onDelete, confirmingDelete, onConfirmDelete, onCancelDelete, onLogSimilar,
+  onDelete, onLogSimilar,
 }: SessionCardProps) {
   const hasPhotos = (session.targetPhotos?.length || 0) > 0;
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [swipeX, setSwipeX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const swipingActiveRef = useRef(false);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    swipingActiveRef.current = false;
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const dx = e.touches[0].clientX - startXRef.current;
+    const dy = e.touches[0].clientY - startYRef.current;
+    if (!swipingActiveRef.current) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+        swipingActiveRef.current = true;
+        setSwiping(true);
+      } else {
+        return;
+      }
+    }
+    const clamped = Math.max(-120, Math.min(0, dx));
+    setSwipeX(clamped);
+  }
+
+  function handleTouchEnd() {
+    if (swipeX < -80) {
+      haptic(20);
+      onDelete();
+    } else {
+      setSwipeX(0);
+    }
+    setSwiping(false);
+    swipingActiveRef.current = false;
+  }
 
   return (
     <div
       style={{
+        position: 'relative',
         backgroundColor: theme.surface,
         border: `0.5px solid ${session.issues ? '#ff6b6b' : theme.border}`,
         borderRadius: '6px',
         overflow: 'hidden',
       }}
     >
+      {/* Delete background layer */}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        width: '120px',
+        backgroundColor: '#e03131',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: '0 6px 6px 0',
+      }}>
+        <span style={{ fontSize: '20px', userSelect: 'none' }}>🗑</span>
+      </div>
+
       {/* Main row — tap to expand */}
       <div
-        onClick={onToggle}
-        style={{ padding: '12px 14px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={!swiping && swipeX === 0 ? onToggle : undefined}
+        style={{
+          position: 'relative',
+          transform: `translateX(${swipeX}px)`,
+          transition: swiping ? 'none' : 'transform 0.15s',
+          backgroundColor: theme.surface,
+          cursor: 'pointer',
+        }}
+      >
+      <div
+        style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary, marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -618,23 +672,10 @@ function SessionCard({
             >
               LOG SIMILAR
             </button>
-            {confirmingDelete ? (
-              <>
-                <button onClick={onCancelDelete} style={{ flex: 1, padding: '8px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer' }}>
-                  CANCEL
-                </button>
-                <button onClick={onConfirmDelete} style={{ flex: 1, padding: '8px', backgroundColor: '#ff6b6b', border: 'none', borderRadius: '4px', color: '#fff', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 700 }}>
-                  CONFIRM DELETE
-                </button>
-              </>
-            ) : (
-              <button onClick={onDelete} style={{ padding: '8px 14px', backgroundColor: 'transparent', border: `0.5px solid rgba(255,107,107,0.4)`, borderRadius: '4px', color: '#ff6b6b', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer' }}>
-                DELETE
-              </button>
-            )}
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

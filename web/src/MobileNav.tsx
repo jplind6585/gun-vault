@@ -1,7 +1,7 @@
 // Bottom tab bar — primary navigation on mobile
 import { theme } from './theme';
 
-type NavView = 'home' | 'vault' | 'arsenal' | 'sessions';
+type NavView = 'home' | 'vault' | 'arsenal' | 'sessions' | 'target-analysis';
 
 interface MobileNavProps {
   currentView: string;
@@ -9,9 +9,9 @@ interface MobileNavProps {
   onNavigateToVault: () => void;
   onNavigateToArsenal: () => void;
   onNavigateToSessions: () => void;
+  onNavigateToTargetAnalysis: () => void;
   // kept for backwards compat, unused
   onNavigateToCaliber?: () => void;
-  onNavigateToTargetAnalysis?: () => void;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -82,11 +82,23 @@ function SessionIcon({ active }: { active: boolean }) {
   );
 }
 
+function TargetIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0}/>
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      <path d="M12 4V8M12 16V20M4 12H8M16 12H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 const TABS: { id: NavView; label: string; Icon: React.FC<{ active: boolean }> }[] = [
-  { id: 'home',     label: 'Home',     Icon: HomeIcon },
-  { id: 'vault',    label: 'Vault',    Icon: VaultIcon },
-  { id: 'arsenal',  label: 'Ammo',     Icon: AmmoIcon },
-  { id: 'sessions', label: 'Sessions', Icon: SessionIcon },
+  { id: 'home',            label: 'Home',     Icon: HomeIcon },
+  { id: 'vault',           label: 'Vault',    Icon: VaultIcon },
+  { id: 'arsenal',         label: 'Ammo',     Icon: AmmoIcon },
+  { id: 'sessions',        label: 'Sessions', Icon: SessionIcon },
+  { id: 'target-analysis', label: 'Analyze',  Icon: TargetIcon },
 ];
 
 import React from 'react';
@@ -97,12 +109,14 @@ export function MobileNav({
   onNavigateToVault,
   onNavigateToArsenal,
   onNavigateToSessions,
+  onNavigateToTargetAnalysis,
 }: MobileNavProps) {
   const handlers: Record<NavView, () => void> = {
-    home:     onNavigateToHome,
-    vault:    onNavigateToVault,
-    arsenal:  onNavigateToArsenal,
-    sessions: onNavigateToSessions,
+    home:              onNavigateToHome,
+    vault:             onNavigateToVault,
+    arsenal:           onNavigateToArsenal,
+    sessions:          onNavigateToSessions,
+    'target-analysis': onNavigateToTargetAnalysis,
   };
 
   // treat gun-detail as vault for active state

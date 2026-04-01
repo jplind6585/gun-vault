@@ -1,5 +1,5 @@
 // LocalStorage-based data persistence (will switch to SQLite when we go mobile)
-import type { Gun, Session, AmmoLot, Cartridge } from './types';
+import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord } from './types';
 import { seedGuns } from './seedData';
 import { seedSessions } from './seedSessions';
 import { seedAmmo } from './seedAmmo';
@@ -10,6 +10,7 @@ const GUNS_KEY = 'gunvault_guns';
 const SESSIONS_KEY = 'gunvault_sessions';
 const AMMO_KEY = 'gunvault_ammo';
 const CARTRIDGES_KEY = 'gunvault_cartridges';
+const ANALYSES_KEY = 'gunvault_target_analyses';
 const INITIALIZED_KEY = 'gunvault_initialized';
 const VERSION_KEY = 'gunvault_version';
 const CURRENT_VERSION = '1.4'; // Increment this when seed data changes
@@ -435,6 +436,36 @@ export function getCartridgeFamilyTree(): Map<string, string[]> {
   });
 
   return tree;
+}
+
+// ============================================================================
+// TARGET ANALYSIS OPERATIONS
+// ============================================================================
+
+export function getTargetAnalyses(): TargetAnalysisRecord[] {
+  const data = localStorage.getItem(ANALYSES_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+export function saveTargetAnalysis(record: Omit<TargetAnalysisRecord, 'id' | 'createdAt'>): string {
+  const analyses = getTargetAnalyses();
+  const id = generateId();
+  const newRecord: TargetAnalysisRecord = { ...record, id, createdAt: new Date().toISOString() };
+  analyses.unshift(newRecord);
+  localStorage.setItem(ANALYSES_KEY, JSON.stringify(analyses));
+  return id;
+}
+
+export function deleteTargetAnalysis(id: string): void {
+  localStorage.setItem(ANALYSES_KEY, JSON.stringify(getTargetAnalyses().filter(a => a.id !== id)));
+}
+
+export function getAnalysesForGun(gunId: string): TargetAnalysisRecord[] {
+  return getTargetAnalyses().filter(a => a.gunId === gunId);
+}
+
+export function getAnalysesForSession(sessionId: string): TargetAnalysisRecord[] {
+  return getTargetAnalyses().filter(a => a.sessionId === sessionId);
 }
 
 // ============================================================================

@@ -86,15 +86,25 @@ export interface Gun {
   updatedAt?: string;
 }
 
-export interface Session {
+// One "string" within a multi-gun session (a single gun/distance/ammo combo)
+export interface SessionString {
   id: string;
   gunId: string;
-  date: string;
+  distanceYards?: number;
   roundsExpended: number;
+  ammoLotId?: string;
+  notes?: string;
+}
+
+export interface Session {
+  id: string;
+  gunId: string;           // primary gun (first string's gun for backwards compat)
+  date: string;
+  roundsExpended: number;  // total rounds (sum of strings when present)
   location?: string;
   indoorOutdoor?: 'Indoor' | 'Outdoor';
   purpose?: SessionPurpose[];
-  distanceYards?: number;
+  distanceYards?: number;  // primary distance (first string's distance for backwards compat)
   issues?: boolean;
   issueTypes?: IssueType[];
   issueDescription?: string;
@@ -105,7 +115,42 @@ export interface Session {
   isCarryGun?: boolean;
   rangeDayId?: string;
   targetPhotos?: TargetPhoto[];
+  strings?: SessionString[];  // multi-gun/multi-distance support
+  targetAnalysisId?: string;  // linked target analysis record
   createdAt?: string;
+}
+
+// Saved result from the Target Analysis workflow
+export interface TargetAnalysisStats {
+  shotCount: number;
+  windageIn: number;
+  elevationIn: number;
+  windageMoa: number;
+  elevationMoa: number;
+  cepIn: number;
+  cepMoa: number;
+  radialSdIn: number;
+  radialSdMoa: number;
+  verticalSdIn: number;
+  verticalSdMoa: number;
+  horizontalSdIn: number;
+  horizontalSdMoa: number;
+  extremeSpreadIn: number;
+  extremeSpreadMoa: number;
+  meanRadiusIn: number;
+  meanRadiusMoa: number;
+}
+
+export interface TargetAnalysisRecord {
+  id: string;
+  createdAt: string;
+  distanceYds: number;
+  bulletDiaIn: number;
+  stats: TargetAnalysisStats;
+  sessionId?: string;   // linked session
+  gunId?: string;       // linked gun
+  ammoLotId?: string;   // linked ammo lot
+  notes?: string;
 }
 
 export interface AmmoLot {

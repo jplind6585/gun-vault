@@ -32,6 +32,7 @@ function App() {
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSmartSearch, setShowSmartSearch] = useState(false);
+  const [showFab, setShowFab] = useState(false);
   const { toasts, dismissToast, success, error } = useToast();
   const { addUndoAction, performUndo, showUndoToast, currentAction } = useUndo();
   const [selectedGun, setSelectedGun] = useState<Gun | null>(null);
@@ -117,7 +118,7 @@ function App() {
     if (currentView === 'arsenal')      return <AppHeader title="Arsenal" />;
     if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('home')} backLabel="Home" />;
     if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('home')} backLabel="Home" />;
-    if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
     if (currentView === 'training')     return <AppHeader title="Training Log" onBack={() => setCurrentView('home')} backLabel="Home" />;
     if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('home')} backLabel="Home" />;
     if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('home')} backLabel="Home" />;
@@ -130,19 +131,12 @@ function App() {
       <HomePage
         onNavigateToVault={() => setCurrentView('vault')}
         onNavigateToArsenal={() => setCurrentView('arsenal')}
-        onNavigateToCaliber={() => setCurrentView('caliber')}
-        onNavigateToBallistics={() => setCurrentView('ballistics')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-        onNavigateToTraining={() => setCurrentView('training')}
-        onNavigateToReloading={() => setCurrentView('reloading')}
-        onNavigateToGear={() => setCurrentView('gear')}
-        onNavigateToWishlist={() => setCurrentView('wishlist')}
         onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
         onLogSession={() => openSessionLog()}
         onAddGun={() => setShowAddForm(true)}
         onSearchOpen={() => setShowSmartSearch(true)}
         onDevTools={() => setDevOpen(o => !o)}
-        onNavigateToStyleDemo={() => setCurrentView('style-demo')}
       />
     );
     if (currentView === 'vault') return (
@@ -173,7 +167,7 @@ function App() {
     return null;
   }
 
-  const activeNavView = (['home','vault','arsenal','sessions'] as const).find(v =>
+  const activeNavView = (['home','vault','arsenal','sessions','target-analysis'] as const).find(v =>
     currentView === v || (currentView === 'gun-detail' && v === 'vault') || (currentView === 'session-log' && v === 'sessions')
   ) ?? 'home';
 
@@ -197,6 +191,7 @@ function App() {
         onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); }}
         onNavigateToArsenal={() => setCurrentView('arsenal')}
         onNavigateToSessions={() => setCurrentView('sessions')}
+        onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
       />
       {showSmartSearch && (
         <SmartSearch
@@ -206,6 +201,76 @@ function App() {
       )}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
+
+      {/* ── GLOBAL FAB ── shown on main views only */}
+      {(['home','vault','arsenal','sessions'] as AppView[]).includes(currentView) && (
+        <>
+          {showFab && (
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+              onClick={() => setShowFab(false)}
+            />
+          )}
+          {showFab && (
+            <div style={{
+              position: 'fixed',
+              bottom: 'calc(136px + env(safe-area-inset-bottom))',
+              right: '20px',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'flex-end',
+            }}>
+              {[
+                { label: 'Log Session', action: () => { setShowFab(false); openSessionLog(); } },
+                { label: 'Add Gun',     action: () => { setShowFab(false); setShowAddForm(true); } },
+                { label: 'Add Ammo',    action: () => { setShowFab(false); setCurrentView('arsenal'); } },
+              ].map(item => (
+                <button key={item.label} onClick={item.action} style={{
+                  padding: '10px 16px',
+                  backgroundColor: theme.surface,
+                  border: `0.5px solid ${theme.border}`,
+                  borderRadius: '20px',
+                  color: theme.textPrimary,
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setShowFab(f => !f)}
+            style={{
+              position: 'fixed',
+              bottom: 'calc(72px + env(safe-area-inset-bottom))',
+              right: '20px',
+              zIndex: 1000,
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              backgroundColor: theme.accent,
+              border: 'none',
+              color: theme.bg,
+              fontSize: '26px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(255,212,59,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: showFab ? 'rotate(45deg)' : 'rotate(0)',
+              transition: 'transform 0.2s',
+            }}
+          >
+            +
+          </button>
+        </>
+      )}
     </div>
   );
 }

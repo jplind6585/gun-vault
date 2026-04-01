@@ -75,6 +75,42 @@ export const transitions = {
   slow: '0.3s ease'
 };
 
+// Outdoor / bright-day theme (high contrast, light background)
+export const outdoorTheme = {
+  bg: '#f0f0ec',
+  surface: '#ffffff',
+  surfaceAlt: '#e4e4e0',
+  border: 'rgba(0,0,0,0.15)',
+  accent: '#b8960a',
+  accentDim: 'rgba(184,150,10,0.15)',
+  red: '#c0392b',
+  green: '#27ae60',
+  blue: '#1a6ea8',
+  textPrimary: '#08080f',
+  textSecondary: '#333340',
+  textMuted: '#70707a',
+  caliberRed: '#c0392b',
+  orange: '#d4680a',
+  accentHover: '#d4a800',
+};
+
+export function isOutdoorMode(): boolean {
+  try {
+    const saved = localStorage.getItem('gunvault_theme');
+    if (saved) return JSON.parse(saved).bg === outdoorTheme.bg;
+  } catch { /* ignore */ }
+  return false;
+}
+
+export function toggleOutdoorMode(): void {
+  if (isOutdoorMode()) {
+    localStorage.removeItem('gunvault_theme');
+  } else {
+    localStorage.setItem('gunvault_theme', JSON.stringify(outdoorTheme));
+  }
+  window.location.reload();
+}
+
 // Function to update theme
 export function setTheme(newTheme: Partial<typeof theme>) {
   Object.assign(currentTheme, newTheme);

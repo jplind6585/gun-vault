@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { theme } from './theme';
+import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns } from './storage';
+import type { TargetAnalysisRecord } from './types';
+import { haptic } from './haptic';
 
 type Step = 1 | 2 | 3 | 4;
 type MarkMode = 'calib' | 'poa' | 'shots';
@@ -72,8 +75,27 @@ export function TargetAnalysis() {
   const [customBullet, setCustomBullet] = useState('');
   const [customRef, setCustomRef] = useState('');
 
+  // Pinch-to-zoom state
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Calibration confirmation banner
+  const [calibBannerMsg, setCalibBannerMsg] = useState<string | null>(null);
+
+  // Auto-save confirmation
+  const [savedMsg, setSavedMsg] = useState(false);
+  const savedRef = useRef(false);
+
+  // History
+  const [history, setHistory] = useState<TargetAnalysisRecord[]>([]);
+  const [guns, setGuns] = useState<ReturnType<typeof getAllGuns>>([]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // Touch tracking refs for pinch/pan
+  const touchStartRef = useRef<{ touches: { id: number; x: number; y: number }[]; scale: number; offset: { x: number; y: number } } | null>(null);
+  const touchMovedRef = useRef(false);
 
   const toCanvas = (clientX: number, clientY: number): Pt => {
     const canvas = canvasRef.current!;
@@ -135,6 +157,25 @@ export function TargetAnalysis() {
       ctx.shadowBlur = 0;
     }
 
+    // Live CEP circle — after POA is placed AND at least 1 shot
+    if (marks.length >= 2 && pixelsPerInch) {
+      const poa = marks[0];
+      const shots = marks.slice(1);
+      const ppi = pixelsPerInch;
+      const windages = shots.map(s => (s.x - poa.x) / ppi);
+      const elevations = shots.map(s => -(s.y - poa.y) / ppi);
+      const radials = shots.map((_, i) => Math.sqrt(windages[i] ** 2 + elevations[i] ** 2));
+      const cepIn = median(radials);
+      const cepPx = cepIn * ppi;
+      ctx.beginPath();
+      ctx.arc(poa.x, poa.y, cepPx, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,212,59,0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     // Shot dots (marks[1..n])
     const ppi = pixelsPerInch ?? 100;
     const dotRadius = Math.max(10, (bulletDiaIn / 2) * ppi);
@@ -186,18 +227,25 @@ export function TargetAnalysis() {
 
   const handleCanvasTap = (x: number, y: number) => {
     if (markMode === 'calib') {
+      haptic();
       const newPts = [...calibPts, { x, y }];
       setCalibPts(newPts);
       if (newPts.length === 2) {
         const dx = newPts[1].x - newPts[0].x;
         const dy = newPts[1].y - newPts[0].y;
-        setPixelsPerInch(Math.sqrt(dx * dx + dy * dy) / refIn);
+        const ppi = Math.sqrt(dx * dx + dy * dy) / refIn;
+        setPixelsPerInch(ppi);
         setMarkMode('poa');
+        // Show calibration banner for 2 seconds
+        setCalibBannerMsg(`✓ Scale set — ${ppi.toFixed(0)} px/in`);
+        setTimeout(() => setCalibBannerMsg(null), 2000);
       }
     } else if (markMode === 'poa') {
+      haptic();
       setMarks([{ x, y }]);
       setMarkMode('shots');
     } else {
+      haptic();
       setMarks(prev => [...prev, { x, y }]);
     }
   };
@@ -207,13 +255,85 @@ export function TargetAnalysis() {
     handleCanvasTap(pt.x, pt.y);
   };
 
-  const handleCanvasTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    if (e.type === 'touchend' && e.changedTouches.length > 0) {
+  // Touch handlers with pinch-to-zoom, two-finger pan, single-finger tap
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      // Two fingers: start pinch/pan tracking
+      e.preventDefault();
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      touchStartRef.current = {
+        touches: [
+          { id: t0.identifier, x: t0.clientX, y: t0.clientY },
+          { id: t1.identifier, x: t1.clientX, y: t1.clientY },
+        ],
+        scale,
+        offset,
+      };
+      touchMovedRef.current = false;
+    } else if (e.touches.length === 1) {
+      // Single finger: track for tap detection
+      const t = e.touches[0];
+      touchStartRef.current = {
+        touches: [{ id: t.identifier, x: t.clientX, y: t.clientY }],
+        scale,
+        offset,
+      };
+      touchMovedRef.current = false;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2 && touchStartRef.current?.touches.length === 2) {
+      e.preventDefault();
+      const start = touchStartRef.current;
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+
+      // Compute pinch scale
+      const startDist = Math.hypot(
+        start.touches[1].x - start.touches[0].x,
+        start.touches[1].y - start.touches[0].y,
+      );
+      const curDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const pinchRatio = startDist > 0 ? curDist / startDist : 1;
+      const newScale = Math.min(5, Math.max(1, start.scale * pinchRatio));
+
+      // Compute two-finger pan: midpoint delta
+      const startMidX = (start.touches[0].x + start.touches[1].x) / 2;
+      const startMidY = (start.touches[0].y + start.touches[1].y) / 2;
+      const curMidX = (t0.clientX + t1.clientX) / 2;
+      const curMidY = (t0.clientY + t1.clientY) / 2;
+      const newOffsetX = start.offset.x + (curMidX - startMidX);
+      const newOffsetY = start.offset.y + (curMidY - startMidY);
+
+      setScale(newScale);
+      setOffset({ x: newOffsetX, y: newOffsetY });
+      touchMovedRef.current = true;
+    } else if (e.touches.length === 1 && touchStartRef.current?.touches.length === 1) {
+      const start = touchStartRef.current.touches[0];
+      const t = e.touches[0];
+      const dx = Math.abs(t.clientX - start.x);
+      const dy = Math.abs(t.clientY - start.y);
+      if (dx > 10 || dy > 10) {
+        touchMovedRef.current = true;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Only handle single-finger tap (no significant movement)
+    if (
+      e.changedTouches.length === 1 &&
+      touchStartRef.current?.touches.length === 1 &&
+      !touchMovedRef.current
+    ) {
       const touch = e.changedTouches[0];
       const pt = toCanvas(touch.clientX, touch.clientY);
       handleCanvasTap(pt.x, pt.y);
     }
+    touchStartRef.current = null;
+    touchMovedRef.current = false;
   };
 
   const undoLast = () => {
@@ -229,6 +349,13 @@ export function TargetAnalysis() {
     } else if (markMode === 'calib' && calibPts.length > 0) {
       setCalibPts(prev => prev.slice(0, -1));
     }
+  };
+
+  const resetCalibration = () => {
+    setCalibPts([]);
+    setPixelsPerInch(null);
+    setMarks([]);
+    setMarkMode('calib');
   };
 
   const computeStats = (): Stats | null => {
@@ -280,12 +407,42 @@ export function TargetAnalysis() {
   };
 
   const goToResults = () => {
+    haptic();
     const s = computeStats();
     setStats(s);
     setStep(4);
   };
 
+  // Auto-save when reaching step 4
+  useEffect(() => {
+    if (step === 4 && stats && !savedRef.current) {
+      savedRef.current = true;
+      saveTargetAnalysis({
+        distanceYds,
+        bulletDiaIn,
+        stats,
+        sessionId: undefined,
+        gunId: undefined,
+        ammoLotId: undefined,
+      });
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2500);
+      // Refresh history
+      setHistory(getTargetAnalyses());
+      setGuns(getAllGuns());
+    }
+  }, [step, stats, distanceYds, bulletDiaIn]);
+
+  // Load history when step 4 is shown
+  useEffect(() => {
+    if (step === 4) {
+      setHistory(getTargetAnalyses());
+      setGuns(getAllGuns());
+    }
+  }, [step]);
+
   const exportOverlay = () => {
+    haptic();
     const canvas = canvasRef.current;
     if (!canvas || !stats) return;
 
@@ -347,6 +504,7 @@ export function TargetAnalysis() {
   };
 
   const resetAll = () => {
+    savedRef.current = false;
     setStep(1);
     setImageUrl(null);
     setCalibPts([]);
@@ -354,6 +512,15 @@ export function TargetAnalysis() {
     setMarks([]);
     setMarkMode('calib');
     setStats(null);
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+    setCalibBannerMsg(null);
+    setSavedMsg(false);
+  };
+
+  const deleteHistoryEntry = (id: string) => {
+    deleteTargetAnalysis(id);
+    setHistory(getTargetAnalyses());
   };
 
   // ---- UI HELPERS ----
@@ -435,6 +602,20 @@ export function TargetAnalysis() {
     <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 22, overflowY: 'auto' }}>
       <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary }}>Setup</div>
 
+      {/* Image thumbnail preview */}
+      {imageUrl && (
+        <div style={{
+          width: '100%', height: 100, borderRadius: 10, overflow: 'hidden',
+          border: `1px solid ${theme.border}`, flexShrink: 0,
+        }}>
+          <img
+            src={imageUrl}
+            alt="Uploaded target"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        </div>
+      )}
+
       <div>
         {sectionLabel('Distance')}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -502,7 +683,7 @@ export function TargetAnalysis() {
         }}>
           ← Back
         </button>
-        <button onClick={() => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); setStep(3); }} style={{
+        <button onClick={() => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); setScale(1); setOffset({ x: 0, y: 0 }); setStep(3); }} style={{
           flex: 2, padding: 14, borderRadius: 12,
           background: theme.accent, color: '#000',
           border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
@@ -516,7 +697,9 @@ export function TargetAnalysis() {
   // ---- STEP 3: Mark ----
   const renderStep3 = () => {
     let instruction = '';
-    if (markMode === 'calib') {
+    if (calibBannerMsg) {
+      instruction = calibBannerMsg;
+    } else if (markMode === 'calib') {
       instruction = calibPts.length === 0
         ? `Tap point 1 of reference scale (${refIn}")`
         : `Tap point 2 of reference scale`;
@@ -527,17 +710,51 @@ export function TargetAnalysis() {
       instruction = `Tap each shot hole  •  ${shotCount} shot${shotCount !== 1 ? 's' : ''} marked`;
     }
 
+    const isCalibConfirm = !!calibBannerMsg;
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
         {/* Instruction bar */}
         <div style={{
           padding: '10px 14px',
-          background: theme.surfaceAlt,
+          background: isCalibConfirm ? 'rgba(60,180,60,0.15)' : theme.surfaceAlt,
           borderBottom: `1px solid ${theme.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0,
+          transition: 'background 0.2s',
         }}>
-          <span style={{ fontSize: 13, color: theme.textPrimary, fontWeight: 500, flex: 1 }}>{instruction}</span>
+          <span style={{
+            fontSize: 13,
+            color: isCalibConfirm ? '#4caf50' : theme.textPrimary,
+            fontWeight: isCalibConfirm ? 700 : 500,
+            flex: 1,
+          }}>
+            {instruction}
+          </span>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {scale > 1 && (
+              <button
+                onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }}
+                style={{
+                  padding: '6px 10px', borderRadius: 8,
+                  background: theme.surface, color: theme.accent,
+                  border: `1px solid ${theme.accent}`, fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Reset Zoom
+              </button>
+            )}
+            {(markMode === 'poa' || markMode === 'shots') && (
+              <button
+                onClick={resetCalibration}
+                style={{
+                  padding: '6px 10px', borderRadius: 8,
+                  background: theme.surface, color: theme.textSecondary,
+                  border: `1px solid ${theme.border}`, fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Recal.
+              </button>
+            )}
             <button onClick={undoLast} style={{
               padding: '6px 12px', borderRadius: 8,
               background: theme.surface, color: theme.textSecondary,
@@ -553,13 +770,24 @@ export function TargetAnalysis() {
           </div>
         </div>
 
-        {/* Canvas */}
-        <div style={{ flex: 1, overflow: 'auto', background: '#0a0a0a', minHeight: 0 }}>
+        {/* Canvas wrapper with pinch-to-zoom */}
+        <div
+          style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', minHeight: 0, touchAction: 'pan-y' }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <canvas
             ref={canvasRef}
-            style={{ width: '100%', display: 'block', touchAction: 'none' }}
+            style={{
+              width: '100%',
+              display: 'block',
+              touchAction: 'none',
+              transformOrigin: '0 0',
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+              willChange: 'transform',
+            }}
             onClick={handleCanvasClick}
-            onTouchEnd={handleCanvasTouch}
           />
         </div>
 
@@ -597,6 +825,17 @@ export function TargetAnalysis() {
           <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary }}>Results</div>
           <div style={{ fontSize: 13, color: theme.textMuted }}>{stats.shotCount} shots • {distanceYds}yd</div>
         </div>
+
+        {/* Auto-save confirmation */}
+        {savedMsg && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 10,
+            background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)',
+            color: '#4caf50', fontSize: 13, fontWeight: 600, textAlign: 'center',
+          }}>
+            Saved to history ✓
+          </div>
+        )}
 
         {/* Offsets */}
         <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
@@ -640,6 +879,78 @@ export function TargetAnalysis() {
         }}>
           + New Analysis
         </button>
+
+        {/* Analysis History */}
+        {history.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Analysis History
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
+              {history.map(record => {
+                const gun = record.gunId ? guns.find(g => g.id === record.gunId) : null;
+                const date = new Date(record.createdAt);
+                const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                return (
+                  <div
+                    key={record.id}
+                    style={{
+                      background: theme.surface,
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      border: `1px solid ${theme.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary }}>
+                          {record.distanceYds}yd
+                        </span>
+                        <span style={{ fontSize: 12, color: theme.textMuted }}>•</span>
+                        <span style={{ fontSize: 12, color: theme.textSecondary }}>
+                          {record.stats.shotCount} shot{record.stats.shotCount !== 1 ? 's' : ''}
+                        </span>
+                        <span style={{ fontSize: 12, color: theme.textMuted }}>•</span>
+                        <span style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'monospace' }}>
+                          CEP {record.stats.cepIn.toFixed(2)}"
+                        </span>
+                        {gun && (
+                          <>
+                            <span style={{ fontSize: 12, color: theme.textMuted }}>•</span>
+                            <span style={{ fontSize: 12, color: theme.accent }}>
+                              {gun.make} {gun.model}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 3 }}>{dateStr}</div>
+                    </div>
+                    <button
+                      onClick={() => deleteHistoryEntry(record.id)}
+                      style={{
+                        padding: '5px 8px',
+                        borderRadius: 7,
+                        background: 'transparent',
+                        color: theme.textMuted,
+                        border: `1px solid ${theme.border}`,
+                        fontSize: 14,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        lineHeight: 1,
+                      }}
+                      title="Delete"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

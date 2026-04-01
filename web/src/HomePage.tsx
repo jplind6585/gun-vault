@@ -6,17 +6,10 @@ import type { Gun, Session, AmmoLot } from './types';
 interface HomePageProps {
   onNavigateToVault: () => void;
   onNavigateToArsenal: () => void;
-  onNavigateToCaliber: () => void;
-  onNavigateToBallistics: () => void;
   onNavigateToTargetAnalysis: () => void;
-  onNavigateToTraining: () => void;
-  onNavigateToReloading: () => void;
-  onNavigateToGear: () => void;
-  onNavigateToWishlist: () => void;
   onNavigateToGun: (gun: Gun) => void;
   onLogSession: () => void;
   onAddGun: () => void;
-  onNavigateToStyleDemo?: () => void;
   onSearchOpen: () => void;
   onDevTools?: () => void;
 }
@@ -51,7 +44,6 @@ export function HomePage({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [ammo, setAmmo]       = useState<AmmoLot[]>([]);
   const [period, setPeriod]   = useState<TimePeriod>('month');
-  const [showFab, setShowFab] = useState(false);
 
   useEffect(() => {
     setGuns(getAllGuns());
@@ -408,50 +400,6 @@ export function HomePage({
 
       </div>
 
-      {/* ── FAB ── */}
-      {showFab && <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setShowFab(false)} />}
-      {showFab && (
-        <div style={{
-          position: 'fixed', bottom: 'calc(136px + env(safe-area-inset-bottom))', right: '20px',
-          zIndex: 999, display: 'flex', flexDirection: 'column',
-          gap: '8px', alignItems: 'flex-end',
-        }}>
-          {[
-            { label: 'Log Session', action: () => { setShowFab(false); onLogSession(); } },
-            { label: 'Add Gun',     action: () => { setShowFab(false); onAddGun(); } },
-            { label: 'Add Ammo',    action: () => { setShowFab(false); onNavigateToArsenal(); } },
-          ].map(item => (
-            <button key={item.label} onClick={item.action} style={{
-              padding: '10px 16px',
-              backgroundColor: theme.surface,
-              border: `0.5px solid ${theme.border}`,
-              borderRadius: '20px', color: theme.textPrimary,
-              fontFamily: 'monospace', fontSize: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-              whiteSpace: 'nowrap',
-            }}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-      <button
-        onClick={() => setShowFab(f => !f)}
-        style={{
-          position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom))', right: '20px',
-          zIndex: 1000, width: '52px', height: '52px',
-          borderRadius: '50%', backgroundColor: theme.accent,
-          border: 'none', color: theme.bg, fontSize: '26px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(255,212,59,0.35)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transform: showFab ? 'rotate(45deg)' : 'rotate(0)',
-          transition: 'transform 0.2s',
-        }}
-      >
-        +
-      </button>
     </div>
   );
 }

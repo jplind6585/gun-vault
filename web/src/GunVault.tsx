@@ -732,6 +732,15 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
             ROUNDS
           </div>
         </div>
+        {daysSince === 0 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.green, textAlign: 'right', flexShrink: 0 }}>today</div>
+        ) : daysSince === 1 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>yesterday</div>
+        ) : daysSince !== null && daysSince <= 30 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+        ) : daysSince !== null && daysSince > 30 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.red, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+        ) : null}
         <button
           onClick={onQuickLog}
           style={{

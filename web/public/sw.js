@@ -1,54 +1,60 @@
-// Gun Vault Service Worker
-// Bump CACHE_NAME when deploying a new version to force cache refresh
-const CACHE_NAME = 'gunvault-v1';
+// Lindcott Armory Service Worker — network-first with full cache fallback
+// Bump version to force cache refresh on deploy
+const CACHE_NAME = 'lindcott-v3';
 
-// Files to precache (add build outputs here after running `npm run build`)
-const PRECACHE = ['/'];
-
-// ── Install ──────────────────────────────────────────────────────────────────
+// Install — skip waiting so new SW activates immediately
 self.addEventListener('install', event => {
-  // Don't skipWaiting here — let the app decide when to update
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE))
+    caches.open(CACHE_NAME).then(cache => cache.add('/'))
   );
 });
 
-// ── Activate ─────────────────────────────────────────────────────────────────
+// Activate — delete old caches, claim all clients
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
+    Promise.all([
+      caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      ),
+      clients.claim(),
+    ])
   );
-  self.clients.claim();
 });
 
-// ── Fetch — network-first with cache fallback ─────────────────────────────────
+// Fetch — network first, fall back to cache; cache every successful GET
 self.addEventListener('fetch', event => {
-  // Skip non-GET and cross-origin (e.g. Anthropic API)
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  const req = event.request;
+
+  // Only handle GET requests for same-origin resources
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.open(CACHE_NAME).then(cache =>
+      fetch(req)
+        .then(response => {
+          // Cache any successful response (HTML, JS, CSS, images, etc.)
+          if (response.ok) {
+            cache.put(req, response.clone());
+          }
+          return response;
+        })
+        .catch(async () => {
+          // Network failed — serve from cache
+          const cached = await cache.match(req);
+          if (cached) return cached;
+          // For page navigations, return the root shell
+          if (req.mode === 'navigate') {
+            const root = await cache.match('/');
+            if (root) return root;
+          }
+          return new Response('Offline — please reload when connected', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        })
+    )
   );
-});
-
-// ── Skip waiting — called by app when user taps "Update" ──────────────────────
-self.addEventListener('message', event => {
-  if (event.data === 'skipWaiting') {
-    self.skipWaiting();
-  }
 });
