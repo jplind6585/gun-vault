@@ -1,1711 +1,688 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { theme } from './theme';
 
-interface Shot {
-  id: number;
-  x: number; // Canvas pixel coordinates
-  y: number;
-}
+type Step = 1 | 2 | 3 | 4;
+type MarkMode = 'calib' | 'poa' | 'shots';
 
-interface CalibrationData {
-  pixelsPerInch: number;
-  referenceInches: number;
-}
+interface Pt { x: number; y: number; }
 
-interface AnalysisResults {
+interface Stats {
   shotCount: number;
-  extremeSpreadInches: number;
-  extremeSpreadMOA: number;
-  extremeSpreadMRAD: number;
-  meanRadiusInches: number;
-  meanRadiusMOA: number;
-  meanRadiusMRAD: number;
-  groupCenterX: number;
-  groupCenterY: number;
-  best3ShotSpread?: number;
-  best5ShotSpread?: number;
-  extremeShotIndices?: [number, number]; // Indices of the two furthest shots
+  windageIn: number;
+  elevationIn: number;
+  windageMoa: number;
+  elevationMoa: number;
+  cepIn: number;
+  cepMoa: number;
+  radialSdIn: number;
+  radialSdMoa: number;
+  verticalSdIn: number;
+  verticalSdMoa: number;
+  horizontalSdIn: number;
+  horizontalSdMoa: number;
+  extremeSpreadIn: number;
+  extremeSpreadMoa: number;
+  meanRadiusIn: number;
+  meanRadiusMoa: number;
 }
 
-interface PatternAnalysis {
-  pattern: 'tight-group' | 'vertical-string' | 'horizontal-string' | 'fliers' | 'scattered' | 'low-left' | 'low-right' | 'high';
-  confidence: number;
-  description: string;
+const DIST_PRESETS = [25, 50, 100, 200, 300];
+const BULLET_PRESETS = [
+  { label: '.22', value: 0.222 },
+  { label: '.224', value: 0.224 },
+  { label: '.243', value: 0.243 },
+  { label: '.308', value: 0.308 },
+  { label: '.355', value: 0.355 },
+  { label: '.357', value: 0.357 },
+  { label: '.40', value: 0.400 },
+  { label: '.45', value: 0.452 },
+];
+const REF_PRESETS = [0.5, 1, 2, 4];
+
+function stddev(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance);
 }
 
-interface CoachingAdvice {
-  issue: string;
-  cause: string;
-  fix: string;
-  priority: 'high' | 'medium' | 'low';
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
-interface TargetSession {
-  id: string;
-  date: string;
-  timestamp: number;
-  distance: number;
-  shotCount: number;
-  analysis: AnalysisResults;
-  pattern: PatternAnalysis;
-  imageData?: string; // Base64 encoded canvas
-  notes?: string;
-  firearm?: string;
-  ammunition?: string;
+function toMoa(inches: number, yards: number): number {
+  return yards > 0 ? (inches / yards) * 95.5 : 0;
 }
 
 export function TargetAnalysis() {
-  const [targetImage, setTargetImage] = useState<string | null>(null);
-  const [shots, setShots] = useState<Shot[]>([]);
-  const [distance, setDistance] = useState<number>(100); // yards
-  const [calibration, setCalibration] = useState<CalibrationData | null>(null);
-  const [isCalibrating, setIsCalibrating] = useState(false);
-  const [calibrationPoints, setCalibrationPoints] = useState<{ x: number; y: number }[]>([]);
-  const [referenceSize, setReferenceSize] = useState<string>('1');
-  const [draggedShot, setDraggedShot] = useState<number | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisResults | null>(null);
-  const [patternAnalysis, setPatternAnalysis] = useState<PatternAnalysis | null>(null);
-  const [coachingAdvice, setCoachingAdvice] = useState<CoachingAdvice[]>([]);
-  const [isAutoDetecting, setIsAutoDetecting] = useState(false);
-  const [sessions, setSessions] = useState<TargetSession[]>([]);
-  const [showSessionHistory, setShowSessionHistory] = useState(false);
-  const [sessionNotes, setSessionNotes] = useState('');
-
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [step, setStep] = useState<Step>(1);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [distanceYds, setDistanceYds] = useState(100);
+  const [bulletDiaIn, setBulletDiaIn] = useState(0.308);
+  const [refIn, setRefIn] = useState(1);
+  const [calibPts, setCalibPts] = useState<Pt[]>([]);
+  const [pixelsPerInch, setPixelsPerInch] = useState<number | null>(null);
+  const [marks, setMarks] = useState<Pt[]>([]); // [0]=POA, [1..n]=shots
+  const [markMode, setMarkMode] = useState<MarkMode>('calib');
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [customDist, setCustomDist] = useState('');
+  const [customBullet, setCustomBullet] = useState('');
+  const [customRef, setCustomRef] = useState('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  // Load sessions from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('gunvault_target_sessions');
-      if (saved) {
-        setSessions(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Failed to load sessions:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-
-  // Scale pointer/touch position from CSS pixels → canvas logical pixels
-  const getCanvasCoords = (clientX: number, clientY: number): { x: number; y: number } => {
+  const toCanvas = (clientX: number, clientY: number): Pt => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-  };
-
-  // Save session
-  const saveSession = () => {
-    if (!analysis || !patternAnalysis) return;
-
-    const session: TargetSession = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      timestamp: Date.now(),
-      distance,
-      shotCount: shots.length,
-      analysis,
-      pattern: patternAnalysis,
-      imageData: canvasRef.current?.toDataURL('image/jpeg', 0.7),
-      notes: sessionNotes
-    };
-
-    const updatedSessions = [session, ...sessions];
-    setSessions(updatedSessions);
-
-    try {
-      localStorage.setItem('gunvault_target_sessions', JSON.stringify(updatedSessions));
-    } catch (e) {
-      console.error('Failed to save session:', e);
-    }
-
-    // Clear notes after save
-    setSessionNotes('');
-  };
-
-  // Delete session
-  const deleteSession = (sessionId: string) => {
-    const updatedSessions = sessions.filter(s => s.id !== sessionId);
-    setSessions(updatedSessions);
-    try {
-      localStorage.setItem('gunvault_target_sessions', JSON.stringify(updatedSessions));
-    } catch (e) {
-      console.error('Failed to delete session:', e);
-    }
-  };
-
-  // Automatic shot detection using image processing
-  const detectShots = async () => {
-    if (!canvasRef.current || !imageRef.current || !calibration) return;
-
-    setIsAutoDetecting(true);
-
-    try {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Create a temporary canvas for processing
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) return;
-
-      // Draw image to temp canvas
-      tempCtx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
-      const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      // Convert to grayscale and find dark spots (bullet holes)
-      const detectedShots: Shot[] = [];
-      const threshold = 80; // Darkness threshold (0-255, lower = darker)
-      const minDistance = 20; // Minimum distance between shots in pixels
-      const gridSize = 5; // Check every N pixels for performance
-
-      for (let y = 0; y < canvas.height; y += gridSize) {
-        for (let x = 0; x < canvas.width; x += gridSize) {
-          const i = (y * canvas.width + x) * 4;
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const gray = (r + g + b) / 3;
-
-          if (gray < threshold) {
-            // Check if this dark spot is far enough from existing shots
-            const tooClose = detectedShots.some(shot => {
-              const dx = shot.x - x;
-              const dy = shot.y - y;
-              return Math.sqrt(dx * dx + dy * dy) < minDistance;
-            });
-
-            if (!tooClose) {
-              // Refine position by finding darkest pixel in local area
-              let darkestX = x;
-              let darkestY = y;
-              let darkestValue = gray;
-
-              for (let dy = -5; dy <= 5; dy++) {
-                for (let dx = -5; dx <= 5; dx++) {
-                  const nx = x + dx;
-                  const ny = y + dy;
-                  if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
-                    const ni = (ny * canvas.width + nx) * 4;
-                    const ngray = (data[ni] + data[ni + 1] + data[ni + 2]) / 3;
-                    if (ngray < darkestValue) {
-                      darkestValue = ngray;
-                      darkestX = nx;
-                      darkestY = ny;
-                    }
-                  }
-                }
-              }
-
-              detectedShots.push({
-                id: Date.now() + detectedShots.length,
-                x: darkestX,
-                y: darkestY
-              });
-            }
-          }
-        }
-      }
-
-      // Limit to most prominent shots (darkest areas)
-      const sortedByDarkness = detectedShots
-        .map(shot => {
-          const i = (Math.floor(shot.y) * canvas.width + Math.floor(shot.x)) * 4;
-          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          return { shot, darkness: 255 - gray };
-        })
-        .sort((a, b) => b.darkness - a.darkness)
-        .slice(0, 20) // Limit to 20 shots
-        .map(item => item.shot);
-
-      setShots(sortedByDarkness);
-    } catch (error) {
-      console.error('Auto-detection error:', error);
-    } finally {
-      setIsAutoDetecting(false);
-    }
-  };
-
-  // Analyze shot pattern for common issues
-  const analyzePattern = (shots: Shot[], centerX: number, centerY: number): PatternAnalysis => {
-    if (shots.length < 3) {
-      return {
-        pattern: 'scattered',
-        confidence: 0,
-        description: 'Not enough shots for pattern analysis'
-      };
-    }
-
-    // Calculate shot positions relative to center
-    const relativePositions = shots.map(shot => ({
-      x: shot.x - centerX,
-      y: shot.y - centerY,
-      distance: Math.sqrt(Math.pow(shot.x - centerX, 2) + Math.pow(shot.y - centerY, 2))
-    }));
-
-    // Check for vertical stringing (common trigger control issue)
-    const verticalVariance = relativePositions.reduce((sum, pos) => sum + Math.abs(pos.x), 0) / relativePositions.length;
-    const horizontalVariance = relativePositions.reduce((sum, pos) => sum + Math.abs(pos.y), 0) / relativePositions.length;
-    const avgDistance = relativePositions.reduce((sum, pos) => sum + pos.distance, 0) / relativePositions.length;
-
-    // Detect fliers (shots far from group)
-    const flierCount = relativePositions.filter(pos => pos.distance > avgDistance * 2).length;
-    const flierRatio = flierCount / shots.length;
-
-    // Detect consistent bias (e.g., low-left for right-handed shooters)
-    const avgX = relativePositions.reduce((sum, pos) => sum + pos.x, 0) / relativePositions.length;
-    const avgY = relativePositions.reduce((sum, pos) => sum + pos.y, 0) / relativePositions.length;
-
-    // Pattern detection logic
-    if (flierRatio > 0.3) {
-      return {
-        pattern: 'fliers',
-        confidence: 0.8,
-        description: 'Multiple shots significantly outside main group'
-      };
-    }
-
-    if (avgDistance < 30 && verticalVariance < 15 && horizontalVariance < 15) {
-      return {
-        pattern: 'tight-group',
-        confidence: 0.9,
-        description: 'Excellent tight grouping'
-      };
-    }
-
-    if (horizontalVariance > verticalVariance * 2) {
-      return {
-        pattern: 'horizontal-string',
-        confidence: 0.8,
-        description: 'Shots forming horizontal pattern'
-      };
-    }
-
-    if (verticalVariance > horizontalVariance * 2) {
-      return {
-        pattern: 'vertical-string',
-        confidence: 0.8,
-        description: 'Shots forming vertical pattern'
-      };
-    }
-
-    // Check for consistent bias
-    if (avgX < -20 && avgY > 20) {
-      return {
-        pattern: 'low-left',
-        confidence: 0.7,
-        description: 'Group consistently low and left of center'
-      };
-    }
-
-    if (avgX > 20 && avgY > 20) {
-      return {
-        pattern: 'low-right',
-        confidence: 0.7,
-        description: 'Group consistently low and right of center'
-      };
-    }
-
-    if (avgY < -20) {
-      return {
-        pattern: 'high',
-        confidence: 0.7,
-        description: 'Group consistently high'
-      };
-    }
-
     return {
-      pattern: 'scattered',
-      confidence: 0.6,
-      description: 'No clear pattern detected'
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
     };
   };
 
-  // Generate coaching advice based on pattern
-  const generateCoachingAdvice = (pattern: PatternAnalysis): CoachingAdvice[] => {
-    const advice: CoachingAdvice[] = [];
+  const drawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    if (!canvas || !img) return;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    switch (pattern.pattern) {
-      case 'vertical-string':
-        advice.push({
-          issue: 'Vertical Stringing',
-          cause: 'Inconsistent trigger control or breathing',
-          fix: 'Focus on smooth, straight-back trigger press. Shoot during natural respiratory pause.',
-          priority: 'high'
-        });
-        advice.push({
-          issue: 'Trigger Jerk',
-          cause: 'Anticipating recoil and pulling trigger',
-          fix: 'Practice dry fire. Squeeze trigger slowly and smoothly. Use surprise break technique.',
-          priority: 'high'
-        });
-        break;
-
-      case 'horizontal-string':
-        advice.push({
-          issue: 'Horizontal Stringing',
-          cause: 'Inconsistent grip pressure or lateral trigger movement',
-          fix: 'Maintain consistent grip. Press trigger straight back without sideways pressure.',
-          priority: 'high'
-        });
-        advice.push({
-          issue: 'Wind Effect',
-          cause: 'Possible wind drift at longer distances',
-          fix: 'Check wind conditions. Adjust hold or use wind flags.',
-          priority: 'medium'
-        });
-        break;
-
-      case 'low-left':
-        advice.push({
-          issue: 'Low-Left Impact (Right-Handed)',
-          cause: 'Anticipating recoil, pushing forward, or heeling',
-          fix: 'Relax. Let recoil happen naturally. Maintain proper grip without death grip.',
-          priority: 'high'
-        });
-        advice.push({
-          issue: 'Trigger Finger Placement',
-          cause: 'Too much finger on trigger',
-          fix: 'Use pad of fingertip, not the crease of first joint.',
-          priority: 'medium'
-        });
-        break;
-
-      case 'low-right':
-        advice.push({
-          issue: 'Low-Right Impact (Right-Handed)',
-          cause: 'Tightening grip during trigger press or thumbing',
-          fix: 'Isolate trigger finger. Maintain grip pressure through shot.',
-          priority: 'high'
-        });
-        break;
-
-      case 'high':
-        advice.push({
-          issue: 'High Impact',
-          cause: 'Breaking wrist upward in anticipation or improper sight picture',
-          fix: 'Verify zero. Check sight alignment. Avoid pushing or lifting during shot.',
-          priority: 'high'
-        });
-        break;
-
-      case 'fliers':
-        advice.push({
-          issue: 'Random Fliers',
-          cause: 'Called vs uncalled shots, inconsistent fundamentals',
-          fix: 'Call your shots. Note which felt different. Check for flinching on certain rounds.',
-          priority: 'high'
-        });
-        advice.push({
-          issue: 'Ammunition Consistency',
-          cause: 'Possible ammo variation',
-          fix: 'Test with match-grade ammo to eliminate variable.',
-          priority: 'low'
-        });
-        break;
-
-      case 'scattered':
-        advice.push({
-          issue: 'Scattered Group',
-          cause: 'Multiple fundamental issues or equipment problems',
-          fix: 'Start with basics: stance, grip, sight alignment, trigger control. Check rifle stability/zero.',
-          priority: 'high'
-        });
-        advice.push({
-          issue: 'Focus on Fundamentals',
-          cause: 'Inconsistent shooting fundamentals',
-          fix: 'Slow down. Make every shot count. Practice dry fire extensively.',
-          priority: 'high'
-        });
-        break;
-
-      case 'tight-group':
-        advice.push({
-          issue: 'Excellent Performance',
-          cause: 'Solid fundamentals',
-          fix: 'Keep doing what you\'re doing! Document this load/technique.',
-          priority: 'low'
-        });
-        break;
-    }
-
-    // Always add general advice
-    advice.push({
-      issue: 'Consistency Check',
-      cause: 'Variable results between sessions',
-      fix: 'Log environmental conditions, ammo lot, and how you felt. Look for patterns.',
-      priority: 'low'
+    // Calibration points + line
+    calibPts.forEach((pt) => {
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,60,60,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
     });
-
-    return advice;
-  };
-
-  // Draw the canvas
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    // Draw image if loaded
-    if (targetImage && imageRef.current) {
-      ctx.drawImage(imageRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-
-    // Draw calibration line if calibrating
-    if (isCalibrating && calibrationPoints.length === 1) {
-      ctx.strokeStyle = theme.accent;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
+    if (calibPts.length === 2) {
       ctx.beginPath();
-      ctx.arc(calibrationPoints[0].x, calibrationPoints[0].y, 8, 0, Math.PI * 2);
+      ctx.moveTo(calibPts[0].x, calibPts[0].y);
+      ctx.lineTo(calibPts[1].x, calibPts[1].y);
+      ctx.strokeStyle = 'rgba(255,60,60,0.7)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    if (isCalibrating && calibrationPoints.length === 2) {
-      ctx.strokeStyle = theme.accent;
-      ctx.lineWidth = 3;
+    // POA crosshair (marks[0])
+    if (marks.length > 0) {
+      const poa = marks[0];
+      const r = 20;
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 4;
       ctx.beginPath();
-      ctx.moveTo(calibrationPoints[0].x, calibrationPoints[0].y);
-      ctx.lineTo(calibrationPoints[1].x, calibrationPoints[1].y);
+      ctx.moveTo(poa.x - r, poa.y);
+      ctx.lineTo(poa.x + r, poa.y);
       ctx.stroke();
-
-      // Draw endpoints
-      ctx.fillStyle = theme.accent;
       ctx.beginPath();
-      ctx.arc(calibrationPoints[0].x, calibrationPoints[0].y, 6, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(poa.x, poa.y - r);
+      ctx.lineTo(poa.x, poa.y + r);
+      ctx.stroke();
       ctx.beginPath();
-      ctx.arc(calibrationPoints[1].x, calibrationPoints[1].y, 6, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.arc(poa.x, poa.y, r * 0.55, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
-    // Draw group center and radius circle if we have analysis
-    if (analysis && shots.length >= 2 && calibration) {
-      const centerX = analysis.groupCenterX;
-      const centerY = analysis.groupCenterY;
-
-      // Draw mean radius circle
-      const meanRadiusPixels = analysis.meanRadiusInches * calibration.pixelsPerInch;
-      ctx.strokeStyle = theme.blue;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
+    // Shot dots (marks[1..n])
+    const ppi = pixelsPerInch ?? 100;
+    const dotRadius = Math.max(10, (bulletDiaIn / 2) * ppi);
+    for (let i = 1; i < marks.length; i++) {
+      const shot = marks[i];
       ctx.beginPath();
-      ctx.arc(centerX, centerY, meanRadiusPixels, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw center point
-      ctx.fillStyle = theme.blue;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+      ctx.arc(shot.x, shot.y, dotRadius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 212, 59, 0.88)';
       ctx.fill();
-
-      // Draw lines from center to each shot
-      ctx.strokeStyle = theme.blue;
-      ctx.lineWidth = 0.5;
-      ctx.globalAlpha = 0.3;
-      shots.forEach(shot => {
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(shot.x, shot.y);
-        ctx.stroke();
-      });
-      ctx.globalAlpha = 1;
-
-      // Highlight extreme spread shots
-      if (analysis.extremeShotIndices) {
-        const [idx1, idx2] = analysis.extremeShotIndices;
-        const shot1 = shots[idx1];
-        const shot2 = shots[idx2];
-
-        ctx.strokeStyle = theme.red;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(shot1.x, shot1.y);
-        ctx.lineTo(shot2.x, shot2.y);
-        ctx.stroke();
-
-        // Draw circles around extreme shots
-        ctx.strokeStyle = theme.red;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(shot1.x, shot1.y, 18, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(shot2.x, shot2.y, 18, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
-
-    // Draw shots
-    shots.forEach((shot, index) => {
-      // Shot marker
-      ctx.fillStyle = theme.accent;
-      ctx.beginPath();
-      ctx.arc(shot.x, shot.y, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // White border
-      ctx.strokeStyle = theme.bg;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(shot.x, shot.y, 8, 0, Math.PI * 2);
       ctx.stroke();
-
-      // Shot number
-      ctx.fillStyle = theme.bg;
-      ctx.font = 'bold 10px monospace';
+      // Shot number label
+      const fontSize = Math.max(11, Math.round(dotRadius * 0.9));
+      ctx.fillStyle = '#000';
+      ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText((index + 1).toString(), shot.x, shot.y);
-    });
-  }, [targetImage, shots, calibration, isCalibrating, calibrationPoints, analysis]);
+      ctx.fillText(String(i), shot.x, shot.y);
+    }
+  }, [calibPts, marks, bulletDiaIn, pixelsPerInch]);
 
-  // Handle image upload
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas]);
+
+  const loadImage = useCallback((url: string) => {
+    const img = new Image();
+    img.onload = () => {
+      imageRef.current = img;
+      const canvas = canvasRef.current!;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      drawCanvas();
+    };
+    img.src = url;
+  }, [drawCanvas]);
+
+  useEffect(() => {
+    if (imageUrl) loadImage(imageUrl);
+  }, [imageUrl, loadImage]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Set canvas size to match image aspect ratio
-        if (canvasRef.current) {
-          const maxWidth = 800;
-          const maxHeight = 600;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
-            height = maxHeight;
-          }
-
-          canvasRef.current.width = width;
-          canvasRef.current.height = height;
-        }
-        imageRef.current = img;
-        setTargetImage(event.target?.result as string);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setImageUrl(url);
   };
 
-  const placeOrCalibrate = (x: number, y: number) => {
-    if (isCalibrating) {
-      const newPoints = [...calibrationPoints, { x, y }];
-      setCalibrationPoints(newPoints);
-      if (newPoints.length === 2) {
-        const dx = newPoints[1].x - newPoints[0].x;
-        const dy = newPoints[1].y - newPoints[0].y;
-        const pixelDistance = Math.sqrt(dx * dx + dy * dy);
-        const inches = parseFloat(referenceSize) || 1;
-        setCalibration({ pixelsPerInch: pixelDistance / inches, referenceInches: inches });
-        setIsCalibrating(false);
-        setCalibrationPoints([]);
+  const handleCanvasTap = (x: number, y: number) => {
+    if (markMode === 'calib') {
+      const newPts = [...calibPts, { x, y }];
+      setCalibPts(newPts);
+      if (newPts.length === 2) {
+        const dx = newPts[1].x - newPts[0].x;
+        const dy = newPts[1].y - newPts[0].y;
+        setPixelsPerInch(Math.sqrt(dx * dx + dy * dy) / refIn);
+        setMarkMode('poa');
       }
+    } else if (markMode === 'poa') {
+      setMarks([{ x, y }]);
+      setMarkMode('shots');
     } else {
-      setShots(prev => [...prev, { id: Date.now(), x, y }]);
+      setMarks(prev => [...prev, { x, y }]);
     }
   };
 
-  // Handle canvas click
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
-    placeOrCalibrate(x, y);
+    const pt = toCanvas(e.clientX, e.clientY);
+    handleCanvasTap(pt.x, pt.y);
   };
 
-  // Handle shot drag
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isCalibrating || !canvasRef.current) return;
-    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
-    const shotIndex = shots.findIndex(shot => {
-      const dx = shot.x - x; const dy = shot.y - y;
-      return Math.sqrt(dx * dx + dy * dy) <= 10;
-    });
-    if (shotIndex !== -1) setDraggedShot(shotIndex);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (draggedShot === null || !canvasRef.current) return;
-    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
-    const newShots = [...shots];
-    newShots[draggedShot] = { ...newShots[draggedShot], x, y };
-    setShots(newShots);
-  };
-
-  const handleMouseUp = () => { setDraggedShot(null); };
-
-  // Handle right click to remove shot
-  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!canvasRef.current || isCalibrating) return;
-    const { x, y } = getCanvasCoords(e.clientX, e.clientY);
-    const shotIndex = shots.findIndex(shot => {
-      const dx = shot.x - x; const dy = shot.y - y;
-      return Math.sqrt(dx * dx + dy * dy) <= 10;
-    });
-    if (shotIndex !== -1) {
-      setShots(shots.filter((_, i) => i !== shotIndex));
+    if (e.type === 'touchend' && e.changedTouches.length > 0) {
+      const touch = e.changedTouches[0];
+      const pt = toCanvas(touch.clientX, touch.clientY);
+      handleCanvasTap(pt.x, pt.y);
     }
   };
 
-  // Touch handlers for mobile
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
-    if (!isCalibrating) {
-      const shotIndex = shots.findIndex(shot => {
-        const dx = shot.x - x; const dy = shot.y - y;
-        return Math.sqrt(dx * dx + dy * dy) <= 20;
-      });
-      if (shotIndex !== -1) { setDraggedShot(shotIndex); return; }
+  const undoLast = () => {
+    if (markMode === 'shots' && marks.length > 1) {
+      setMarks(prev => prev.slice(0, -1));
+    } else if (markMode === 'shots' && marks.length === 1) {
+      setMarks([]);
+      setMarkMode('poa');
+    } else if (markMode === 'poa') {
+      setCalibPts([]);
+      setPixelsPerInch(null);
+      setMarkMode('calib');
+    } else if (markMode === 'calib' && calibPts.length > 0) {
+      setCalibPts(prev => prev.slice(0, -1));
     }
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (draggedShot === null || !canvasRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
-    const newShots = [...shots];
-    newShots[draggedShot] = { ...newShots[draggedShot], x, y };
-    setShots(newShots);
-  };
+  const computeStats = (): Stats | null => {
+    const ppi = pixelsPerInch;
+    if (!ppi || marks.length < 2) return null;
+    const poa = marks[0];
+    const shots = marks.slice(1);
 
-  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    if (draggedShot !== null) { setDraggedShot(null); return; }
-    if (!canvasRef.current) return;
-    const touch = e.changedTouches[0];
-    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
-    placeOrCalibrate(x, y);
-  };
+    const windages = shots.map(s => (s.x - poa.x) / ppi);
+    const elevations = shots.map(s => -(s.y - poa.y) / ppi);
+    const radials = shots.map((_, i) => Math.sqrt(windages[i] ** 2 + elevations[i] ** 2));
 
-  // Calculate analysis
-  useEffect(() => {
-    if (shots.length < 2 || !calibration) {
-      setAnalysis(null);
-      return;
-    }
+    const windageIn = windages.reduce((a, b) => a + b, 0) / shots.length;
+    const elevationIn = elevations.reduce((a, b) => a + b, 0) / shots.length;
+    const cepIn = median(radials);
+    const radialSdIn = stddev(radials);
+    const verticalSdIn = stddev(elevations);
+    const horizontalSdIn = stddev(windages);
+    const meanRadiusIn = radials.reduce((a, b) => a + b, 0) / radials.length;
 
-    // Calculate group center (centroid)
-    const centerX = shots.reduce((sum, shot) => sum + shot.x, 0) / shots.length;
-    const centerY = shots.reduce((sum, shot) => sum + shot.y, 0) / shots.length;
-
-    // Calculate distances from each shot to center
-    const distancesToCenter = shots.map(shot => {
-      const dx = shot.x - centerX;
-      const dy = shot.y - centerY;
-      return Math.sqrt(dx * dx + dy * dy);
-    });
-
-    // Mean radius in pixels, then convert to inches
-    const meanRadiusPixels = distancesToCenter.reduce((sum, d) => sum + d, 0) / distancesToCenter.length;
-    const meanRadiusInches = meanRadiusPixels / calibration.pixelsPerInch;
-
-    // Extreme spread: find two furthest shots
-    let maxDistance = 0;
-    let extremeIndices: [number, number] = [0, 1];
+    let extremeSpreadIn = 0;
     for (let i = 0; i < shots.length; i++) {
       for (let j = i + 1; j < shots.length; j++) {
-        const dx = shots[j].x - shots[i].x;
-        const dy = shots[j].y - shots[i].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > maxDistance) {
-          maxDistance = dist;
-          extremeIndices = [i, j];
-        }
+        const dx = (shots[i].x - shots[j].x) / ppi;
+        const dy = (shots[i].y - shots[j].y) / ppi;
+        extremeSpreadIn = Math.max(extremeSpreadIn, Math.sqrt(dx * dx + dy * dy));
       }
     }
-    const extremeSpreadInches = maxDistance / calibration.pixelsPerInch;
 
-    // Convert to MOA and MRAD
-    const inchesToMOA = (inches: number) => (inches / distance) * 95.5;
-    const inchesToMRAD = (inches: number) => (inches / distance) * 27.78;
-
-    // Calculate best 3-shot and 5-shot groups
-    let best3ShotSpread: number | undefined;
-    let best5ShotSpread: number | undefined;
-
-    if (shots.length >= 3) {
-      let minSpread = Infinity;
-      for (let i = 0; i < shots.length - 2; i++) {
-        for (let j = i + 1; j < shots.length - 1; j++) {
-          for (let k = j + 1; k < shots.length; k++) {
-            const group = [shots[i], shots[j], shots[k]];
-            let maxDist = 0;
-            for (let a = 0; a < group.length; a++) {
-              for (let b = a + 1; b < group.length; b++) {
-                const dx = group[b].x - group[a].x;
-                const dy = group[b].y - group[a].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > maxDist) maxDist = dist;
-              }
-            }
-            if (maxDist < minSpread) minSpread = maxDist;
-          }
-        }
-      }
-      best3ShotSpread = minSpread / calibration.pixelsPerInch;
-    }
-
-    if (shots.length >= 5) {
-      let minSpread = Infinity;
-      // For 5-shot, we'll sample combinations (not all permutations for performance)
-      const combinations: number[][] = [];
-      for (let i = 0; i < shots.length - 4; i++) {
-        for (let j = i + 1; j < shots.length - 3; j++) {
-          for (let k = j + 1; k < shots.length - 2; k++) {
-            for (let l = k + 1; l < shots.length - 1; l++) {
-              for (let m = l + 1; m < shots.length; m++) {
-                combinations.push([i, j, k, l, m]);
-              }
-            }
-          }
-        }
-      }
-
-      combinations.forEach(indices => {
-        const group = indices.map(idx => shots[idx]);
-        let maxDist = 0;
-        for (let a = 0; a < group.length; a++) {
-          for (let b = a + 1; b < group.length; b++) {
-            const dx = group[b].x - group[a].x;
-            const dy = group[b].y - group[a].y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > maxDist) maxDist = dist;
-          }
-        }
-        if (maxDist < minSpread) minSpread = maxDist;
-      });
-      best5ShotSpread = minSpread / calibration.pixelsPerInch;
-    }
-
-    const analysisResult = {
+    return {
       shotCount: shots.length,
-      extremeSpreadInches,
-      extremeSpreadMOA: inchesToMOA(extremeSpreadInches),
-      extremeSpreadMRAD: inchesToMRAD(extremeSpreadInches),
-      meanRadiusInches,
-      meanRadiusMOA: inchesToMOA(meanRadiusInches),
-      meanRadiusMRAD: inchesToMRAD(meanRadiusInches),
-      groupCenterX: centerX,
-      groupCenterY: centerY,
-      best3ShotSpread,
-      best5ShotSpread,
-      extremeShotIndices: extremeIndices
+      windageIn,
+      elevationIn,
+      windageMoa: toMoa(Math.abs(windageIn), distanceYds),
+      elevationMoa: toMoa(Math.abs(elevationIn), distanceYds),
+      cepIn,
+      cepMoa: toMoa(cepIn, distanceYds),
+      radialSdIn,
+      radialSdMoa: toMoa(radialSdIn, distanceYds),
+      verticalSdIn,
+      verticalSdMoa: toMoa(verticalSdIn, distanceYds),
+      horizontalSdIn,
+      horizontalSdMoa: toMoa(horizontalSdIn, distanceYds),
+      extremeSpreadIn,
+      extremeSpreadMoa: toMoa(extremeSpreadIn, distanceYds),
+      meanRadiusIn,
+      meanRadiusMoa: toMoa(meanRadiusIn, distanceYds),
     };
-
-    setAnalysis(analysisResult);
-
-    // Perform pattern analysis and generate coaching
-    const pattern = analyzePattern(shots, centerX, centerY);
-    setPatternAnalysis(pattern);
-    setCoachingAdvice(generateCoachingAdvice(pattern));
-  }, [shots, calibration, distance]);
-
-  // Export as image
-  const handleExportImage = () => {
-    if (!canvasRef.current) return;
-    const dataUrl = canvasRef.current.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `target-analysis-${new Date().toISOString().split('T')[0]}.png`;
-    link.href = dataUrl;
-    link.click();
   };
 
-  // Export as CSV
-  const handleExportCSV = () => {
-    if (!analysis || !calibration) return;
+  const goToResults = () => {
+    const s = computeStats();
+    setStats(s);
+    setStep(4);
+  };
 
-    const csvRows = [
-      ['Target Analysis Export'],
-      ['Date', new Date().toLocaleDateString()],
-      ['Distance (yards)', distance.toString()],
-      [''],
-      ['Group Statistics'],
-      ['Shot Count', analysis.shotCount.toString()],
-      ['Extreme Spread (in)', analysis.extremeSpreadInches.toFixed(3)],
-      ['Extreme Spread (MOA)', analysis.extremeSpreadMOA.toFixed(2)],
-      ['Extreme Spread (MRAD)', analysis.extremeSpreadMRAD.toFixed(2)],
-      ['Mean Radius (in)', analysis.meanRadiusInches.toFixed(3)],
-      ['Mean Radius (MOA)', analysis.meanRadiusMOA.toFixed(2)],
-      ['Mean Radius (MRAD)', analysis.meanRadiusMRAD.toFixed(2)],
+  const exportOverlay = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !stats) return;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvas.width;
+    offscreen.height = canvas.height;
+    const ctx = offscreen.getContext('2d')!;
+    ctx.drawImage(canvas, 0, 0);
+
+    const panelW = Math.round(canvas.width * 0.38);
+    const lineH = Math.round(panelW * 0.065);
+    const fontSize = Math.round(lineH * 0.72);
+    const smallFont = Math.round(fontSize * 0.8);
+    const rows = [
+      ['Windage', `${stats.windageIn >= 0 ? 'R' : 'L'} ${Math.abs(stats.windageIn).toFixed(2)}"`, `${stats.windageMoa.toFixed(2)} MOA`],
+      ['Elevation', `${stats.elevationIn >= 0 ? 'U' : 'D'} ${Math.abs(stats.elevationIn).toFixed(2)}"`, `${stats.elevationMoa.toFixed(2)} MOA`],
+      ['CEP', `${stats.cepIn.toFixed(2)}"`, `${stats.cepMoa.toFixed(2)} MOA`],
+      ['Radial SD', `${stats.radialSdIn.toFixed(2)}"`, `${stats.radialSdMoa.toFixed(2)} MOA`],
+      ['Vertical SD', `${stats.verticalSdIn.toFixed(2)}"`, `${stats.verticalSdMoa.toFixed(2)} MOA`],
+      ['Horiz SD', `${stats.horizontalSdIn.toFixed(2)}"`, `${stats.horizontalSdMoa.toFixed(2)} MOA`],
+      ['ES', `${stats.extremeSpreadIn.toFixed(2)}"`, `${stats.extremeSpreadMoa.toFixed(2)} MOA`],
+      ['Mean R', `${stats.meanRadiusIn.toFixed(2)}"`, `${stats.meanRadiusMoa.toFixed(2)} MOA`],
     ];
 
-    if (analysis.best3ShotSpread !== undefined) {
-      csvRows.push(['Best 3-Shot Group (in)', analysis.best3ShotSpread.toFixed(3)]);
-    }
-    if (analysis.best5ShotSpread !== undefined) {
-      csvRows.push(['Best 5-Shot Group (in)', analysis.best5ShotSpread.toFixed(3)]);
-    }
+    const panelH = lineH * (rows.length + 2.5);
+    const margin = Math.round(canvas.width * 0.02);
+    const px = canvas.width - panelW - margin;
+    const py = margin;
 
-    csvRows.push(['']);
-    csvRows.push(['Shot Coordinates']);
-    csvRows.push(['Shot #', 'X (pixels)', 'Y (pixels)']);
-    shots.forEach((shot, i) => {
-      csvRows.push([(i + 1).toString(), shot.x.toFixed(1), shot.y.toFixed(1)]);
+    ctx.fillStyle = 'rgba(0,0,0,0.78)';
+    ctx.beginPath();
+    ctx.roundRect(px, py, panelW, panelH, Math.round(panelW * 0.04));
+    ctx.fill();
+
+    ctx.fillStyle = 'white';
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`${distanceYds}yd  •  ${stats.shotCount} shots`, px + Math.round(panelW * 0.05), py + lineH * 1.2);
+
+    rows.forEach(([label, val, moa], i) => {
+      const rowY = py + lineH * (2.4 + i);
+      ctx.font = `${smallFont}px sans-serif`;
+      ctx.fillStyle = 'rgba(180,180,200,0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, px + Math.round(panelW * 0.05), rowY);
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'right';
+      ctx.fillText(val, px + Math.round(panelW * 0.62), rowY);
+      ctx.font = `${smallFont}px sans-serif`;
+      ctx.fillStyle = 'rgba(180,180,200,0.8)';
+      ctx.fillText(moa, px + panelW - Math.round(panelW * 0.04), rowY);
     });
 
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `target-analysis-${new Date().toISOString().split('T')[0]}.csv`;
-    link.href = url;
+    link.download = `target-${distanceYds}yd-${stats.shotCount}shots.png`;
+    link.href = offscreen.toDataURL('image/png');
     link.click();
-    URL.revokeObjectURL(url);
   };
 
-  const buttonStyle = {
-    padding: '10px 16px',
-    backgroundColor: 'transparent',
-    color: theme.textPrimary,
-    border: `0.5px solid ${theme.border}`,
-    borderRadius: '4px',
-    fontFamily: 'monospace',
-    fontSize: '11px',
-    letterSpacing: '0.8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
+  const resetAll = () => {
+    setStep(1);
+    setImageUrl(null);
+    setCalibPts([]);
+    setPixelsPerInch(null);
+    setMarks([]);
+    setMarkMode('calib');
+    setStats(null);
   };
 
-  const primaryButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: theme.accent,
-    color: theme.bg,
-    border: 'none',
-    fontWeight: 600
-  };
+  // ---- UI HELPERS ----
 
-  const inputStyle = {
-    padding: '8px 12px',
-    backgroundColor: theme.surface,
-    border: `0.5px solid ${theme.border}`,
-    borderRadius: '4px',
-    color: theme.textPrimary,
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    width: '100%'
-  };
+  const chip = (label: string, selected: boolean, onSelect: () => void) => (
+    <button
+      key={label}
+      onClick={onSelect}
+      style={{
+        padding: '8px 16px',
+        borderRadius: 20,
+        border: selected ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
+        background: selected ? theme.accentDim : theme.surface,
+        color: selected ? theme.accent : theme.textSecondary,
+        fontWeight: selected ? 700 : 400,
+        fontSize: 14,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </button>
+  );
 
-  const cardStyle = {
-    backgroundColor: theme.surface,
-    border: `0.5px solid ${theme.border}`,
-    borderRadius: '6px',
-    padding: '16px'
-  };
+  const sectionLabel = (text: string) => (
+    <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+      {text}
+    </div>
+  );
 
-  const sectionTitleStyle = {
-    fontFamily: 'monospace',
-    fontSize: '11px',
-    letterSpacing: '1px',
-    color: theme.textMuted,
-    textTransform: 'uppercase' as const,
-    marginBottom: '12px',
-    fontWeight: 600
-  };
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: theme.bg,
-      color: theme.textPrimary,
-      padding: '24px'
-    }}>
-      {/* Header */}
-      <div style={{
-        borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
-      }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: '24px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
-        }}>
-          TARGET ANALYSIS
-        </h1>
-        <p style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
-        }}>
-          Upload target photos, mark shots, and analyze group performance
-        </p>
+  // ---- STEP 1: Upload ----
+  const renderStep1 = () => (
+    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
+      <div style={{ textAlign: 'center', paddingTop: 16 }}>
+        <div style={{ fontSize: 52, lineHeight: 1, marginBottom: 12 }}>🎯</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: theme.textPrimary, marginBottom: 6 }}>Target Analysis</div>
+        <div style={{ fontSize: 14, color: theme.textSecondary }}>Upload a photo of your target to analyze shot placement</div>
       </div>
 
-      {/* Main Layout: Split View */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
-        gap: '24px',
-        alignItems: 'start'
-      }}>
-        {/* Left: Canvas/Image Area */}
-        <div style={cardStyle}>
-          {!targetImage ? (
-            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '20px', opacity: 0.3 }}>🎯</div>
-              <div style={{
-                fontFamily: 'monospace', fontSize: '13px',
-                color: theme.textSecondary, marginBottom: '24px'
-              }}>
-                Load a target photo to begin analysis
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '260px', margin: '0 auto' }}>
-                <label style={{
-                  display: 'block', padding: '14px 20px', textAlign: 'center',
-                  backgroundColor: theme.accent, color: theme.bg,
-                  borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px',
-                  fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px',
-                }}>
-                  📷 Take Photo
-                  <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
-                </label>
-                <label style={{
-                  display: 'block', padding: '14px 20px', textAlign: 'center',
-                  backgroundColor: 'transparent', color: theme.textPrimary,
-                  border: `0.5px solid ${theme.border}`, borderRadius: '8px',
-                  fontFamily: 'monospace', fontSize: '13px',
-                  cursor: 'pointer', letterSpacing: '0.5px',
-                }}>
-                  🖼 Choose from Library
-                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                </label>
-              </div>
-            </div>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onContextMenu={handleContextMenu}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{
-                  border: `0.5px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  cursor: isCalibrating ? 'crosshair' : draggedShot !== null ? 'grabbing' : 'pointer',
-                  display: 'block',
-                  width: '100%',
-                  height: 'auto'
-                }}
-              />
-              <div style={{
-                marginTop: '12px',
-                display: 'flex',
-                gap: '8px',
-                fontSize: '10px',
-                color: theme.textMuted,
-                fontFamily: 'monospace'
-              }}>
-                {isMobile ? (
-                  <>
-                    <div>• Tap to place shots</div>
-                    <div>• Drag to reposition</div>
-                  </>
-                ) : (
-                  <>
-                    <div>• Click to place shots</div>
-                    <div>• Drag to reposition</div>
-                    <div>• Right-click to remove</div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Controls & Statistics */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Image Controls */}
-          {targetImage && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>Image</div>
-              <button
-                onClick={() => {
-                  setTargetImage(null);
-                  setShots([]);
-                  setCalibration(null);
-                  setAnalysis(null);
-                  if (canvasRef.current) {
-                    canvasRef.current.width = 0;
-                    canvasRef.current.height = 0;
-                  }
-                }}
-                style={buttonStyle}
-              >
-                Change Image
-              </button>
-            </div>
-          )}
-
-          {/* Distance & Calibration */}
-          <div style={cardStyle}>
-            <div style={sectionTitleStyle}>Setup</div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '10px',
-                color: theme.textSecondary,
-                marginBottom: '6px',
-                fontFamily: 'monospace',
-                letterSpacing: '0.5px'
-              }}>
-                DISTANCE (YARDS)
-              </label>
-              <input
-                type="number"
-                value={distance}
-                onChange={(e) => setDistance(parseFloat(e.target.value) || 100)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '10px',
-                color: theme.textSecondary,
-                marginBottom: '6px',
-                fontFamily: 'monospace',
-                letterSpacing: '0.5px'
-              }}>
-                REFERENCE SIZE (INCHES)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={referenceSize}
-                onChange={(e) => setReferenceSize(e.target.value)}
-                style={inputStyle}
-                placeholder="e.g., 1 for 1-inch grid"
-              />
-            </div>
-
-            {!calibration ? (
-              <button
-                onClick={() => {
-                  setIsCalibrating(true);
-                  setCalibrationPoints([]);
-                }}
-                disabled={!targetImage}
-                style={{
-                  ...primaryButtonStyle,
-                  opacity: !targetImage ? 0.5 : 1,
-                  cursor: !targetImage ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isCalibrating ? 'Click 2 Points on Target...' : 'Calibrate Scale'}
-              </button>
-            ) : (
-              <div>
-                <div style={{
-                  padding: '8px 12px',
-                  backgroundColor: theme.accentDim,
-                  border: `0.5px solid ${theme.accent}`,
-                  borderRadius: '4px',
-                  marginBottom: '8px'
-                }}>
-                  <div style={{ fontSize: '10px', color: theme.accent, fontFamily: 'monospace' }}>
-                    ✓ Calibrated: {calibration.pixelsPerInch.toFixed(1)} px/in
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setCalibration(null);
-                    setIsCalibrating(true);
-                    setCalibrationPoints([]);
-                  }}
-                  style={buttonStyle}
-                >
-                  Recalibrate
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Shot Management */}
-          {calibration && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>Shots</div>
-              <div style={{
-                padding: '12px',
-                backgroundColor: theme.bg,
-                borderRadius: '4px',
-                marginBottom: '12px'
-              }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'monospace' }}>
-                  {shots.length}
-                </div>
-                <div style={{ fontSize: '10px', color: theme.textMuted }}>shots placed</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  onClick={detectShots}
-                  disabled={isAutoDetecting}
-                  style={{
-                    ...primaryButtonStyle,
-                    opacity: isAutoDetecting ? 0.7 : 1,
-                    cursor: isAutoDetecting ? 'wait' : 'pointer'
-                  }}
-                >
-                  {isAutoDetecting ? 'Detecting...' : '🤖 Auto-Detect Shots'}
-                </button>
-                <button
-                  onClick={() => setShots([])}
-                  disabled={shots.length === 0}
-                  style={{
-                    ...buttonStyle,
-                    opacity: shots.length === 0 ? 0.5 : 1,
-                    cursor: shots.length === 0 ? 'not-allowed' : 'pointer',
-                    color: theme.red,
-                    borderColor: theme.red
-                  }}
-                >
-                  Clear All Shots
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Statistics */}
-          {analysis && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>Group Statistics</div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <StatRow
-                  label="Extreme Spread"
-                  inches={analysis.extremeSpreadInches}
-                  moa={analysis.extremeSpreadMOA}
-                  mrad={analysis.extremeSpreadMRAD}
-                  highlight={theme.red}
-                />
-                <StatRow
-                  label="Mean Radius"
-                  inches={analysis.meanRadiusInches}
-                  moa={analysis.meanRadiusMOA}
-                  mrad={analysis.meanRadiusMRAD}
-                  highlight={theme.blue}
-                />
-
-                {analysis.best3ShotSpread !== undefined && (
-                  <div style={{
-                    padding: '8px',
-                    backgroundColor: theme.bg,
-                    borderRadius: '4px',
-                    borderLeft: `3px solid ${theme.green}`
-                  }}>
-                    <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                      BEST 3-SHOT GROUP
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: theme.green, fontFamily: 'monospace' }}>
-                      {analysis.best3ShotSpread.toFixed(3)}"
-                    </div>
-                  </div>
-                )}
-
-                {analysis.best5ShotSpread !== undefined && (
-                  <div style={{
-                    padding: '8px',
-                    backgroundColor: theme.bg,
-                    borderRadius: '4px',
-                    borderLeft: `3px solid ${theme.green}`
-                  }}>
-                    <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                      BEST 5-SHOT GROUP
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: theme.green, fontFamily: 'monospace' }}>
-                      {analysis.best5ShotSpread.toFixed(3)}"
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Save & Export */}
-          {analysis && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>Save & Export</div>
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '10px',
-                  color: theme.textSecondary,
-                  marginBottom: '6px',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.5px'
-                }}>
-                  SESSION NOTES (OPTIONAL)
-                </label>
-                <textarea
-                  value={sessionNotes}
-                  onChange={(e) => setSessionNotes(e.target.value)}
-                  placeholder="e.g., Felt good, wind from left, new ammo..."
-                  style={{
-                    ...inputStyle,
-                    minHeight: '60px',
-                    resize: 'vertical',
-                    fontFamily: 'monospace',
-                    fontSize: '11px'
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  onClick={saveSession}
-                  style={{
-                    ...primaryButtonStyle,
-                    backgroundColor: theme.green,
-                    fontWeight: 700
-                  }}
-                >
-                  💾 Save Session
-                </button>
-                <button
-                  onClick={() => setShowSessionHistory(true)}
-                  disabled={sessions.length === 0}
-                  style={{
-                    ...buttonStyle,
-                    opacity: sessions.length === 0 ? 0.5 : 1,
-                    cursor: sessions.length === 0 ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  📊 View History ({sessions.length})
-                </button>
-                <button onClick={handleExportImage} style={buttonStyle}>
-                  Export as Image
-                </button>
-                <button onClick={handleExportCSV} style={buttonStyle}>
-                  Export as CSV
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Pattern Analysis */}
-          {patternAnalysis && shots.length >= 3 && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>🎯 Pattern Analysis</div>
-              <div style={{
-                padding: '12px',
-                backgroundColor: theme.bg,
-                borderRadius: '4px',
-                marginBottom: '8px'
-              }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: theme.accent,
-                  marginBottom: '4px',
-                  textTransform: 'capitalize'
-                }}>
-                  {patternAnalysis.pattern.replace(/-/g, ' ')}
-                </div>
-                <div style={{
-                  fontSize: '11px',
-                  color: theme.textSecondary,
-                  marginBottom: '8px'
-                }}>
-                  {patternAnalysis.description}
-                </div>
-                <div style={{
-                  fontSize: '9px',
-                  color: theme.textMuted,
-                  fontFamily: 'monospace'
-                }}>
-                  Confidence: {(patternAnalysis.confidence * 100).toFixed(0)}%
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Coaching Advice */}
-          {coachingAdvice.length > 0 && shots.length >= 3 && (
-            <div style={cardStyle}>
-              <div style={sectionTitleStyle}>💡 Coaching Recommendations</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {coachingAdvice.map((advice, index) => {
-                  const priorityColors = {
-                    high: theme.red,
-                    medium: theme.orange,
-                    low: theme.blue
-                  };
-
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '10px',
-                        backgroundColor: theme.bg,
-                        borderRadius: '4px',
-                        borderLeft: `3px solid ${priorityColors[advice.priority]}`
-                      }}
-                    >
-                      <div style={{
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: theme.textPrimary,
-                        marginBottom: '4px'
-                      }}>
-                        {advice.issue}
-                      </div>
-                      <div style={{
-                        fontSize: '10px',
-                        color: theme.textSecondary,
-                        marginBottom: '6px',
-                        lineHeight: '1.4'
-                      }}>
-                        <span style={{ color: theme.textMuted }}>Cause:</span> {advice.cause}
-                      </div>
-                      <div style={{
-                        fontSize: '10px',
-                        color: theme.textPrimary,
-                        lineHeight: '1.4',
-                        paddingTop: '6px',
-                        borderTop: `1px solid ${theme.border}`
-                      }}>
-                        <span style={{ color: theme.accent, fontWeight: 600 }}>→</span> {advice.fix}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 340 }}>
+        <label style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '18px 20px', borderRadius: 14,
+          background: theme.accent, color: '#000',
+          fontSize: 16, fontWeight: 700, cursor: 'pointer',
+        }}>
+          📷 Take Photo
+          <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
+        </label>
+        <label style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '18px 20px', borderRadius: 14,
+          background: theme.surface, color: theme.textPrimary,
+          border: `1px solid ${theme.border}`,
+          fontSize: 16, fontWeight: 600, cursor: 'pointer',
+        }}>
+          🖼 Choose from Library
+          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+        </label>
       </div>
 
-      {/* Session History Modal */}
-      {showSessionHistory && (
-        <div
+      {imageUrl && (
+        <button
+          onClick={() => setStep(2)}
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '24px'
+            padding: '14px 40px', borderRadius: 12,
+            background: theme.accent, color: '#000',
+            border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer',
           }}
-          onClick={() => setShowSessionHistory(false)}
         >
-          <div
-            style={{
-              backgroundColor: theme.surface,
-              border: `0.5px solid ${theme.border}`,
-              borderRadius: '8px',
-              padding: '24px',
-              maxWidth: '900px',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              width: '100%'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px',
-              paddingBottom: '16px',
-              borderBottom: `0.5px solid ${theme.border}`
-            }}>
-              <h2 style={{
-                fontFamily: 'monospace',
-                fontSize: '18px',
-                fontWeight: 700,
-                letterSpacing: '1px',
-                margin: 0
-              }}>
-                SESSION HISTORY
-              </h2>
-              <button
-                onClick={() => setShowSessionHistory(false)}
-                style={{
-                  ...buttonStyle,
-                  padding: '8px 16px',
-                  fontSize: '16px'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Progress Summary */}
-            {sessions.length >= 2 && (
-              <div style={{
-                ...cardStyle,
-                marginBottom: '20px',
-                backgroundColor: theme.bg
-              }}>
-                <div style={{ ...sectionTitleStyle, marginBottom: '16px' }}>
-                  📈 Progress Overview
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '16px'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                      LATEST SESSION
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: theme.accent }}>
-                      {sessions[0].analysis.extremeSpreadMOA.toFixed(2)} MOA
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                      BEST EVER
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: theme.green }}>
-                      {Math.min(...sessions.map(s => s.analysis.extremeSpreadMOA)).toFixed(2)} MOA
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                      TOTAL SESSIONS
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: theme.blue }}>
-                      {sessions.length}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Sessions List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  style={{
-                    ...cardStyle,
-                    backgroundColor: theme.bg,
-                    display: 'grid',
-                    gridTemplateColumns: '200px 1fr auto',
-                    gap: '16px',
-                    alignItems: 'start'
-                  }}
-                >
-                  {/* Thumbnail */}
-                  {session.imageData && (
-                    <img
-                      src={session.imageData}
-                      alt="Target"
-                      style={{
-                        width: '100%',
-                        height: '150px',
-                        objectFit: 'cover',
-                        borderRadius: '4px',
-                        border: `0.5px solid ${theme.border}`
-                      }}
-                    />
-                  )}
-
-                  {/* Session Details */}
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      color: theme.textMuted,
-                      marginBottom: '8px',
-                      fontFamily: 'monospace'
-                    }}>
-                      {new Date(session.timestamp).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '12px',
-                      marginBottom: '12px'
-                    }}>
-                      <div>
-                        <div style={{ fontSize: '9px', color: theme.textMuted, marginBottom: '2px' }}>
-                          EXTREME SPREAD
-                        </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'monospace' }}>
-                          {session.analysis.extremeSpreadMOA.toFixed(2)} MOA
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '9px', color: theme.textMuted, marginBottom: '2px' }}>
-                          MEAN RADIUS
-                        </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'monospace' }}>
-                          {session.analysis.meanRadiusMOA.toFixed(2)} MOA
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '9px', color: theme.textMuted, marginBottom: '2px' }}>
-                          SHOTS
-                        </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'monospace' }}>
-                          {session.shotCount} @ {session.distance}yds
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '9px', color: theme.textMuted, marginBottom: '2px' }}>
-                          PATTERN
-                        </div>
-                        <div style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          color: theme.accent,
-                          textTransform: 'capitalize'
-                        }}>
-                          {session.pattern.pattern.replace(/-/g, ' ')}
-                        </div>
-                      </div>
-                    </div>
-
-                    {session.notes && (
-                      <div style={{
-                        fontSize: '10px',
-                        color: theme.textSecondary,
-                        fontStyle: 'italic',
-                        padding: '8px',
-                        backgroundColor: theme.surface,
-                        borderRadius: '4px',
-                        borderLeft: `2px solid ${theme.border}`
-                      }}>
-                        "{session.notes}"
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <button
-                      onClick={() => deleteSession(session.id)}
-                      style={{
-                        ...buttonStyle,
-                        padding: '6px 12px',
-                        fontSize: '10px',
-                        color: theme.red,
-                        borderColor: theme.red
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {sessions.length === 0 && (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px',
-                color: theme.textMuted,
-                fontSize: '12px'
-              }}>
-                No saved sessions yet. Complete an analysis and click "Save Session" to track your progress.
-              </div>
-            )}
-          </div>
-        </div>
+          Continue →
+        </button>
       )}
     </div>
   );
-}
 
-interface StatRowProps {
-  label: string;
-  inches: number;
-  moa: number;
-  mrad: number;
-  highlight?: string;
-}
+  // ---- STEP 2: Setup ----
+  const renderStep2 = () => (
+    <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 22, overflowY: 'auto' }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary }}>Setup</div>
 
-function StatRow({ label, inches, moa, mrad, highlight }: StatRowProps) {
-  return (
-    <div style={{
-      padding: '10px',
-      backgroundColor: theme.bg,
-      borderRadius: '4px',
-      borderLeft: highlight ? `3px solid ${highlight}` : undefined
-    }}>
-      <div style={{
-        fontSize: '10px',
-        color: theme.textMuted,
-        marginBottom: '6px',
-        fontFamily: 'monospace',
-        letterSpacing: '0.5px'
-      }}>
-        {label.toUpperCase()}
+      <div>
+        {sectionLabel('Distance')}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {DIST_PRESETS.map(d => chip(`${d}yd`, distanceYds === d && !customDist, () => { setDistanceYds(d); setCustomDist(''); }))}
+          <input
+            type="number"
+            placeholder="Other yd"
+            value={customDist}
+            onChange={e => { setCustomDist(e.target.value); if (e.target.value) setDistanceYds(Number(e.target.value)); }}
+            style={{
+              padding: '8px 12px', borderRadius: 20,
+              border: `1px solid ${theme.border}`, background: theme.surface,
+              color: theme.textPrimary, fontSize: 14, width: 90,
+            }}
+          />
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'baseline' }}>
-        <div>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 700,
-            fontFamily: 'monospace',
-            color: highlight || theme.textPrimary
-          }}>
-            {inches.toFixed(3)}"
+
+      <div>
+        {sectionLabel('Bullet Diameter')}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {BULLET_PRESETS.map(b => chip(b.label, Math.abs(bulletDiaIn - b.value) < 0.001 && !customBullet, () => { setBulletDiaIn(b.value); setCustomBullet(''); }))}
+          <input
+            type="number"
+            step="0.001"
+            placeholder='Other "'
+            value={customBullet}
+            onChange={e => { setCustomBullet(e.target.value); if (e.target.value) setBulletDiaIn(Number(e.target.value)); }}
+            style={{
+              padding: '8px 12px', borderRadius: 20,
+              border: `1px solid ${theme.border}`, background: theme.surface,
+              color: theme.textPrimary, fontSize: 14, width: 100,
+            }}
+          />
+        </div>
+      </div>
+
+      <div>
+        {sectionLabel('Reference Scale')}
+        <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>
+          You'll tap two points on the photo that are this far apart. Use a ruler, target grid square, or known distance.
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {REF_PRESETS.map(r => chip(`${r}"`, refIn === r && !customRef, () => { setRefIn(r); setCustomRef(''); }))}
+          <input
+            type="number"
+            step="0.25"
+            placeholder='Other "'
+            value={customRef}
+            onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(Number(e.target.value)); }}
+            style={{
+              padding: '8px 12px', borderRadius: 20,
+              border: `1px solid ${theme.border}`, background: theme.surface,
+              color: theme.textPrimary, fontSize: 14, width: 100,
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
+        <button onClick={() => setStep(1)} style={{
+          flex: 1, padding: 14, borderRadius: 12,
+          background: theme.surface, color: theme.textPrimary,
+          border: `1px solid ${theme.border}`, fontSize: 15, cursor: 'pointer',
+        }}>
+          ← Back
+        </button>
+        <button onClick={() => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); setStep(3); }} style={{
+          flex: 2, padding: 14, borderRadius: 12,
+          background: theme.accent, color: '#000',
+          border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+        }}>
+          Calibrate & Mark →
+        </button>
+      </div>
+    </div>
+  );
+
+  // ---- STEP 3: Mark ----
+  const renderStep3 = () => {
+    let instruction = '';
+    if (markMode === 'calib') {
+      instruction = calibPts.length === 0
+        ? `Tap point 1 of reference scale (${refIn}")`
+        : `Tap point 2 of reference scale`;
+    } else if (markMode === 'poa') {
+      instruction = 'Tap your point of aim (target center)';
+    } else {
+      const shotCount = marks.length - 1;
+      instruction = `Tap each shot hole  •  ${shotCount} shot${shotCount !== 1 ? 's' : ''} marked`;
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+        {/* Instruction bar */}
+        <div style={{
+          padding: '10px 14px',
+          background: theme.surfaceAlt,
+          borderBottom: `1px solid ${theme.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 13, color: theme.textPrimary, fontWeight: 500, flex: 1 }}>{instruction}</span>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={undoLast} style={{
+              padding: '6px 12px', borderRadius: 8,
+              background: theme.surface, color: theme.textSecondary,
+              border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer',
+            }}>Undo</button>
+            {markMode === 'shots' && marks.length >= 2 && (
+              <button onClick={goToResults} style={{
+                padding: '6px 14px', borderRadius: 8,
+                background: theme.accent, color: '#000',
+                border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Results →</button>
+            )}
           </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '11px', color: theme.textSecondary, fontFamily: 'monospace' }}>
-            {moa.toFixed(2)} MOA
-          </div>
-          <div style={{ fontSize: '11px', color: theme.textSecondary, fontFamily: 'monospace' }}>
-            {mrad.toFixed(2)} MRAD
-          </div>
+
+        {/* Canvas */}
+        <div style={{ flex: 1, overflow: 'auto', background: '#0a0a0a', minHeight: 0 }}>
+          <canvas
+            ref={canvasRef}
+            style={{ width: '100%', display: 'block', touchAction: 'none' }}
+            onClick={handleCanvasClick}
+            onTouchEnd={handleCanvasTouch}
+          />
         </div>
+
+        <button onClick={() => setStep(2)} style={{
+          margin: 12, padding: 12, borderRadius: 12, flexShrink: 0,
+          background: theme.surface, color: theme.textSecondary,
+          border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer',
+        }}>← Back to Setup</button>
+      </div>
+    );
+  };
+
+  // ---- STEP 4: Results ----
+  const StatRow = ({ label, val, moa }: { label: string; val: string; moa: string }) => (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '11px 0', borderBottom: `1px solid ${theme.border}`,
+    }}>
+      <span style={{ fontSize: 14, color: theme.textSecondary }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 17, fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{val}</span>
+        <span style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'monospace' }}>{moa}</span>
+      </div>
+    </div>
+  );
+
+  const renderStep4 = () => {
+    if (!stats) return null;
+    const wDir = stats.windageIn >= 0 ? 'R ' : 'L ';
+    const eDir = stats.elevationIn >= 0 ? 'U ' : 'D ';
+
+    return (
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary }}>Results</div>
+          <div style={{ fontSize: 13, color: theme.textMuted }}>{stats.shotCount} shots • {distanceYds}yd</div>
+        </div>
+
+        {/* Offsets */}
+        <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
+          <div style={{ padding: '12px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Group Offset from POA
+          </div>
+          <StatRow label="Windage" val={`${wDir}${Math.abs(stats.windageIn).toFixed(2)}"`} moa={`${stats.windageMoa.toFixed(2)} MOA`} />
+          <StatRow label="Elevation" val={`${eDir}${Math.abs(stats.elevationIn).toFixed(2)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
+        </div>
+
+        {/* Precision */}
+        <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
+          <div style={{ padding: '12px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Precision
+          </div>
+          <StatRow label="CEP" val={`${stats.cepIn.toFixed(2)}"`} moa={`${stats.cepMoa.toFixed(2)} MOA`} />
+          <StatRow label="Radial SD" val={`${stats.radialSdIn.toFixed(2)}"`} moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
+          <StatRow label="Vertical SD" val={`${stats.verticalSdIn.toFixed(2)}"`} moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
+          <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(2)}"`} moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
+          <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(2)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} />
+          <StatRow label="Mean Radius" val={`${stats.meanRadiusIn.toFixed(2)}"`} moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={() => setStep(3)} style={{
+            flex: 1, padding: 14, borderRadius: 12,
+            background: theme.surface, color: theme.textPrimary,
+            border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer',
+          }}>← Edit</button>
+          <button onClick={exportOverlay} style={{
+            flex: 2, padding: 14, borderRadius: 12,
+            background: theme.accent, color: '#000',
+            border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          }}>⬇ Export with Overlay</button>
+        </div>
+
+        <button onClick={resetAll} style={{
+          padding: 12, borderRadius: 12,
+          background: 'transparent', color: theme.textMuted,
+          border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer',
+        }}>
+          + New Analysis
+        </button>
+      </div>
+    );
+  };
+
+  // Step progress indicator
+  const stepLabels = ['Upload', 'Setup', 'Mark', 'Results'];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      {step !== 3 && (
+        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 4, flexShrink: 0 }}>
+          {stepLabels.map((label, i) => {
+            const s = (i + 1) as Step;
+            const active = s === step;
+            const done = s < step;
+            return (
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: done ? theme.accent : active ? theme.accentDim : theme.surface,
+                  border: active ? `2px solid ${theme.accent}` : done ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
+                  fontSize: 11, fontWeight: 700,
+                  color: done ? '#000' : active ? theme.accent : theme.textMuted,
+                }}>
+                  {done ? '✓' : s}
+                </div>
+                <span style={{ fontSize: 11, color: active ? theme.textPrimary : theme.textMuted, fontWeight: active ? 600 : 400 }}>
+                  {label}
+                </span>
+                {i < stepLabels.length - 1 && (
+                  <div style={{ flex: 1, height: 1, background: done ? theme.accent : theme.border, opacity: done ? 0.6 : 1 }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div style={{ flex: 1, overflowY: step === 3 ? 'hidden' : 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+        {step === 4 && renderStep4()}
       </div>
     </div>
   );
