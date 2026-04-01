@@ -3,8 +3,8 @@
 
 let currentTheme = {
   bg: '#07071a',
-  surface: '#0e0e2a',
-  surfaceAlt: '#13132e',
+  surface: '#14143a',
+  surfaceAlt: '#181845',
   border: 'rgba(255,255,255,0.08)',
 
   accent: '#ffd43b',

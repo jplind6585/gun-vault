@@ -303,19 +303,28 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           backgroundColor: theme.surface, borderRadius: '8px',
           border: `0.5px solid ${theme.border}`,
         }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '16px' }}>
-            NO SESSIONS LOGGED
+          <div style={{ fontSize: '36px', marginBottom: '12px', opacity: 0.3 }}>🎯</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px' }}>
+            {sessions.length === 0 ? 'NO SESSIONS YET' : 'NO RESULTS'}
           </div>
-          <button
-            onClick={() => onLogSession()}
-            style={{
-              padding: '10px 20px', backgroundColor: theme.accent,
-              border: 'none', borderRadius: '6px', color: theme.bg,
-              fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            LOG YOUR FIRST SESSION
-          </button>
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '20px', lineHeight: 1.6 }}>
+            {sessions.length === 0
+              ? 'Log your first range trip to start tracking rounds fired, training gaps, and ammo consumption.'
+              : 'Try adjusting your filters.'}
+          </div>
+          {sessions.length === 0 && (
+            <button
+              onClick={() => onLogSession()}
+              style={{
+                padding: '11px 24px', backgroundColor: theme.accent,
+                border: 'none', borderRadius: '6px', color: theme.bg,
+                fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
+                cursor: 'pointer', letterSpacing: '0.8px',
+              }}
+            >
+              LOG YOUR FIRST SESSION
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

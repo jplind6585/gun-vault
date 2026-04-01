@@ -1,15 +1,14 @@
 // Consistent top header bar — shown on every view
-import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
+import { theme } from './theme';
 
 interface AppHeaderProps {
   title: string;
   onBack?: () => void;       // shows ‹ back chevron when provided
   backLabel?: string;        // e.g. "Vault" — shown next to chevron
   onSearch?: () => void;     // search icon, right side
-  onOutdoorToggle?: () => void;
 }
 
-export function AppHeader({ title, onBack, backLabel, onSearch, onOutdoorToggle }: AppHeaderProps) {
+export function AppHeader({ title, onBack, backLabel, onSearch }: AppHeaderProps) {
   return (
     <div style={{
       position: 'sticky',
@@ -69,8 +68,8 @@ export function AppHeader({ title, onBack, backLabel, onSearch, onOutdoorToggle 
         {title}
       </div>
 
-      {/* Right — search + outdoor toggle */}
-      <div style={{ width: '72px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+      {/* Right — search */}
+      <div style={{ width: '72px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         {onSearch && (
           <button
             onClick={onSearch}
@@ -90,12 +89,6 @@ export function AppHeader({ title, onBack, backLabel, onSearch, onOutdoorToggle 
             </svg>
           </button>
         )}
-        <button
-          onClick={onOutdoorToggle ?? toggleOutdoorMode}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '16px' }}
-        >
-          {isOutdoorMode() ? '🌙' : '☀'}
-        </button>
       </div>
     </div>
   );

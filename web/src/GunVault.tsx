@@ -454,17 +454,30 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
           backgroundColor: theme.surface, borderRadius: '8px',
           border: `0.5px solid ${theme.border}`,
         }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '12px' }}>
-            {guns.length === 0 ? 'NO FIREARMS IN VAULT' : 'NO RESULTS'}
-          </div>
-          {guns.length === 0 && (
-            <button onClick={onAddGun} style={{
-              padding: '10px 20px', backgroundColor: theme.accent,
-              border: 'none', borderRadius: '6px', color: theme.bg,
-              fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-            }}>
-              ADD YOUR FIRST GUN
-            </button>
+          {guns.length === 0 ? (
+            <>
+              <div style={{ fontSize: '36px', marginBottom: '12px', opacity: 0.3 }}>🔒</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px' }}>
+                VAULT IS EMPTY
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '20px', lineHeight: 1.6 }}>
+                Add your first firearm to start tracking rounds, maintenance, and market value.
+              </div>
+              <button onClick={onAddGun} style={{
+                padding: '11px 24px', backgroundColor: theme.accent,
+                border: 'none', borderRadius: '6px', color: theme.bg,
+                fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
+                cursor: 'pointer', letterSpacing: '0.8px',
+              }}>
+                ADD YOUR FIRST GUN
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '12px' }}>
+                NO RESULTS
+              </div>
+            </>
           )}
           {guns.length > 0 && activeFilterCount > 0 && (
             <button onClick={clearAllFilters} style={{

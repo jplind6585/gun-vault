@@ -75,7 +75,7 @@ const TABS: { id: NavView; label: string; Icon: React.FC<{ active: boolean }> }[
   { id: 'home',            label: 'Home',     Icon: HomeIcon },
   { id: 'vault',           label: 'Vault',    Icon: VaultIcon },
   { id: 'sessions',        label: 'Sessions', Icon: SessionIcon },
-  { id: 'target-analysis', label: 'Analyze',  Icon: TargetIcon },
+  { id: 'target-analysis', label: 'Targets',  Icon: TargetIcon },
 ];
 
 import React from 'react';

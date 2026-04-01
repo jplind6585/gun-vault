@@ -1,6 +1,6 @@
 // Dev / owner toolbar — persistent floating bar for testing and app management
 import { useState, useEffect } from 'react';
-import { theme } from './theme';
+import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { resetAllData } from './storage';
 
 export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
@@ -102,6 +102,13 @@ export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => 
             color={theme.textMuted}
             borderColor={theme.border}
             onClick={handleReloadSeed}
+          />
+
+          <ToolButton
+            label={isOutdoorMode() ? 'SWITCH TO NIGHT MODE' : 'SWITCH TO DAY MODE'}
+            color={theme.textMuted}
+            borderColor={theme.border}
+            onClick={toggleOutdoorMode}
           />
 
           <ToolButton

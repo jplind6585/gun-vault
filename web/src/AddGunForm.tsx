@@ -429,7 +429,7 @@ function ChipGroup({ options, selected, onSelect, autoHighlight }: {
         const isSelected = selected === opt;
         return (
           <button key={opt} type="button" onClick={() => onSelect(opt)} style={{
-            padding: '6px 12px', borderRadius: '4px',
+            padding: '10px 14px', borderRadius: '4px',
             border: `1px solid ${isSelected ? theme.accent : theme.border}`,
             backgroundColor: isSelected ? theme.accentDim : theme.surface,
             color: isSelected ? theme.accent : theme.textSecondary,
@@ -520,8 +520,8 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.8px', cursor: 'pointer', minHeight: '38px',
   },
   saveBtn: {
-    padding: '9px 20px', backgroundColor: theme.textPrimary,
-    border: `1px solid ${theme.textPrimary}`, borderRadius: '4px',
+    padding: '9px 20px', backgroundColor: theme.accent,
+    border: `1px solid ${theme.accent}`, borderRadius: '4px',
     color: theme.bg, fontFamily: 'monospace', fontSize: '11px',
     letterSpacing: '0.8px', fontWeight: 700, cursor: 'pointer', minHeight: '38px',
   },
