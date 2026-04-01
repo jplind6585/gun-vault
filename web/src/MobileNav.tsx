@@ -110,16 +110,12 @@ export function MobileNav({
 
   return (
     <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
       backgroundColor: theme.surface,
       borderTop: `0.5px solid ${theme.border}`,
       display: 'flex',
       justifyContent: 'space-around',
       padding: `8px 0 calc(8px + env(safe-area-inset-bottom))`,
-      zIndex: 1000,
+      flexShrink: 0,
       boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
     }}>
       {TABS.map(({ id, label, Icon }) => {

@@ -987,38 +987,23 @@ export function TargetAnalysis() {
                 Load a target photo to begin analysis
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '260px', margin: '0 auto' }}>
-                <button
-                  onClick={() => cameraInputRef.current?.click()}
-                  style={{
-                    padding: '14px 20px',
-                    backgroundColor: theme.accent, color: theme.bg,
-                    border: 'none', borderRadius: '8px',
-                    fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
-                    cursor: 'pointer', letterSpacing: '0.5px',
-                  }}
-                >
+                <label htmlFor="ta-camera-input" style={{
+                  display: 'block', padding: '14px 20px', textAlign: 'center',
+                  backgroundColor: theme.accent, color: theme.bg,
+                  borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px',
+                  fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px',
+                }}>
                   📷 Take Photo
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = theme.accent; }}
-                  onDragLeave={(e) => { e.currentTarget.style.borderColor = theme.border; }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.style.borderColor = theme.border;
-                    const file = e.dataTransfer.files[0];
-                    if (file) handleImageUpload({ target: { files: [file] } } as any);
-                  }}
-                  style={{
-                    padding: '14px 20px',
-                    backgroundColor: 'transparent', color: theme.textPrimary,
-                    border: `0.5px solid ${theme.border}`, borderRadius: '8px',
-                    fontFamily: 'monospace', fontSize: '13px',
-                    cursor: 'pointer', letterSpacing: '0.5px',
-                  }}
-                >
+                </label>
+                <label htmlFor="ta-file-input" style={{
+                  display: 'block', padding: '14px 20px', textAlign: 'center',
+                  backgroundColor: 'transparent', color: theme.textPrimary,
+                  border: `0.5px solid ${theme.border}`, borderRadius: '8px',
+                  fontFamily: 'monospace', fontSize: '13px',
+                  cursor: 'pointer', letterSpacing: '0.5px',
+                }}>
                   🖼 Choose from Library
-                </button>
+                </label>
               </div>
             </div>
           ) : (
@@ -1067,6 +1052,7 @@ export function TargetAnalysis() {
             </div>
           )}
           <input
+            id="ta-file-input"
             ref={fileInputRef}
             type="file"
             accept="image/*"
@@ -1074,6 +1060,7 @@ export function TargetAnalysis() {
             style={{ display: 'none' }}
           />
           <input
+            id="ta-camera-input"
             ref={cameraInputRef}
             type="file"
             accept="image/*"

@@ -108,207 +108,105 @@ function App() {
 
   // ── VIEWS ────────────────────────────────────────────────────────────────────
 
-  const nav = (current: string) => (
-    <MobileNav
-      currentView={current}
-      onNavigateToHome={() => setCurrentView('home')}
-      onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); }}
-      onNavigateToArsenal={() => setCurrentView('arsenal')}
-      onNavigateToSessions={() => setCurrentView('sessions')}
-    />
-  );
+  function renderHeader() {
+    if (currentView === 'home')         return <AppHeader title="Lindcott Armory" />;
+    if (currentView === 'vault')        return <AppHeader title="Gun Vault" onSearch={() => setShowSmartSearch(true)} />;
+    if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
+    if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
+    if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
+    if (currentView === 'arsenal')      return <AppHeader title="Arsenal" />;
+    if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'training')     return <AppHeader title="Training Log" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    return null;
+  }
 
   function renderView() {
-
-  if (currentView === 'home') {
-    return (
-      <>
-        <AppHeader title="Lindcott Armory" />
-        <HomePage
-          onNavigateToVault={() => setCurrentView('vault')}
-          onNavigateToArsenal={() => setCurrentView('arsenal')}
-          onNavigateToCaliber={() => setCurrentView('caliber')}
-          onNavigateToBallistics={() => setCurrentView('ballistics')}
-          onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-          onNavigateToTraining={() => setCurrentView('training')}
-          onNavigateToReloading={() => setCurrentView('reloading')}
-          onNavigateToGear={() => setCurrentView('gear')}
-          onNavigateToWishlist={() => setCurrentView('wishlist')}
-          onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
-          onLogSession={() => openSessionLog()}
-          onAddGun={() => setShowAddForm(true)}
-          onSearchOpen={() => setShowSmartSearch(true)}
-          onDevTools={() => setDevOpen(o => !o)}
-          onNavigateToStyleDemo={() => setCurrentView('style-demo')}
-        />
-        {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => setShowAddForm(false)} />}
-        {nav('home')}
-        {showSmartSearch && (
-          <SmartSearch
-            onClose={() => setShowSmartSearch(false)}
-            onNavigate={(view, data) => { setCurrentView(view as AppView); if (data) setSelectedGun(data); }}
-          />
-        )}
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-        {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
-      </>
+    if (currentView === 'home') return (
+      <HomePage
+        onNavigateToVault={() => setCurrentView('vault')}
+        onNavigateToArsenal={() => setCurrentView('arsenal')}
+        onNavigateToCaliber={() => setCurrentView('caliber')}
+        onNavigateToBallistics={() => setCurrentView('ballistics')}
+        onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
+        onNavigateToTraining={() => setCurrentView('training')}
+        onNavigateToReloading={() => setCurrentView('reloading')}
+        onNavigateToGear={() => setCurrentView('gear')}
+        onNavigateToWishlist={() => setCurrentView('wishlist')}
+        onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
+        onLogSession={() => openSessionLog()}
+        onAddGun={() => setShowAddForm(true)}
+        onSearchOpen={() => setShowSmartSearch(true)}
+        onDevTools={() => setDevOpen(o => !o)}
+        onNavigateToStyleDemo={() => setCurrentView('style-demo')}
+      />
     );
-  }
-
-  if (currentView === 'vault') {
-    return (
-      <>
-        <AppHeader title="Gun Vault" onSearch={() => setShowSmartSearch(true)} />
-        <GunVault
-          onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
-          onAddGun={() => setShowAddForm(true)}
-        />
-        {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => setShowAddForm(false)} />}
-        {nav('vault')}
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </>
+    if (currentView === 'vault') return (
+      <GunVault
+        onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
+        onAddGun={() => setShowAddForm(true)}
+      />
     );
-  }
-
-  if (currentView === 'gun-detail' && selectedGun) {
-    return (
-      <>
-        <AppHeader
-          title={`${selectedGun.make} ${selectedGun.model}`}
-          onBack={() => { setSelectedGun(null); setCurrentView('vault'); }}
-          backLabel="Vault"
-        />
-        <GunDetail
-          gun={selectedGun}
-          onBack={() => { setSelectedGun(null); setCurrentView('vault'); }}
-          onGunUpdated={loadGuns}
-          onLogSession={(gun) => openSessionLog(gun)}
-        />
-        {nav('vault')}
-      </>
+    if (currentView === 'gun-detail' && selectedGun) return (
+      <GunDetail
+        gun={selectedGun}
+        onBack={() => { setSelectedGun(null); setCurrentView('vault'); }}
+        onGunUpdated={loadGuns}
+        onLogSession={(gun) => openSessionLog(gun)}
+      />
     );
+    if (currentView === 'sessions')    return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} />;
+    if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} />;
+    if (currentView === 'arsenal')     return <Arsenal />;
+    if (currentView === 'caliber')     return <CaliberDatabase />;
+    if (currentView === 'ballistics')  return <BallisticCalculator />;
+    if (currentView === 'target-analysis') return <TargetAnalysis />;
+    if (currentView === 'training')    return <TrainingLog />;
+    if (currentView === 'reloading')   return <ReloadingBench />;
+    if (currentView === 'gear')        return <GearLocker />;
+    if (currentView === 'wishlist')    return <Wishlist />;
+    if (currentView === 'style-demo')  return <StyleDemo />;
+    return null;
   }
 
-  if (currentView === 'sessions') {
-    return (
-      <>
-        <AppHeader title="Sessions" />
-        <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} />
-        {nav('sessions')}
-      </>
-    );
-  }
-
-  if (currentView === 'session-log') {
-    return (
-      <>
-        <AppHeader
-          title={sessionLogGun ? 'Log Session' : 'New Session'}
-          onBack={() => setCurrentView('sessions')}
-          backLabel="Sessions"
-        />
-        <SessionLogView
-          preselectedGun={sessionLogGun}
-          onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }}
-          onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }}
-        />
-        {nav('sessions')}
-      </>
-    );
-  }
-
-  if (currentView === 'arsenal') {
-    return (
-      <>
-        <AppHeader title="Arsenal" />
-        <Arsenal />
-        {nav('arsenal')}
-      </>
-    );
-  }
-
-  if (currentView === 'caliber') {
-    return (
-      <>
-        <AppHeader title="Calibers" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <CaliberDatabase />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'ballistics') {
-    return (
-      <>
-        <AppHeader title="Ballistics" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <BallisticCalculator />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'target-analysis') {
-    return (
-      <>
-        <AppHeader title="Target Analysis" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <TargetAnalysis />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'training') {
-    return (
-      <>
-        <AppHeader title="Training Log" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <TrainingLog />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'reloading') {
-    return (
-      <>
-        <AppHeader title="Reloading" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <ReloadingBench />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'gear') {
-    return (
-      <>
-        <AppHeader title="Gear Locker" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <GearLocker />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'wishlist') {
-    return (
-      <>
-        <AppHeader title="Wishlist" onBack={() => setCurrentView('home')} backLabel="Home" />
-        <Wishlist />
-        {nav('home')}
-      </>
-    );
-  }
-
-  if (currentView === 'style-demo') {
-    return <StyleDemo />;
-  }
-
-  return null;
-  } // end renderView
+  const activeNavView = (['home','vault','arsenal','sessions'] as const).find(v =>
+    currentView === v || (currentView === 'gun-detail' && v === 'vault') || (currentView === 'session-log' && v === 'sessions')
+  ) ?? 'home';
 
   return (
-    <>
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      height: '100dvh',
+      maxWidth: '480px', margin: '0 auto',
+      backgroundColor: theme.bg,
+      overflow: 'hidden',
+    }}>
       <DevToolbar open={devOpen} onToggle={() => setDevOpen(o => !o)} />
-      {renderView()}
-    </>
+      {renderHeader()}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        {renderView()}
+        {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => setShowAddForm(false)} />}
+      </div>
+      <MobileNav
+        currentView={activeNavView}
+        onNavigateToHome={() => setCurrentView('home')}
+        onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); }}
+        onNavigateToArsenal={() => setCurrentView('arsenal')}
+        onNavigateToSessions={() => setCurrentView('sessions')}
+      />
+      {showSmartSearch && (
+        <SmartSearch
+          onClose={() => setShowSmartSearch(false)}
+          onNavigate={(view, data) => { setCurrentView(view as AppView); if (data) setSelectedGun(data); }}
+        />
+      )}
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+      {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
+    </div>
   );
 }
 
