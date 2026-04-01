@@ -423,6 +423,8 @@ export function HomePage({
           }
         </div>
 
+      </div>
+
       {/* Version tap target — 7 taps unlocks dev tools */}
       <div style={{ paddingBottom: '8px', textAlign: 'center' }}>
         <span
@@ -435,7 +437,7 @@ export function HomePage({
             letterSpacing: '0.5px',
           }}
         >
-          {devTapCount > 0 ? `${devTapCount}/7` : 'LINDCOTT ARMORY v1.0'}
+          {devTapCount > 0 ? (devTapCount + '/7') : 'LINDCOTT ARMORY v1.0'}
         </span>
       </div>
 
