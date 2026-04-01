@@ -11,22 +11,14 @@ interface Pt { x: number; y: number; }
 
 interface Stats {
   shotCount: number;
-  windageIn: number;
-  elevationIn: number;
-  windageMoa: number;
-  elevationMoa: number;
-  cepIn: number;
-  cepMoa: number;
-  radialSdIn: number;
-  radialSdMoa: number;
-  verticalSdIn: number;
-  verticalSdMoa: number;
-  horizontalSdIn: number;
-  horizontalSdMoa: number;
-  extremeSpreadIn: number;
-  extremeSpreadMoa: number;
-  meanRadiusIn: number;
-  meanRadiusMoa: number;
+  windageIn: number; elevationIn: number;
+  windageMoa: number; elevationMoa: number;
+  cepIn: number; cepMoa: number;
+  radialSdIn: number; radialSdMoa: number;
+  verticalSdIn: number; verticalSdMoa: number;
+  horizontalSdIn: number; horizontalSdMoa: number;
+  extremeSpreadIn: number; extremeSpreadMoa: number;
+  meanRadiusIn: number; meanRadiusMoa: number;
 }
 
 const BULLET_PRESETS: { label: string; inVal: number }[] = [
@@ -78,6 +70,74 @@ function toMoa(inches: number, yards: number) { return yards > 0 ? (inches / yar
 function inToMm(inches: number) { return (inches * 25.4).toFixed(1); }
 function mmToIn(mm: number) { return mm / 25.4; }
 
+// ── Stats panel drawn on canvas (overlay + export) ────────────────────────
+function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, stats: Stats, distYds: number) {
+  const panelW = Math.round(W * 0.33);
+  const lineH = Math.round(panelW * 0.068);
+  const fontSize = Math.round(lineH * 0.66);
+  const smallFont = Math.round(fontSize * 0.78);
+  const titleFont = Math.round(lineH * 0.72);
+
+  const rows: [string, string, string][] = [
+    ['CEP',       `${stats.cepIn.toFixed(2)}"`,                                                  `${stats.cepMoa.toFixed(2)} MOA`],
+    ['ES',        `${stats.extremeSpreadIn.toFixed(2)}"`,                                        `${stats.extremeSpreadMoa.toFixed(2)} MOA`],
+    ['Windage',   `${stats.windageIn >= 0 ? 'R' : 'L'} ${Math.abs(stats.windageIn).toFixed(2)}"`,  `${stats.windageMoa.toFixed(2)} MOA`],
+    ['Elevation', `${stats.elevationIn >= 0 ? 'U' : 'D'} ${Math.abs(stats.elevationIn).toFixed(2)}"`, `${stats.elevationMoa.toFixed(2)} MOA`],
+    ['Radial SD', `${stats.radialSdIn.toFixed(2)}"`,                                             `${stats.radialSdMoa.toFixed(2)} MOA`],
+  ];
+
+  // 3 header lines (title, separator, "Xyd • N shots") + rows + bottom padding
+  const panelH = lineH * (3.2 + rows.length + 0.8);
+  const margin = Math.round(W * 0.022);
+  const px = W - panelW - margin;
+  const py = margin;
+
+  // Panel background
+  ctx.fillStyle = 'rgba(0,0,0,0.84)';
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, Math.round(panelW * 0.04));
+  ctx.fill();
+
+  const padX = Math.round(panelW * 0.07);
+
+  // "LINDCOTT ARMORY" in accent yellow
+  ctx.fillStyle = '#ffd43b';
+  ctx.font = `bold ${titleFont}px sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText('LINDCOTT ARMORY', px + padX, py + lineH * 1.0);
+
+  // Separator
+  ctx.strokeStyle = 'rgba(255,212,59,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(px + padX, py + lineH * 1.38);
+  ctx.lineTo(px + panelW - padX, py + lineH * 1.38);
+  ctx.stroke();
+
+  // Distance + shot count
+  ctx.fillStyle = 'rgba(200,200,220,0.85)';
+  ctx.font = `${smallFont}px sans-serif`;
+  ctx.fillText(`${distYds}yd  •  ${stats.shotCount} shots`, px + padX, py + lineH * 2.15);
+
+  // Stat rows
+  rows.forEach(([label, val, moa], i) => {
+    const rowY = py + lineH * (3.1 + i);
+    ctx.font = `${smallFont}px sans-serif`;
+    ctx.fillStyle = 'rgba(155,155,175,0.9)';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, px + padX, rowY);
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'right';
+    ctx.fillText(val, px + Math.round(panelW * 0.66), rowY);
+
+    ctx.font = `${smallFont}px sans-serif`;
+    ctx.fillStyle = 'rgba(155,155,175,0.85)';
+    ctx.fillText(moa, px + panelW - padX, rowY);
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function TargetAnalysis() {
@@ -90,7 +150,7 @@ export function TargetAnalysis() {
   const [refUnit, setRefUnit] = useState<'in' | 'mm'>('in');
   const [calibPts, setCalibPts] = useState<Pt[]>([]);
   const [pixelsPerInch, setPixelsPerInch] = useState<number | null>(null);
-  const [marks, setMarks] = useState<Pt[]>([]);   // [0]=POA, [1..n]=shots
+  const [marks, setMarks] = useState<Pt[]>([]);  // [0]=POA, [1..n]=shots
   const [markMode, setMarkMode] = useState<MarkMode>('calib');
   const [stats, setStats] = useState<Stats | null>(null);
   const [customDist, setCustomDist] = useState('');
@@ -107,8 +167,7 @@ export function TargetAnalysis() {
   const [guns, setGuns] = useState<ReturnType<typeof getAllGuns>>([]);
 
   const [resultTab, setResultTab] = useState<'stats' | 'overlay'>('stats');
-  // Snapshot of annotated canvas captured at "Results →" time — avoids
-  // remounting the canvas element in step 4 and getting a black screen.
+  // Overlay snapshot with stats panel baked in — captured at "Results →" time
   const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
@@ -117,12 +176,17 @@ export function TargetAnalysis() {
   const [coachInput, setCoachInput] = useState('');
   const [coachLoading, setCoachLoading] = useState(false);
 
+  // Loupe magnifier shown during drag
+  const [showLoupe, setShowLoupe] = useState(false);
+  const loupeRef = useRef<HTMLCanvasElement>(null);
+  // Ref so drawCanvas can read without being a dep — avoids infinite re-render
+  const loupeCenterRef = useRef<Pt | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const touchStartRef = useRef<{ touches: { id: number; x: number; y: number }[]; scale: number; offset: { x: number; y: number } } | null>(null);
   const touchMovedRef = useRef(false);
-  // Prevent ghost mouse events that fire after touchend on mobile
   const lastTouchTimeRef = useRef(0);
 
   type DragTarget = { type: 'calib' | 'poa' | 'shot'; index: number };
@@ -140,26 +204,8 @@ export function TargetAnalysis() {
     };
   };
 
-  // ── Drag zoom: centers view 2× on the dragged item ────────────────────────
-  const startDragZoom = useCallback((canvasPt: Pt) => {
-    if (scale >= 1.8) return; // already zoomed enough
-    const canvas = canvasRef.current;
-    if (!canvas?.parentElement) return;
-    const container = canvas.parentElement;
-    const newScale = 2;
-    // canvas.offsetWidth is natural CSS size before transform
-    const nx = canvasPt.x * (canvas.offsetWidth / canvas.width);
-    const ny = canvasPt.y * (canvas.offsetHeight / canvas.height);
-    setScale(newScale);
-    setOffset({
-      x: container.clientWidth / 2 - nx * newScale,
-      y: container.clientHeight / 2 - ny * newScale,
-    });
-  }, [scale]);
-
-  // ── Find draggable ────────────────────────────────────────────────────────
+  // ── Find draggable item near a canvas point ───────────────────────────────
   const findDraggable = useCallback((pt: Pt): DragTarget | null => {
-    // Hit radius: bigger of 40 canvas px or the dot's actual radius
     const ppi = pixelsPerInch ?? 100;
     const dotR = Math.max(40, (bulletDiaIn / 2) * ppi);
     for (let i = 0; i < calibPts.length; i++) {
@@ -175,6 +221,7 @@ export function TargetAnalysis() {
   const updateDragged = useCallback((pt: Pt) => {
     const d = draggingRef.current;
     if (!d) return;
+    loupeCenterRef.current = pt; // keep loupe centered on dragged point
     if (d.type === 'calib') {
       setCalibPts(prev => {
         const next = [...prev];
@@ -187,15 +234,19 @@ export function TargetAnalysis() {
         return next;
       });
     } else {
-      setMarks(prev => {
-        const next = [...prev];
-        next[d.index] = pt;
-        return next;
-      });
+      setMarks(prev => { const next = [...prev]; next[d.index] = pt; return next; });
     }
   }, [refIn]);
 
-  // ── Draw canvas ───────────────────────────────────────────────────────────
+  const clearLoupe = () => {
+    loupeCenterRef.current = null;
+    setShowLoupe(false);
+    // Clear loupe canvas immediately
+    const loupe = loupeRef.current;
+    if (loupe) loupe.getContext('2d')!.clearRect(0, 0, loupe.width, loupe.height);
+  };
+
+  // ── Draw canvas (main + loupe) ────────────────────────────────────────────
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const img = imageRef.current;
@@ -204,105 +255,136 @@ export function TargetAnalysis() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // Screen-pixel-aware minimum radius so dots are never invisible
+    // Screen-pixel-aware sizing
     const rect = canvas.getBoundingClientRect();
-    const displayRatio = rect.width > 0 ? canvas.width / rect.width : 1; // canvas px per screen px
-    const MIN_SCREEN_PX = 10;
+    const displayRatio = rect.width > 0 ? canvas.width / rect.width : 1;
     const ppi = pixelsPerInch ?? 50;
     const bulletRadiusCanvas = (bulletDiaIn / 2) * ppi;
-    const dotRadius = Math.max(MIN_SCREEN_PX * displayRatio, bulletRadiusCanvas);
+    const dotRadius = Math.max(10 * displayRatio, bulletRadiusCanvas);
+    const calibR = Math.max(16, dotRadius * 0.75); // calib dots slightly smaller
+    const lw = Math.max(2, displayRatio * 1.5);
 
-    // Calibration endpoints + line
+    // ── Calibration endpoints + connecting line ───────────────────────────
     calibPts.forEach((pt, i) => {
+      // Circle
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, Math.max(16, 0.8 * dotRadius), 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,60,60,0.85)';
+      ctx.arc(pt.x, pt.y, calibR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,50,50,0.82)';
       ctx.fill();
       ctx.strokeStyle = 'white';
-      ctx.lineWidth = Math.max(2, displayRatio * 1.5);
+      ctx.lineWidth = lw;
       ctx.stroke();
+
+      // White cross in center for precise alignment
+      const arm = Math.max(6, calibR * 0.42);
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = Math.max(1.5, displayRatio * 1.2);
+      ctx.beginPath();
+      ctx.moveTo(pt.x - arm, pt.y); ctx.lineTo(pt.x + arm, pt.y);
+      ctx.moveTo(pt.x, pt.y - arm); ctx.lineTo(pt.x, pt.y + arm);
+      ctx.stroke();
+
+      // A/B label above the dot
       ctx.fillStyle = 'white';
-      ctx.font = `bold ${Math.max(12, dotRadius * 0.6)}px sans-serif`;
+      ctx.font = `bold ${Math.max(11, calibR * 0.65)}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(i === 0 ? 'A' : 'B', pt.x, pt.y);
+      ctx.textBaseline = 'bottom';
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(i === 0 ? 'A' : 'B', pt.x, pt.y - calibR - 3);
+      ctx.shadowBlur = 0;
     });
+
     if (calibPts.length === 2) {
       ctx.beginPath();
       ctx.moveTo(calibPts[0].x, calibPts[0].y);
       ctx.lineTo(calibPts[1].x, calibPts[1].y);
-      ctx.strokeStyle = 'rgba(255,80,80,0.6)';
-      ctx.lineWidth = Math.max(2, displayRatio * 1.5);
+      ctx.strokeStyle = 'rgba(255,80,80,0.55)';
+      ctx.lineWidth = lw;
       ctx.setLineDash([8 * displayRatio, 5 * displayRatio]);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    // POA — bullet-diameter circle with center crosshair, easy to center on target
+    // ── POA — bullet-diameter circle + outer tick marks ───────────────────
     if (marks.length > 0) {
       const poa = marks[0];
       const r = dotRadius;
-      // Outer circle (white ring)
       ctx.beginPath();
       ctx.arc(poa.x, poa.y, r, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = Math.max(3, displayRatio * 2);
-      ctx.shadowColor = 'rgba(0,0,0,0.7)';
-      ctx.shadowBlur = 6 * displayRatio;
+      ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 6 * displayRatio;
       ctx.stroke();
       ctx.shadowBlur = 0;
-      // Filled center dot
+      // Center dot
       ctx.beginPath();
       ctx.arc(poa.x, poa.y, Math.max(4, r * 0.12), 0, Math.PI * 2);
-      ctx.fillStyle = 'white';
-      ctx.fill();
-      // Short crosshair lines outside the circle
-      const lineLen = r * 0.5;
-      const lw = Math.max(2, displayRatio * 1.5);
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-      ctx.lineWidth = lw;
-      [[poa.x - r - lineLen, poa.y, poa.x - r, poa.y],
-       [poa.x + r, poa.y, poa.x + r + lineLen, poa.y],
-       [poa.x, poa.y - r - lineLen, poa.x, poa.y - r],
-       [poa.x, poa.y + r, poa.x, poa.y + r + lineLen]].forEach(([x1, y1, x2, y2]) => {
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.fillStyle = 'white'; ctx.fill();
+      // Outer tick marks
+      const tick = r * 0.45;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = Math.max(2, displayRatio * 1.5);
+      [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(poa.x + dx * r, poa.y + dy * r);
+        ctx.lineTo(poa.x + dx * (r + tick), poa.y + dy * (r + tick));
+        ctx.stroke();
       });
     }
 
-    // Live CEP circle
+    // ── Live CEP circle ───────────────────────────────────────────────────
     if (marks.length >= 2 && pixelsPerInch) {
       const poa = marks[0];
       const shots = marks.slice(1);
-      const pp = pixelsPerInch;
-      const windages = shots.map(s => (s.x - poa.x) / pp);
-      const elevations = shots.map(s => -(s.y - poa.y) / pp);
-      const radials = shots.map((_, i) => Math.sqrt(windages[i] ** 2 + elevations[i] ** 2));
-      const cepPx = median(radials) * pp;
+      const radials = shots.map(s => Math.sqrt(((s.x - poa.x) / pixelsPerInch) ** 2 + ((s.y - poa.y) / pixelsPerInch) ** 2));
+      const cepPx = median(radials) * pixelsPerInch;
       ctx.beginPath();
       ctx.arc(poa.x, poa.y, cepPx, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255,212,59,0.5)';
       ctx.lineWidth = Math.max(2, displayRatio * 1.5);
-      ctx.setLineDash([10 * displayRatio, 7 * displayRatio]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.setLineDash([10 * displayRatio, 7 * displayRatio]); ctx.stroke(); ctx.setLineDash([]);
     }
 
-    // Shot dots — sized to bullet diameter, with number label
+    // ── Shot dots ─────────────────────────────────────────────────────────
     for (let i = 1; i < marks.length; i++) {
       const shot = marks[i];
       ctx.beginPath();
       ctx.arc(shot.x, shot.y, dotRadius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,212,59,0.88)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      ctx.lineWidth = Math.max(2, displayRatio * 1.5);
-      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,212,59,0.88)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = lw; ctx.stroke();
       const fontSize = Math.max(12, dotRadius * 0.8);
       ctx.fillStyle = '#000';
       ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(i), shot.x, shot.y);
+    }
+
+    // ── Loupe magnifier (drawn from main canvas after it's fully rendered) ──
+    const loupePt = loupeCenterRef.current;
+    const loupe = loupeRef.current;
+    if (loupePt && loupe) {
+      const lctx = loupe.getContext('2d')!;
+      const LW = loupe.width; const LH = loupe.height;
+      // Sample a region that represents LOUPE_CSS screen-pixels at 3× magnification
+      const LOUPE_CSS = 150; const LOUPE_ZOOM = 3;
+      const srcPx = (LOUPE_CSS / LOUPE_ZOOM) * displayRatio; // canvas pixels to sample
+      const srcX = Math.max(0, Math.min(canvas.width  - srcPx, loupePt.x - srcPx / 2));
+      const srcY = Math.max(0, Math.min(canvas.height - srcPx, loupePt.y - srcPx / 2));
+
+      lctx.clearRect(0, 0, LW, LH);
+      lctx.drawImage(canvas, srcX, srcY, srcPx, srcPx, 0, 0, LW, LH);
+
+      // Red center crosshair
+      const cx = LW / 2; const cy = LH / 2;
+      lctx.strokeStyle = 'rgba(255,60,60,0.95)';
+      lctx.lineWidth = 1.5;
+      lctx.beginPath();
+      lctx.moveTo(cx, cy - 16); lctx.lineTo(cx, cy + 16);
+      lctx.moveTo(cx - 16, cy); lctx.lineTo(cx + 16, cy);
+      lctx.stroke();
+      // Small center circle
+      lctx.strokeStyle = 'rgba(255,60,60,0.6)';
+      lctx.beginPath(); lctx.arc(cx, cy, 5, 0, Math.PI * 2); lctx.stroke();
     }
   }, [calibPts, marks, bulletDiaIn, pixelsPerInch]);
 
@@ -322,7 +404,7 @@ export function TargetAnalysis() {
 
   useEffect(() => { if (imageUrl) loadImage(imageUrl); }, [imageUrl, loadImage]);
 
-  // ── Image upload ──────────────────────────────────────────────────────────
+  // ── Upload ────────────────────────────────────────────────────────────────
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -336,8 +418,7 @@ export function TargetAnalysis() {
       const newPts = [...calibPts, { x, y }];
       setCalibPts(newPts);
       if (newPts.length === 2) {
-        const dx = newPts[1].x - newPts[0].x;
-        const dy = newPts[1].y - newPts[0].y;
+        const dx = newPts[1].x - newPts[0].x; const dy = newPts[1].y - newPts[0].y;
         const ppi = Math.sqrt(dx * dx + dy * dy) / refIn;
         setPixelsPerInch(ppi);
         setMarkMode('poa');
@@ -345,8 +426,7 @@ export function TargetAnalysis() {
         setTimeout(() => setCalibBannerMsg(null), 2000);
       }
     } else if (markMode === 'poa') {
-      setMarks([{ x, y }]);
-      setMarkMode('shots');
+      setMarks([{ x, y }]); setMarkMode('shots');
     } else {
       setMarks(prev => [...prev, { x, y }]);
     }
@@ -370,7 +450,7 @@ export function TargetAnalysis() {
       const pt = toCanvas(t.clientX, t.clientY);
       const draggable = findDraggable(pt);
       draggingRef.current = draggable;
-      if (draggable) startDragZoom(pt);
+      if (draggable) { loupeCenterRef.current = pt; setShowLoupe(true); }
     }
   };
 
@@ -381,20 +461,16 @@ export function TargetAnalysis() {
       const t0 = e.touches[0]; const t1 = e.touches[1];
       const startDist = Math.hypot(start.touches[1].x - start.touches[0].x, start.touches[1].y - start.touches[0].y);
       const curDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
-      const pinchRatio = startDist > 0 ? curDist / startDist : 1;
-      const newScale = Math.min(5, Math.max(1, start.scale * pinchRatio));
-      const startMidX = (start.touches[0].x + start.touches[1].x) / 2;
-      const startMidY = (start.touches[0].y + start.touches[1].y) / 2;
-      const curMidX = (t0.clientX + t1.clientX) / 2;
-      const curMidY = (t0.clientY + t1.clientY) / 2;
+      const newScale = Math.min(5, Math.max(1, start.scale * (startDist > 0 ? curDist / startDist : 1)));
+      const sMidX = (start.touches[0].x + start.touches[1].x) / 2;
+      const sMidY = (start.touches[0].y + start.touches[1].y) / 2;
       setScale(newScale);
-      setOffset({ x: start.offset.x + (curMidX - startMidX), y: start.offset.y + (curMidY - startMidY) });
+      setOffset({ x: start.offset.x + (t0.clientX + t1.clientX) / 2 - sMidX, y: start.offset.y + (t0.clientY + t1.clientY) / 2 - sMidY });
       touchMovedRef.current = true;
     } else if (e.touches.length === 1 && touchStartRef.current?.touches.length === 1) {
       const t = e.touches[0];
       if (draggingRef.current) {
-        const pt = toCanvas(t.clientX, t.clientY);
-        updateDragged(pt);
+        updateDragged(toCanvas(t.clientX, t.clientY));
         touchMovedRef.current = true;
       } else {
         const start = touchStartRef.current.touches[0];
@@ -408,6 +484,7 @@ export function TargetAnalysis() {
       draggingRef.current = null;
       touchStartRef.current = null;
       touchMovedRef.current = false;
+      clearLoupe();
       return;
     }
     if (e.changedTouches.length === 1 && touchStartRef.current?.touches.length === 1 && !touchMovedRef.current) {
@@ -419,7 +496,7 @@ export function TargetAnalysis() {
     touchMovedRef.current = false;
   };
 
-  // ── Mouse handlers (desktop) — guarded against ghost events after touch ───
+  // ── Mouse handlers ────────────────────────────────────────────────────────
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (Date.now() - lastTouchTimeRef.current < 500) return;
     const pt = toCanvas(e.clientX, e.clientY);
@@ -427,7 +504,7 @@ export function TargetAnalysis() {
     mouseMovedRef.current = false;
     const draggable = findDraggable(pt);
     draggingRef.current = draggable;
-    if (draggable) startDragZoom(pt);
+    if (draggable) { loupeCenterRef.current = pt; setShowLoupe(true); }
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -443,10 +520,8 @@ export function TargetAnalysis() {
     const wasDraggingAndMoved = draggingRef.current && mouseMovedRef.current;
     draggingRef.current = null;
     mouseDownPtRef.current = null;
-    if (!wasDraggingAndMoved) {
-      const pt = toCanvas(e.clientX, e.clientY);
-      handleCanvasTap(pt.x, pt.y);
-    }
+    clearLoupe();
+    if (!wasDraggingAndMoved) handleCanvasTap(toCanvas(e.clientX, e.clientY).x, toCanvas(e.clientX, e.clientY).y);
     mouseMovedRef.current = false;
   };
 
@@ -457,17 +532,13 @@ export function TargetAnalysis() {
     else if (markMode === 'poa') { setCalibPts([]); setPixelsPerInch(null); setMarkMode('calib'); }
     else if (markMode === 'calib' && calibPts.length > 0) setCalibPts(prev => prev.slice(0, -1));
   };
-
-  const resetCalibration = () => {
-    setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib');
-  };
+  const resetCalibration = () => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); };
 
   // ── Compute stats ─────────────────────────────────────────────────────────
   const computeStats = (): Stats | null => {
     const ppi = pixelsPerInch;
     if (!ppi || marks.length < 2) return null;
-    const poa = marks[0];
-    const shots = marks.slice(1);
+    const poa = marks[0]; const shots = marks.slice(1);
     const windages = shots.map(s => (s.x - poa.x) / ppi);
     const elevations = shots.map(s => -(s.y - poa.y) / ppi);
     const radials = shots.map((_, i) => Math.sqrt(windages[i] ** 2 + elevations[i] ** 2));
@@ -478,8 +549,7 @@ export function TargetAnalysis() {
     let extremeSpreadIn = 0;
     for (let i = 0; i < shots.length; i++)
       for (let j = i + 1; j < shots.length; j++) {
-        const dx = (shots[i].x - shots[j].x) / ppi;
-        const dy = (shots[i].y - shots[j].y) / ppi;
+        const dx = (shots[i].x - shots[j].x) / ppi; const dy = (shots[i].y - shots[j].y) / ppi;
         extremeSpreadIn = Math.max(extremeSpreadIn, Math.sqrt(dx * dx + dy * dy));
       }
     return {
@@ -494,92 +564,51 @@ export function TargetAnalysis() {
     };
   };
 
+  // ── Go to results — captures overlay with stats panel baked in ────────────
   const goToResults = () => {
     haptic();
     const s = computeStats();
     setStats(s);
-    // Capture canvas as static image — avoids black screen when canvas remounts in step 4
+
     const canvas = canvasRef.current;
-    if (canvas) setOverlayDataUrl(canvas.toDataURL('image/png'));
-    setStep(4);
-    setResultTab('stats');
+    if (canvas && s) {
+      const off = document.createElement('canvas');
+      off.width = canvas.width; off.height = canvas.height;
+      const ctx = off.getContext('2d')!;
+      ctx.drawImage(canvas, 0, 0);
+      drawStatsPanel(ctx, off.width, off.height, s, distanceYds);
+      setOverlayDataUrl(off.toDataURL('image/png'));
+    }
+
+    setStep(4); setResultTab('stats');
   };
 
   useEffect(() => {
     if (step === 4 && stats && !savedRef.current) {
       savedRef.current = true;
       saveTargetAnalysis({ distanceYds, bulletDiaIn, stats, sessionId: undefined, gunId: undefined, ammoLotId: undefined });
-      setSavedMsg(true);
-      setTimeout(() => setSavedMsg(false), 2500);
-      setHistory(getTargetAnalyses());
-      setGuns(getAllGuns());
+      setSavedMsg(true); setTimeout(() => setSavedMsg(false), 2500);
+      setHistory(getTargetAnalyses()); setGuns(getAllGuns());
     }
   }, [step, stats, distanceYds, bulletDiaIn]);
-
   useEffect(() => { if (step === 4) { setHistory(getTargetAnalyses()); setGuns(getAllGuns()); } }, [step]);
 
-  // ── Export ────────────────────────────────────────────────────────────────
-  const exportOverlay = () => {
+  // ── Export — share / download the pre-rendered overlay ───────────────────
+  const exportOverlay = async () => {
     haptic();
-    // Use the captured data URL as source so we always have the image even after step 3 unmounts
-    const source = overlayDataUrl;
-    if (!source || !stats) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const offscreen = document.createElement('canvas');
-      offscreen.width = img.width;
-      offscreen.height = img.height;
-      const ctx = offscreen.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-
-      const panelW = Math.round(img.width * 0.38);
-      const lineH = Math.round(panelW * 0.065);
-      const fontSize = Math.round(lineH * 0.72);
-      const smallFont = Math.round(fontSize * 0.8);
-      const rows = [
-        ['Windage',   `${stats.windageIn >= 0 ? 'R' : 'L'} ${Math.abs(stats.windageIn).toFixed(2)}"`,   `${stats.windageMoa.toFixed(2)} MOA`],
-        ['Elevation', `${stats.elevationIn >= 0 ? 'U' : 'D'} ${Math.abs(stats.elevationIn).toFixed(2)}"`, `${stats.elevationMoa.toFixed(2)} MOA`],
-        ['CEP',       `${stats.cepIn.toFixed(2)}"`,             `${stats.cepMoa.toFixed(2)} MOA`],
-        ['Radial SD', `${stats.radialSdIn.toFixed(2)}"`,        `${stats.radialSdMoa.toFixed(2)} MOA`],
-        ['Vert SD',   `${stats.verticalSdIn.toFixed(2)}"`,      `${stats.verticalSdMoa.toFixed(2)} MOA`],
-        ['Horiz SD',  `${stats.horizontalSdIn.toFixed(2)}"`,    `${stats.horizontalSdMoa.toFixed(2)} MOA`],
-        ['ES',        `${stats.extremeSpreadIn.toFixed(2)}"`,   `${stats.extremeSpreadMoa.toFixed(2)} MOA`],
-        ['Mean R',    `${stats.meanRadiusIn.toFixed(2)}"`,      `${stats.meanRadiusMoa.toFixed(2)} MOA`],
-      ];
-      const panelH = lineH * (rows.length + 2.5);
-      const margin = Math.round(img.width * 0.02);
-      const px = img.width - panelW - margin; const py = margin;
-
-      ctx.fillStyle = 'rgba(0,0,0,0.78)';
-      ctx.beginPath(); ctx.roundRect(px, py, panelW, panelH, Math.round(panelW * 0.04)); ctx.fill();
-      ctx.fillStyle = 'white'; ctx.font = `bold ${fontSize}px sans-serif`; ctx.textAlign = 'left';
-      ctx.fillText(`${distanceYds}yd  •  ${stats.shotCount} shots`, px + Math.round(panelW * 0.05), py + lineH * 1.2);
-      rows.forEach(([label, val, moa], i) => {
-        const rowY = py + lineH * (2.4 + i);
-        ctx.font = `${smallFont}px sans-serif`; ctx.fillStyle = 'rgba(180,180,200,0.9)'; ctx.textAlign = 'left';
-        ctx.fillText(label, px + Math.round(panelW * 0.05), rowY);
-        ctx.font = `bold ${fontSize}px sans-serif`; ctx.fillStyle = 'white'; ctx.textAlign = 'right';
-        ctx.fillText(val, px + Math.round(panelW * 0.62), rowY);
-        ctx.font = `${smallFont}px sans-serif`; ctx.fillStyle = 'rgba(180,180,200,0.8)';
-        ctx.fillText(moa, px + panelW - Math.round(panelW * 0.04), rowY);
-      });
-
-      const filename = `target-${distanceYds}yd-${stats.shotCount}shots.png`;
-      offscreen.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], filename, { type: 'image/png' });
-        if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: 'Target Analysis' }); return; } catch { /* fall through */ }
-        }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = filename; link.href = url;
-        document.body.appendChild(link); link.click();
-        document.body.removeChild(link); URL.revokeObjectURL(url);
-      }, 'image/png');
-    };
-    img.src = source;
+    if (!overlayDataUrl || !stats) return;
+    const filename = `lindcott-${distanceYds}yd-${stats.shotCount}shots.png`;
+    const res = await fetch(overlayDataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Lindcott Armory — Target Analysis' }); return; } catch { /* fall through */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename; link.href = url;
+    document.body.appendChild(link); link.click();
+    document.body.removeChild(link); URL.revokeObjectURL(url);
   };
 
   // ── Reset ─────────────────────────────────────────────────────────────────
@@ -589,34 +618,28 @@ export function TargetAnalysis() {
     setMarks([]); setMarkMode('calib'); setStats(null); setScale(1);
     setOffset({ x: 0, y: 0 }); setCalibBannerMsg(null); setSavedMsg(false);
     setOverlayDataUrl(null); setCoachMessages([]); setShowCoach(false);
+    clearLoupe();
   };
-
-  const deleteHistoryEntry = (id: string) => {
-    deleteTargetAnalysis(id); setHistory(getTargetAnalyses());
-  };
+  const deleteHistoryEntry = (id: string) => { deleteTargetAnalysis(id); setHistory(getTargetAnalyses()); };
 
   // ── AI Coach ──────────────────────────────────────────────────────────────
   const statsContext = stats ? [
     `Distance: ${distanceYds} yards | Shots: ${stats.shotCount}`,
     `Windage: ${stats.windageIn >= 0 ? 'Right' : 'Left'} ${Math.abs(stats.windageIn).toFixed(2)}" (${stats.windageMoa.toFixed(2)} MOA)`,
     `Elevation: ${stats.elevationIn >= 0 ? 'Up' : 'Down'} ${Math.abs(stats.elevationIn).toFixed(2)}" (${stats.elevationMoa.toFixed(2)} MOA)`,
-    `CEP: ${stats.cepIn.toFixed(2)}" (${stats.cepMoa.toFixed(2)} MOA)`,
-    `ES: ${stats.extremeSpreadIn.toFixed(2)}" (${stats.extremeSpreadMoa.toFixed(2)} MOA)`,
+    `CEP: ${stats.cepIn.toFixed(2)}" (${stats.cepMoa.toFixed(2)} MOA) | ES: ${stats.extremeSpreadIn.toFixed(2)}" (${stats.extremeSpreadMoa.toFixed(2)} MOA)`,
     `Radial SD: ${stats.radialSdIn.toFixed(2)}" | Vert SD: ${stats.verticalSdIn.toFixed(2)}" | Horiz SD: ${stats.horizontalSdIn.toFixed(2)}"`,
   ].join('\n') : '';
 
   const callCoach = async (userMsg: string) => {
     const newMessages = [...coachMessages, { role: 'user', content: userMsg }];
-    setCoachMessages(newMessages);
-    setCoachInput('');
-    setCoachLoading(true);
+    setCoachMessages(newMessages); setCoachInput(''); setCoachLoading(true);
     try {
       const res = await fetch('/.netlify/functions/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statsContext, messages: newMessages }),
       });
-      const data = await res.json() as { reply?: string; error?: string };
+      const data = await res.json() as { reply?: string };
       if (!res.ok) {
         setCoachMessages(prev => [...prev, { role: 'assistant', content: res.status === 503 ? '⚠️ Coach not configured. Add ANTHROPIC_API_KEY to Netlify environment variables.' : '⚠️ Coach unavailable.' }]);
       } else {
@@ -624,15 +647,9 @@ export function TargetAnalysis() {
       }
     } catch {
       setCoachMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Could not reach coaching service.' }]);
-    } finally {
-      setCoachLoading(false);
-    }
+    } finally { setCoachLoading(false); }
   };
-
-  const openCoach = () => {
-    setShowCoach(true);
-    if (coachMessages.length === 0) callCoach('Analyze my shot group and give me 2–3 specific, actionable coaching tips.');
-  };
+  const openCoach = () => { setShowCoach(true); if (coachMessages.length === 0) callCoach('Analyze my shot group and give me 2–3 specific, actionable coaching tips.'); };
 
   // ── UI helpers ────────────────────────────────────────────────────────────
   const chip = (label: string, selected: boolean, onSelect: () => void) => (
@@ -642,28 +659,17 @@ export function TargetAnalysis() {
       background: selected ? theme.accentDim : theme.surface,
       color: selected ? theme.accent : theme.textSecondary,
       fontWeight: selected ? 700 : 400, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-    }}>
-      {label}
-    </button>
+    }}>{label}</button>
   );
-
   const unitToggle = (unit: 'in' | 'mm', setUnit: (u: 'in' | 'mm') => void) => (
     <div style={{ display: 'flex', border: `1px solid ${theme.border}`, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
       {(['in', 'mm'] as const).map(u => (
-        <button key={u} onClick={() => setUnit(u)} style={{
-          padding: '5px 10px', border: 'none', cursor: 'pointer', fontSize: 11,
-          fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.5px',
-          background: unit === u ? theme.accent : 'transparent',
-          color: unit === u ? '#000' : theme.textMuted,
-        }}>{u.toUpperCase()}</button>
+        <button key={u} onClick={() => setUnit(u)} style={{ padding: '5px 10px', border: 'none', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.5px', background: unit === u ? theme.accent : 'transparent', color: unit === u ? '#000' : theme.textMuted }}>{u.toUpperCase()}</button>
       ))}
     </div>
   );
-
   const sectionLabel = (text: string) => (
-    <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
-      {text}
-    </div>
+    <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>{text}</div>
   );
 
   // ── STEP 1: Upload + Distance + Bullet ────────────────────────────────────
@@ -679,33 +685,26 @@ export function TargetAnalysis() {
               <div style={{ fontSize: 13, color: theme.textSecondary }}>Upload a target photo to analyze your shot placement</div>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.accent, color: '#000', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-              📷 Take Photo
-              <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
+              📷 Take Photo <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
             </label>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              🖼 Choose from Library
-              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+              🖼 Choose from Library <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
             </label>
           </div>
         ) : (
           <>
-            {/* Image preview — contain (not cover) so the full image is visible */}
             <div style={{ position: 'relative' }}>
               <div style={{ width: '100%', borderRadius: 10, overflow: 'hidden', border: `1px solid ${theme.border}`, background: '#000', maxHeight: 200 }}>
-                <img src={imageUrl} alt="Target" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', maxHeight: 200 }} />
+                <img src={imageUrl} alt="Target" style={{ width: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
               </div>
-              <button onClick={() => setImageUrl(null)} style={{ position: 'absolute', top: 6, right: 6, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', fontSize: 11, cursor: 'pointer' }}>
-                Change
-              </button>
+              <button onClick={() => setImageUrl(null)} style={{ position: 'absolute', top: 6, right: 6, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', fontSize: 11, cursor: 'pointer' }}>Change</button>
             </div>
 
             <div>
               {sectionLabel('Distance')}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                 {DIST_PRESETS.map(d => chip(`${d}yd`, distanceYds === d && !customDist, () => { setDistanceYds(d); setCustomDist(''); }))}
-                <input type="number" placeholder="Other yd" value={customDist}
-                  onChange={e => { setCustomDist(e.target.value); if (e.target.value) setDistanceYds(Number(e.target.value)); }}
-                  style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 88 }} />
+                <input type="number" placeholder="Other yd" value={customDist} onChange={e => { setCustomDist(e.target.value); if (e.target.value) setDistanceYds(Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 88 }} />
               </div>
             </div>
 
@@ -722,20 +721,13 @@ export function TargetAnalysis() {
                 })}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="number" step={bulletUnit === 'mm' ? '0.1' : '0.001'} placeholder={bulletUnit === 'mm' ? 'mm' : 'inches'} value={customBullet}
-                  onChange={e => { setCustomBullet(e.target.value); if (e.target.value) setBulletDiaIn(bulletUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }}
-                  style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 100 }} />
+                <input type="number" step={bulletUnit === 'mm' ? '0.1' : '0.001'} placeholder={bulletUnit === 'mm' ? 'mm' : 'inches'} value={customBullet} onChange={e => { setCustomBullet(e.target.value); if (e.target.value) setBulletDiaIn(bulletUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 100 }} />
                 {selectedBullet && !customBullet && (
-                  <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'monospace' }}>
-                    {bulletUnit === 'mm' ? `= ${selectedBullet.label.split(' / ')[0]}` : `= ${inToMm(bulletDiaIn)}mm`}
-                  </span>
+                  <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'monospace' }}>{bulletUnit === 'mm' ? `= ${selectedBullet.label.split(' / ')[0]}` : `= ${inToMm(bulletDiaIn)}mm`}</span>
                 )}
               </div>
             </div>
-
-            <button onClick={() => setStep(2)} style={{ padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-              Continue →
-            </button>
+            <button onClick={() => setStep(2)} style={{ padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Continue →</button>
           </>
         )}
       </div>
@@ -752,11 +744,9 @@ export function TargetAnalysis() {
             <img src={imageUrl} alt="Target" style={{ width: '100%', maxHeight: 160, objectFit: 'contain', display: 'block' }} />
           </div>
         )}
-
         <div style={{ background: theme.surfaceAlt, borderRadius: 10, padding: '12px 14px', fontSize: 13, color: theme.textSecondary, lineHeight: 1.5 }}>
-          In the next step you'll tap two points on the photo that are exactly <strong style={{ color: theme.textPrimary }}>{displayRefIn}</strong> apart, then drag to fine-tune. Use a ruler edge, target grid square, or any known distance.
+          Next, tap two points on the photo that are exactly <strong style={{ color: theme.textPrimary }}>{displayRefIn}</strong> apart, then drag to fine-tune. Use a ruler, target grid line, or any known distance.
         </div>
-
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             {sectionLabel('Reference Distance')}
@@ -765,23 +755,14 @@ export function TargetAnalysis() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
             {REF_PRESETS_IN.map(r => {
               const displayVal = refUnit === 'mm' ? `${Math.round(r * 25.4)}mm` : `${r}"`;
-              const isSelected = Math.abs(refIn - r) < 0.01 && !customRef;
-              return chip(displayVal, isSelected, () => { setRefIn(r); setCustomRef(''); });
+              return chip(displayVal, Math.abs(refIn - r) < 0.01 && !customRef, () => { setRefIn(r); setCustomRef(''); });
             })}
-            <input type="number" step={refUnit === 'mm' ? '1' : '0.25'} placeholder={refUnit === 'mm' ? 'mm' : 'inches'} value={customRef}
-              onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(refUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }}
-              style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
+            <input type="number" step={refUnit === 'mm' ? '1' : '0.25'} placeholder={refUnit === 'mm' ? 'mm' : 'inches'} value={customRef} onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(refUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
           </div>
         </div>
-
         <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
-          <button onClick={() => setStep(1)} style={{ flex: 1, padding: 14, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer' }}>
-            ← Back
-          </button>
-          <button onClick={() => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); setScale(1); setOffset({ x: 0, y: 0 }); setStep(3); }}
-            style={{ flex: 2, padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-            Mark Target →
-          </button>
+          <button onClick={() => setStep(1)} style={{ flex: 1, padding: 14, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer' }}>← Back</button>
+          <button onClick={() => { setCalibPts([]); setPixelsPerInch(null); setMarks([]); setMarkMode('calib'); setScale(1); setOffset({ x: 0, y: 0 }); setStep(3); }} style={{ flex: 2, padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Mark Target →</button>
         </div>
       </div>
     );
@@ -791,60 +772,45 @@ export function TargetAnalysis() {
   const renderStep3 = () => {
     let instruction = '';
     if (calibBannerMsg) instruction = calibBannerMsg;
-    else if (markMode === 'calib') instruction = calibPts.length === 0 ? `Tap point A on your ${refIn}" reference` : 'Tap point B — then drag A or B to fine-tune';
+    else if (markMode === 'calib') instruction = calibPts.length === 0 ? `Tap point A on your ${refIn}" reference` : 'Tap point B — drag A or B to fine-tune';
     else if (markMode === 'poa') instruction = 'Tap your Point of Aim (center of target)';
     else { const n = marks.length - 1; instruction = `Tap each shot hole  •  ${n} shot${n !== 1 ? 's' : ''}  •  drag to reposition`; }
 
-    const isCalibConfirm = !!calibBannerMsg;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-        <div style={{ padding: '8px 12px', background: isCalibConfirm ? 'rgba(60,180,60,0.15)' : theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, color: isCalibConfirm ? '#4caf50' : theme.textPrimary, fontWeight: isCalibConfirm ? 700 : 500, flex: 1 }}>
-            {instruction}
-          </span>
+        <div style={{ padding: '8px 12px', background: calibBannerMsg ? 'rgba(60,180,60,0.15)' : theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: calibBannerMsg ? '#4caf50' : theme.textPrimary, fontWeight: calibBannerMsg ? 700 : 500, flex: 1 }}>{instruction}</span>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            {scale > 1 && (
-              <button onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, cursor: 'pointer' }}>
-                Reset Zoom
-              </button>
-            )}
-            {(markMode === 'poa' || markMode === 'shots') && (
-              <button onClick={resetCalibration} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>
-                Recal.
-              </button>
-            )}
-            <button onClick={undoLast} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 12, cursor: 'pointer' }}>
-              Undo
-            </button>
-            {markMode === 'shots' && marks.length >= 2 && (
-              <button onClick={goToResults} style={{ padding: '5px 12px', borderRadius: 7, background: theme.accent, color: '#000', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Results →
-              </button>
-            )}
+            {scale > 1 && <button onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, cursor: 'pointer' }}>Reset Zoom</button>}
+            {(markMode === 'poa' || markMode === 'shots') && <button onClick={resetCalibration} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Recal.</button>}
+            <button onClick={undoLast} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 12, cursor: 'pointer' }}>Undo</button>
+            {markMode === 'shots' && marks.length >= 2 && <button onClick={goToResults} style={{ padding: '5px 12px', borderRadius: 7, background: theme.accent, color: '#000', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Results →</button>}
           </div>
         </div>
 
-        {/* Canvas wrapper — flex centering + contain sizing prevents image cutoff */}
+        {/* Canvas wrapper — position:relative so loupe can be absolutely positioned */}
         <div
-          style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', minHeight: 0, touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', minHeight: 0, touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           <canvas
             ref={canvasRef}
-            style={{
-              maxWidth: '100%', maxHeight: '100%',
-              width: 'auto', height: 'auto',
-              display: 'block', touchAction: 'none',
-              transformOrigin: '0 0',
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-              willChange: 'transform', cursor: 'crosshair',
-            }}
+            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', display: 'block', touchAction: 'none', transformOrigin: '0 0', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, willChange: 'transform', cursor: 'crosshair' }}
             onMouseDown={handleCanvasMouseDown}
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
           />
+          {/* Loupe magnifier — appears in top-right corner during drag */}
+          {showLoupe && (
+            <canvas
+              ref={loupeRef}
+              width={300}
+              height={300}
+              style={{ position: 'absolute', top: 12, right: 12, width: 150, height: 150, borderRadius: 10, border: '2px solid rgba(255,255,255,0.65)', boxShadow: '0 4px 20px rgba(0,0,0,0.75)', pointerEvents: 'none', background: '#000' }}
+            />
+          )}
         </div>
 
         <button onClick={() => setStep(2)} style={{ margin: 10, padding: 11, borderRadius: 10, flexShrink: 0, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>
@@ -860,22 +826,14 @@ export function TargetAnalysis() {
     const isOpen = openTooltip === label;
     return (
       <div style={{ borderBottom: `1px solid ${theme.border}` }}>
-        <div onClick={() => hasTooltip ? setOpenTooltip(isOpen ? null : label) : undefined}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', cursor: hasTooltip ? 'pointer' : 'default' }}>
+        <div onClick={() => hasTooltip ? setOpenTooltip(isOpen ? null : label) : undefined} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', cursor: hasTooltip ? 'pointer' : 'default' }}>
           <span style={{ fontSize: 14, color: theme.textSecondary, userSelect: 'none' }}>{label}</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 17, fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{val}</span>
-            <span style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'monospace', cursor: 'pointer' }}
-              onClick={e => { e.stopPropagation(); setOpenTooltip(openTooltip === 'MOA' ? null : 'MOA'); }}>
-              {moa}
-            </span>
+            <span style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'monospace', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setOpenTooltip(openTooltip === 'MOA' ? null : 'MOA'); }}>{moa}</span>
           </div>
         </div>
-        {isOpen && (
-          <div style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 1.5, paddingBottom: 10 }}>
-            {TOOLTIPS[label]}
-          </div>
-        )}
+        {isOpen && <div style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 1.5, paddingBottom: 10 }}>{TOOLTIPS[label]}</div>}
       </div>
     );
   };
@@ -884,18 +842,11 @@ export function TargetAnalysis() {
     if (!stats) return null;
     const wDir = stats.windageIn >= 0 ? 'R ' : 'L ';
     const eDir = stats.elevationIn >= 0 ? 'U ' : 'D ';
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
           {(['stats', 'overlay'] as const).map(tab => (
-            <button key={tab} onClick={() => setResultTab(tab)} style={{
-              flex: 1, padding: '10px', border: 'none', background: 'transparent',
-              color: resultTab === tab ? theme.accent : theme.textMuted,
-              fontFamily: 'monospace', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px',
-              textTransform: 'uppercase', cursor: 'pointer',
-              borderBottom: resultTab === tab ? `2px solid ${theme.accent}` : '2px solid transparent',
-            }}>
+            <button key={tab} onClick={() => setResultTab(tab)} style={{ flex: 1, padding: '10px', border: 'none', background: 'transparent', color: resultTab === tab ? theme.accent : theme.textMuted, fontFamily: 'monospace', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', borderBottom: resultTab === tab ? `2px solid ${theme.accent}` : '2px solid transparent' }}>
               {tab === 'stats' ? 'Stats' : 'Overlay'}
             </button>
           ))}
@@ -906,16 +857,11 @@ export function TargetAnalysis() {
             <div style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {overlayDataUrl
                 ? <img src={overlayDataUrl} alt="Annotated target" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
-                : <span style={{ color: theme.textMuted, fontSize: 13 }}>No overlay captured</span>
-              }
+                : <span style={{ color: theme.textMuted, fontSize: 13 }}>No overlay captured</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, padding: 12, flexShrink: 0 }}>
-              <button onClick={() => setStep(3)} style={{ flex: 1, padding: 12, borderRadius: 10, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>
-                ← Edit
-              </button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                ⬇ Export
-              </button>
+              <button onClick={() => setStep(3)} style={{ flex: 1, padding: 12, borderRadius: 10, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
+              <button onClick={exportOverlay} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬇ Export</button>
             </div>
           </div>
         ) : (
@@ -924,19 +870,13 @@ export function TargetAnalysis() {
               <div style={{ fontSize: 18, fontWeight: 700, color: theme.textPrimary }}>Results</div>
               <div style={{ fontSize: 12, color: theme.textMuted }}>{stats.shotCount} shots • {distanceYds}yd</div>
             </div>
-
-            {savedMsg && (
-              <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>
-                Saved to history ✓
-              </div>
-            )}
+            {savedMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Saved to history ✓</div>}
 
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Offset from POA</div>
               <StatRow label="Windage"   val={`${wDir}${Math.abs(stats.windageIn).toFixed(2)}"`}   moa={`${stats.windageMoa.toFixed(2)} MOA`} />
               <StatRow label="Elevation" val={`${eDir}${Math.abs(stats.elevationIn).toFixed(2)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
             </div>
-
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Precision</div>
               <StatRow label="CEP"            val={`${stats.cepIn.toFixed(2)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} />
@@ -948,18 +888,12 @@ export function TargetAnalysis() {
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setStep(3)} style={{ flex: 1, padding: 13, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>
-                ← Edit
-              </button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                ⬇ Export
-              </button>
+              <button onClick={() => setStep(3)} style={{ flex: 1, padding: 13, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
+              <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬇ Export</button>
             </div>
 
             {!showCoach ? (
-              <button onClick={openCoach} style={{ padding: 13, borderRadius: 12, border: `1px solid ${theme.accent}`, background: theme.accentDim, color: theme.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                🎯 Get Coaching
-              </button>
+              <button onClick={openCoach} style={{ padding: 13, borderRadius: 12, border: `1px solid ${theme.accent}`, background: theme.accentDim, color: theme.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>🎯 Get Coaching</button>
             ) : (
               <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '10px 14px', background: theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -968,40 +902,20 @@ export function TargetAnalysis() {
                 </div>
                 <div style={{ maxHeight: 280, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {coachMessages.map((msg, i) => (
-                    <div key={i} style={{
-                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '88%', padding: '8px 12px',
-                      borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                      background: msg.role === 'user' ? theme.accent : theme.surface,
-                      color: msg.role === 'user' ? '#000' : theme.textPrimary,
-                      fontSize: 13, lineHeight: 1.5,
-                      border: msg.role === 'assistant' ? `1px solid ${theme.border}` : 'none',
-                    }}>
+                    <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%', padding: '8px 12px', borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px', background: msg.role === 'user' ? theme.accent : theme.surface, color: msg.role === 'user' ? '#000' : theme.textPrimary, fontSize: 13, lineHeight: 1.5, border: msg.role === 'assistant' ? `1px solid ${theme.border}` : 'none' }}>
                       {msg.content}
                     </div>
                   ))}
-                  {coachLoading && (
-                    <div style={{ alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '12px 12px 12px 2px', background: theme.surface, border: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: 13 }}>
-                      ...
-                    </div>
-                  )}
+                  {coachLoading && <div style={{ alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '12px 12px 12px 2px', background: theme.surface, border: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: 13 }}>...</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: `1px solid ${theme.border}` }}>
-                  <input type="text" placeholder="Ask a follow-up..." value={coachInput}
-                    onChange={e => setCoachInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && coachInput.trim() && !coachLoading) callCoach(coachInput.trim()); }}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13 }} />
-                  <button onClick={() => coachInput.trim() && !coachLoading && callCoach(coachInput.trim())}
-                    style={{ padding: '8px 14px', borderRadius: 8, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: coachLoading ? 0.5 : 1 }}>
-                    Send
-                  </button>
+                  <input type="text" placeholder="Ask a follow-up..." value={coachInput} onChange={e => setCoachInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && coachInput.trim() && !coachLoading) callCoach(coachInput.trim()); }} style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13 }} />
+                  <button onClick={() => coachInput.trim() && !coachLoading && callCoach(coachInput.trim())} style={{ padding: '8px 14px', borderRadius: 8, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: coachLoading ? 0.5 : 1 }}>Send</button>
                 </div>
               </div>
             )}
 
-            <button onClick={resetAll} style={{ padding: 11, borderRadius: 12, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>
-              + New Analysis
-            </button>
+            <button onClick={resetAll} style={{ padding: 11, borderRadius: 12, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>+ New Analysis</button>
 
             {history.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1023,9 +937,7 @@ export function TargetAnalysis() {
                           </div>
                           <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 3 }}>{dateStr}</div>
                         </div>
-                        <button onClick={() => deleteHistoryEntry(record.id)} style={{ padding: '5px 8px', borderRadius: 7, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer', flexShrink: 0 }} title="Delete">
-                          🗑
-                        </button>
+                        <button onClick={() => deleteHistoryEntry(record.id)} style={{ padding: '5px 8px', borderRadius: 7, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 14, cursor: 'pointer', flexShrink: 0 }} title="Delete">🗑</button>
                       </div>
                     );
                   })}
@@ -1040,20 +952,15 @@ export function TargetAnalysis() {
 
   // ── Step indicator ────────────────────────────────────────────────────────
   const stepLabels = ['Setup', 'Scale', 'Mark', 'Results'];
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       {step !== 3 && (
         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', gap: 4, flexShrink: 0 }}>
           {stepLabels.map((label, i) => {
-            const s = (i + 1) as Step;
-            const active = s === step; const done = s < step;
+            const s = (i + 1) as Step; const active = s === step; const done = s < step;
             return (
               <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: done ? theme.accent : active ? theme.accentDim : theme.surface,
-                  border: active ? `2px solid ${theme.accent}` : done ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
-                  fontSize: 10, fontWeight: 700, color: done ? '#000' : active ? theme.accent : theme.textMuted }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: done ? theme.accent : active ? theme.accentDim : theme.surface, border: active ? `2px solid ${theme.accent}` : done ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`, fontSize: 10, fontWeight: 700, color: done ? '#000' : active ? theme.accent : theme.textMuted }}>
                   {done ? '✓' : s}
                 </div>
                 <span style={{ fontSize: 10, color: active ? theme.textPrimary : theme.textMuted, fontWeight: active ? 600 : 400 }}>{label}</span>
