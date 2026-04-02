@@ -12,6 +12,7 @@ type SortOption = 'make' | 'roundCount' | 'acquiredPriceDesc' | 'acquiredPriceAs
 interface GunVaultProps {
   onGunSelect: (gun: Gun) => void;
   onAddGun: () => void;
+  onImportRequest?: () => void;
 }
 
 export const typeAccent: Record<string, string> = {
@@ -25,7 +26,7 @@ export const typeAccent: Record<string, string> = {
 const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold', 'Transferred'];
 const ALL_PURPOSES: GunPurpose[] = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'];
 
-export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
+export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultProps) {
   const [guns, setGuns]         = useState<Gun[]>([]);
   const [lastShotMap, setLastShotMap] = useState<Record<string, string>>({});
   const [search, setSearch]     = useState('');
@@ -198,49 +199,48 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
           {guns.length > 0 && (() => {
             const totalFMV = filtered.reduce((sum, g) => sum + (g.estimatedFMV || 0), 0);
             return totalFMV > 0 ? (
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.green, marginTop: '3px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginTop: '3px' }}>
                 Est. Market Value ${totalFMV.toLocaleString()}
               </div>
             ) : null;
           })()}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
-          <button onClick={onAddGun} style={{
-            padding: '10px 14px',
-            backgroundColor: theme.accent,
-            border: 'none', borderRadius: '6px',
-            color: theme.bg, fontFamily: 'monospace',
-            fontSize: '11px', letterSpacing: '0.8px',
-            fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-          }}>
-            + ADD GUN
-          </button>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button onClick={() => setShowCSVImport(true)} style={{
-              padding: '5px 10px',
-              backgroundColor: 'transparent',
-              border: `0.5px solid ${theme.border}`,
-              borderRadius: '5px',
-              color: theme.textMuted, fontFamily: 'monospace',
-              fontSize: '9px', letterSpacing: '0.5px',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
-              IMPORT
-            </button>
-            <button onClick={() => exportInsuranceClaim(guns)} style={{
-              padding: '5px 10px',
-              backgroundColor: 'transparent',
-              border: `0.5px solid ${theme.border}`,
-              borderRadius: '5px',
-              color: theme.textMuted, fontFamily: 'monospace',
-              fontSize: '9px', letterSpacing: '0.5px',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
-              EXPORT
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px' }}>
+            {filtered.length !== guns.length ? `${filtered.length} shown` : ''}
           </div>
         </div>
       </div>
+
+      {/* ── MAINTENANCE ALERT BAR (V2) ── */}
+      {attentionGuns.length > 0 && (
+        <button
+          onClick={() => {
+            setTypeFilter('All');
+            setCaliberFilter('');
+            setActionFilter('');
+            setStatusFilter('');
+            setPurposeFilter('');
+            setSearch('');
+            // Filter to only guns needing attention via a search term approach isn't ideal,
+            // so we surface the needs-attention section instead by toggling it
+          }}
+          style={{
+            width: '100%',
+            marginBottom: '10px',
+            padding: '8px 12px',
+            backgroundColor: 'transparent',
+            border: `0.5px solid ${theme.accent}`,
+            borderRadius: '6px',
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.accent, letterSpacing: '0.5px' }}>
+            {attentionGuns.length} gun{attentionGuns.length !== 1 ? 's' : ''} due for cleaning
+          </span>
+        </button>
+      )}
 
       {/* ── SEARCH + SORT ROW ── */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -289,7 +289,7 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
       {/* ── TYPE CHIPS + FILTERS ROW ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         {/* Chips — scrollable, don't overflow into FILTERS */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, scrollbarWidth: 'none', paddingRight: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, minWidth: 0, scrollbarWidth: 'none', paddingRight: '8px' }}>
           {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
             .filter(t => typeCounts[t] > 0)
             .map(t => {
@@ -579,7 +579,7 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
 
 // ── Insurance export ──────────────────────────────────────────────────────────
 
-function exportInsuranceClaim(guns: Gun[]): void {
+export function exportInsuranceClaim(guns: Gun[]): void {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const activeGuns = guns.filter(g => g.status !== 'Sold' && g.status !== 'Transferred');
@@ -709,7 +709,7 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <GunSilhouetteImage gun={gun} color={accent} size={44} />
+        <GunSilhouetteImage gun={gun} color="rgba(255,255,255,0.15)" size={44} />
       </div>
 
       {/* Name + meta */}
@@ -737,7 +737,9 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.caliberRed }}>{gun.caliber}</span>
           <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>{gun.action}</span>
           {gun.capacity && (
-            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>{gun.capacity}+1</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>
+              {gun.capacity}{gun.action !== 'Revolver' ? '+1' : ''}
+            </span>
           )}
           {gun.status && gun.status !== 'Active' && (
             <span style={{

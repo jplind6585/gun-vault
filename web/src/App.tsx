@@ -23,9 +23,14 @@ import { AddGunForm } from './AddGunForm';
 import { SessionRecaps } from './SessionRecaps';
 import { SessionLogView } from './SessionLogView';
 import { DevToolbar } from './DevToolbar';
+import { SettingsPanel } from './SettingsPanel';
+import { exportInsuranceClaim } from './GunVault';
+import { CSVImportModal } from './CSVImportModal';
+import { MoreMenu } from './MoreMenu';
+import { FieldGuide } from './FieldGuide';
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'style-demo';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'style-demo' | 'more' | 'field-guide';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -42,6 +47,9 @@ function App() {
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [vaultSection, setVaultSection] = useState<'guns' | 'ammo'>('guns');
+  const [showSettings, setShowSettings] = useState(false);
+  const [openAddAmmo, setOpenAddAmmo] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
 
   function handleVersionTap() {
     const next = devTapCount + 1;
@@ -127,13 +135,15 @@ function App() {
     if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
     if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
     if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
-    if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('home')} backLabel="Home" />;
-    if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
-    if (currentView === 'training')     return <AppHeader title="Training Log" onBack={() => setCurrentView('home')} backLabel="Home" />;
-    if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('home')} backLabel="Home" />;
-    if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('home')} backLabel="Home" />;
-    if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('home')} backLabel="Home" />;
+    if (currentView === 'training')     return <AppHeader title="Training Log" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
+    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" onBack={() => setCurrentView('more')} backLabel="More" />;
     return null;
   }
 
@@ -147,6 +157,7 @@ function App() {
         onLogSession={(gun) => openSessionLog(gun)}
         onAddGun={() => setShowAddForm(true)}
         onSearchOpen={() => setShowSmartSearch(true)}
+        onSettingsOpen={() => setShowSettings(true)}
         onDevTools={devUnlocked ? () => setDevOpen(o => !o) : undefined}
         onVersionTap={handleVersionTap}
         devTapCount={devTapCount}
@@ -194,8 +205,9 @@ function App() {
             ? <GunVault
                 onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
                 onAddGun={() => setShowAddForm(true)}
+                onImportRequest={() => setShowCSVImport(true)}
               />
-            : <Arsenal />
+            : <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
           }
         </div>
       );
@@ -218,15 +230,12 @@ function App() {
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist />;
     if (currentView === 'style-demo')  return <StyleDemo />;
+    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
+    if (currentView === 'field-guide') return <FieldGuide onNavigateToCalibers={() => setCurrentView('caliber')} />;
     return null;
   }
 
-  const activeNavView = (['home','vault','sessions','target-analysis'] as const).find(v =>
-    currentView === v ||
-    (currentView === 'gun-detail' && v === 'vault') ||
-    (currentView === 'session-log' && v === 'sessions') ||
-    (currentView === 'arsenal' && v === 'vault')
-  ) ?? 'home';
+  const activeNavView = currentView;
 
   return (
     <div style={{
@@ -248,6 +257,7 @@ function App() {
         onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
         onNavigateToSessions={() => setCurrentView('sessions')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
+        onNavigateToMore={() => setCurrentView('more')}
       />
       {showSmartSearch && (
         <SmartSearch
@@ -255,11 +265,24 @@ function App() {
           onNavigate={(view, data) => { setCurrentView(view as AppView); if (data) setSelectedGun(data); }}
         />
       )}
+      {showCSVImport && (
+        <CSVImportModal
+          onClose={() => setShowCSVImport(false)}
+          onImported={(count) => { setShowCSVImport(false); loadGuns(); success(count + ' guns imported'); }}
+        />
+      )}
+      {showSettings && (
+        <SettingsPanel
+          onClose={() => setShowSettings(false)}
+          onImport={() => { setShowSettings(false); setShowCSVImport(true); setCurrentView('vault'); setVaultSection('guns'); }}
+          onExport={() => { setShowSettings(false); exportInsuranceClaim(allGuns); }}
+        />
+      )}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 
-      {/* ── GLOBAL FAB ── shown on main views only */}
-      {(['home','vault','sessions'] as AppView[]).includes(currentView) && (
+      {/* ── GLOBAL FAB ── shown on main views only, hidden when modals are open */}
+      {(['home','vault','sessions'] as AppView[]).includes(currentView) && !showAddForm && !showSettings && (
         <>
           {showFab && (
             <div
@@ -281,7 +304,7 @@ function App() {
               {[
                 { label: 'Log Session', action: () => { setShowFab(false); openSessionLog(); } },
                 { label: 'Add Gun',     action: () => { setShowFab(false); setShowAddForm(true); } },
-                { label: 'Add Ammo',    action: () => { setShowFab(false); setCurrentView('vault'); setVaultSection('ammo'); } },
+                { label: 'Add Ammo',    action: () => { setShowFab(false); setVaultSection('ammo'); setCurrentView('vault'); setOpenAddAmmo(true); } },
               ].map(item => (
                 <button key={item.label} onClick={item.action} style={{
                   padding: '10px 16px',

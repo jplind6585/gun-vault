@@ -11,6 +11,7 @@ interface HomePageProps {
   onLogSession: (gun?: Gun) => void;
   onAddGun: () => void;
   onSearchOpen: () => void;
+  onSettingsOpen?: () => void;
   onDevTools?: () => void;
   onVersionTap?: () => void;
   devTapCount?: number;
@@ -103,6 +104,7 @@ export function HomePage({
   onLogSession,
   onAddGun,
   onSearchOpen,
+  onSettingsOpen,
   onDevTools,
   onVersionTap,
   devTapCount = 0,
@@ -259,19 +261,22 @@ export function HomePage({
           </svg>
           Search guns, ammo, sessions...
         </button>
-        {onDevTools && (
-          <button onClick={onDevTools} style={{
+        <button
+          onClick={onDevTools || onSettingsOpen}
+          style={{
             width: '40px', height: '40px', flexShrink: 0,
             backgroundColor: theme.surface,
             border: `0.5px solid ${theme.border}`,
             borderRadius: '6px', color: theme.textMuted,
             cursor: 'pointer', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
-            fontSize: '16px',
-          }}>
-            ⚙
-          </button>
-        )}
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
       </div>
 
       {/* ── GUNS + AMMO CARD ── */}
@@ -362,7 +367,7 @@ export function HomePage({
             { val: periodShots.toLocaleString(),                  lbl: 'Rounds Fired'   },
             { val: avgRounds > 0 ? avgRounds.toString() : '—',   lbl: 'Avg/Session'    },
             { val: daysSinceLast !== null ? `${daysSinceLast}d` : '—', lbl: 'Last Session' },
-            { val: sessions.reduce((s,x) => s + x.roundsExpended, 0).toLocaleString(), lbl: 'Total Rounds' },
+            { val: sessions.reduce((s,x) => s + x.roundsExpended, 0).toLocaleString(), lbl: 'Rds Fired' },
             { val: sessionsPerMonth,                              lbl: 'Sessions/Mo'    },
           ].map(item => (
             <div key={item.lbl}>
@@ -397,14 +402,15 @@ export function HomePage({
                   #{i + 1}
                 </span>
 
-                {/* Name + caliber — wraps on narrow screens */}
+                {/* Name + caliber — one line, ellipsis */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
+                  <div style={{
                     fontFamily: 'monospace', fontSize: '13px', fontWeight: 700,
                     color: i === 0 ? theme.accent : theme.textPrimary,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
-                    {gun!.make} {gun!.model}
-                  </span>
+                    {gun!.displayName || (gun!.make + ' ' + gun!.model)}
+                  </div>
                   {' '}
                   <span style={{
                     fontFamily: 'monospace', fontSize: '10px',
@@ -427,15 +433,15 @@ export function HomePage({
                     onClick={() => onLogSession(gun!)}
                     style={{
                       padding: '4px 10px',
-                      backgroundColor: 'transparent',
-                      border: `0.5px solid ${theme.border}`,
+                      backgroundColor: theme.accent,
+                      border: 'none',
                       borderRadius: '3px',
-                      color: theme.textMuted,
+                      color: theme.bg,
                       fontFamily: 'monospace',
                       fontSize: '9px',
                       letterSpacing: '0.5px',
                       cursor: 'pointer',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       whiteSpace: 'nowrap',
                       minHeight: '28px',
                     }}

@@ -1,11 +1,38 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { theme } from './theme';
 import { getAllAmmo, getAmmoSummaryByCaliber, updateAmmo, addAmmo, getAllGuns, getAllSessions, getAllCartridges } from './storage';
 import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
+import { analyzeAmmoBox, hasClaudeApiKey } from './claudeApi';
 
 type ViewMode = 'calibers' | 'lots';
 type CategoryFilter = 'all' | 'Match' | 'Practice' | 'Self Defense' | 'Hunting';
+
+// Typical market price estimates per round (USD) — used as fallback when no price is recorded
+function estimatePricePerRound(caliber: string): number {
+  const c = caliber.toLowerCase();
+  if (c.includes('.22') || c.includes('22 lr')) return 0.09;
+  if (c.includes('9mm') || c.includes('9x19') || c.includes('luger')) return 0.32;
+  if (c.includes('.380') || c.includes('380 acp')) return 0.45;
+  if (c.includes('.45 acp') || c.includes('45 acp')) return 0.55;
+  if (c.includes('.40 s&w') || c.includes('40 s&w')) return 0.48;
+  if (c.includes('10mm')) return 0.72;
+  if (c.includes('.357 mag') || c.includes('357 mag')) return 0.70;
+  if (c.includes('5.56') || c.includes('.223')) return 0.65;
+  if (c.includes('.308') || c.includes('7.62x51')) return 1.20;
+  if (c.includes('6.5 creedmoor') || c.includes('6.5cm')) return 1.50;
+  if (c.includes('.300 win mag')) return 2.00;
+  if (c.includes('.30-06') || c.includes('30-06')) return 1.40;
+  if (c.includes('.30-30') || c.includes('30-30')) return 1.20;
+  if (c.includes('.300 blk') || c.includes('300 blk') || c.includes('300 blackout')) return 0.90;
+  if (c.includes('.338 lapua')) return 3.50;
+  if (c.includes('7.62x39')) return 0.45;
+  if (c.includes('12 gauge') || c.includes('12ga')) return 0.80;
+  if (c.includes('20 gauge') || c.includes('20ga')) return 0.90;
+  if (c.includes('.50 bmg') || c.includes('50 bmg')) return 4.50;
+  if (c.includes('.45 colt') || c.includes('45 colt')) return 0.90;
+  return 0.50; // generic fallback
+}
 
 // ============================================================================
 // CALIBER CONSOLIDATION
@@ -234,7 +261,7 @@ ${costFooter}
 // MAIN ARSENAL COMPONENT
 // ============================================================================
 
-export function Arsenal() {
+export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAddAmmoOnMount?: boolean; onAddAmmoMountHandled?: () => void } = {}) {
   const [viewMode, setViewMode] = useState<ViewMode>('calibers');
   const [allAmmo, setAllAmmo] = useState<AmmoLot[]>([]);
   const [selectedCaliber, setSelectedCaliber] = useState<string | null>(null);
@@ -264,6 +291,13 @@ export function Arsenal() {
   useEffect(() => {
     loadAmmo();
   }, []);
+
+  useEffect(() => {
+    if (openAddAmmoOnMount) {
+      setShowAddForm(true);
+      onAddAmmoMountHandled?.();
+    }
+  }, [openAddAmmoOnMount]);
 
   function loadAmmo() {
     const ammo = getAllAmmo();
@@ -371,10 +405,10 @@ export function Arsenal() {
     return true;
   });
 
-  // Replacement cost uses current market price (manually set); falls back to purchase price
+  // Replacement cost: uses manually set market price, then purchase price, then caliber estimate
   const replacementCost = allAmmo.reduce((sum, lot) => {
-    const price = lot.currentMarketPrice ?? lot.purchasePricePerRound;
-    return sum + (price ? lot.quantity * price : 0);
+    const price = lot.currentMarketPrice ?? lot.purchasePricePerRound ?? estimatePricePerRound(lot.caliber);
+    return sum + (lot.quantity * price);
   }, 0);
 
   // Task 9: Total invested (based on quantityPurchased * purchasePricePerRound)
@@ -495,10 +529,13 @@ export function Arsenal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
           <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>REPLACEMENT COST</span>
           <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>
-            {replacementCost > 0
-              ? `$${replacementCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-              : '—'}
+            {'$' + replacementCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
+          {allAmmo.some(l => !l.currentMarketPrice && !l.purchasePricePerRound) && (
+            <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>
+              est. — add prices for accuracy
+            </span>
+          )}
           {pricesStale && staleLot && (
             <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>
               prices may be stale{' '}
@@ -558,23 +595,6 @@ export function Arsenal() {
             }}
           >
             EXPORT LIST
-          </button>
-          <button
-            onClick={() => setShowAddForm(true)}
-            style={{
-              padding: '7px 14px',
-              background: theme.accent,
-              color: theme.bg,
-              border: 'none',
-              borderRadius: '4px',
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              letterSpacing: '0.8px',
-              cursor: 'pointer',
-              fontWeight: 600
-            }}
-          >
-            + ADD
           </button>
         </div>
       </div>
@@ -804,7 +824,7 @@ export function Arsenal() {
                       }}>
                         {stats.totalRounds.toLocaleString()}
                       </div>
-                      {hasGun && caliberThreshold > 0 && (
+                      {caliberThreshold > 0 && (
                         <div style={{
                           fontSize: '8px',
                           fontWeight: 700,
@@ -817,17 +837,6 @@ export function Arsenal() {
                           flexShrink: 0,
                         }}>
                           {fillPct >= 100 ? 'STOCKED' : fillPct >= 25 ? 'LOW' : 'CRITICAL'}
-                        </div>
-                      )}
-                      {hasGun && caliberThreshold === 0 && (
-                        <div style={{
-                          fontSize: '8px',
-                          fontWeight: 400,
-                          fontFamily: 'monospace',
-                          color: theme.textMuted,
-                          flexShrink: 0,
-                        }}>
-                          no target set
                         </div>
                       )}
                     </div>
@@ -872,11 +881,13 @@ export function Arsenal() {
                     {rdsPerWeek > 0 && (
                       <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', marginTop: '4px' }}>
                         ~{rdsPerWeek.toFixed(0)} rds/wk · ~{
-                          runwayWeeks >= 104
-                            ? `${(runwayWeeks / 52).toFixed(1)} yrs remaining`
-                            : runwayWeeks >= 4
-                              ? `${Math.round(runwayWeeks)} wks remaining`
-                              : `${Math.round(runwayWeeks * 7)} days remaining`
+                          runwayWeeks >= 520
+                            ? '10+ yrs remaining'
+                            : runwayWeeks >= 104
+                              ? `${(runwayWeeks / 52).toFixed(1)} yrs remaining`
+                              : runwayWeeks >= 4
+                                ? `${Math.round(runwayWeeks)} wks remaining`
+                                : `${Math.round(runwayWeeks * 7)} days remaining`
                         }
                       </div>
                     )}
@@ -1359,8 +1370,109 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
 
       {/* Single-line ballistics */}
       <div style={{ fontSize: '11px', color: theme.textSecondary, marginBottom: '4px' }}>
-        {lot.grainWeight}<AmmoAcronym term="GR" /> <BulletTypeDisplay value={lot.bulletType || ''} />{lot.advertisedFPS ? ` · ${lot.advertisedFPS} fps` : ''}{lot.purchasePricePerRound ? ` · ${(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd` : ''}
+        {lot.grainWeight}<AmmoAcronym term="GR" /> <BulletTypeDisplay value={lot.bulletType || ''} />{lot.advertisedFPS ? ` · ${lot.advertisedFPS} fps` : ''}
+        {lot.standardDeviation != null && (
+          <span style={{
+            color: lot.standardDeviation <= 10 ? theme.green : lot.standardDeviation <= 15 ? theme.orange : theme.red,
+            fontWeight: 700,
+          }}>
+            {' · SD ' + lot.standardDeviation + ' fps'}
+          </span>
+        )}
+        {lot.purchasePricePerRound ? ` · ${(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd` : ''}
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// TYPEAHEAD DATA
+// ============================================================================
+
+const AMMO_BRANDS = [
+  'Federal', 'Hornady', 'Winchester', 'Remington', 'PMC', 'Blazer', 'Blazer Brass',
+  'CCI', 'Speer', 'Sig Sauer', 'Fiocchi', 'Magtech', 'Sellier & Bellot', 'Aguila',
+  'American Eagle', 'Norma', 'Nosler', 'Barnes', 'Lapua', 'IMI', 'Wolf', 'Tula',
+  'Herter\'s', 'Browning', 'Underwood', 'Buffalo Bore', 'Cor-Bon', 'Liberty',
+];
+
+const AMMO_CALIBERS = [
+  '9mm Luger', '9mm +P', '.45 ACP', '.40 S&W', '10mm Auto', '.380 ACP',
+  '.357 Magnum', '.38 Special', '.44 Magnum', '.357 SIG',
+  '5.56x45mm NATO', '.223 Remington', '.308 Winchester', '6.5 Creedmoor',
+  '.30-06 Springfield', '.300 Win Mag', '.300 Blackout', '7.62x39mm',
+  '7.62x51mm NATO', '6.8 SPC', '.338 Lapua', '.50 BMG',
+  '.22 LR', '.22 WMR', '.17 HMR',
+  '12 Gauge', '20 Gauge', '.410 Bore',
+  '.45 Colt', '.44 Special', '.38 Super', '.41 Magnum',
+  '.30-30 Winchester', '.243 Winchester', '.270 Winchester', '7mm Rem Mag',
+];
+
+const AMMO_BULLET_TYPES = [
+  'FMJ', 'JHP', 'HP', 'SP', 'JSP', 'TMJ', 'LRN', 'LSWC', 'FP', 'TC',
+  'FMJBT', 'BTHP', 'OTM', 'HPBT', 'SJHP', 'HST', 'XTP', 'SXT',
+  'FTX', 'FlexTip', 'Partition', 'AccuBond', 'ELD-X', 'ELD-M',
+  'Frangible', 'Tracer', 'API', 'Buckshot', 'Slug',
+];
+
+// Typeahead input component
+function TypeaheadInput({
+  value, onChange, suggestions, placeholder, inputStyle,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  suggestions: string[];
+  placeholder?: string;
+  inputStyle: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = value.length >= 1
+    ? suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase())).slice(0, 6)
+    : [];
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        style={inputStyle}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+          backgroundColor: theme.surface, border: '0.5px solid ' + theme.border,
+          borderRadius: '4px', marginTop: '2px', overflow: 'hidden',
+        }}>
+          {filtered.map(s => (
+            <button
+              key={s}
+              onMouseDown={e => { e.preventDefault(); onChange(s); setOpen(false); }}
+              style={{
+                display: 'block', width: '100%', padding: '8px 10px', textAlign: 'left',
+                backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+                fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1390,6 +1502,9 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
   const [lotNumber, setLotNumber] = useState('');
   const [storageLocation, setStorageLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit() {
     if (!caliber || !brand || !grainWeight || !quantity) {
@@ -1421,6 +1536,33 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
 
     addAmmo(newLot);
     onSave();
+  }
+
+  async function handleScanFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanning(true);
+    setScanError('');
+    try {
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const result = await analyzeAmmoBox(dataUrl);
+      if (result.caliber) setCaliber(result.caliber);
+      if (result.brand) setBrand(result.brand);
+      if (result.productLine) setProductLine(result.productLine);
+      if (result.grainWeight) setGrainWeight(String(result.grainWeight));
+      if (result.bulletType) setBulletType(result.bulletType);
+      if (result.quantity) setQuantity(String(result.quantity));
+    } catch {
+      setScanError('Could not read the box. Try a clearer photo.');
+    } finally {
+      setScanning(false);
+      if (scanInputRef.current) scanInputRef.current.value = '';
+    }
   }
 
   const inputStyle = {
@@ -1472,15 +1614,50 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, margin: '0 0 20px 0', color: theme.accent }}>
-          ADD AMMO TO INVENTORY
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <h2 style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, margin: 0, color: theme.accent }}>
+            ADD AMMO TO INVENTORY
+          </h2>
+          {hasClaudeApiKey() && (
+            <button
+              onClick={() => scanInputRef.current?.click()}
+              disabled={scanning}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 12px', backgroundColor: scanning ? theme.surface : 'rgba(255,212,59,0.12)',
+                border: '0.5px solid ' + theme.accent, borderRadius: '6px',
+                color: theme.accent, fontFamily: 'monospace', fontSize: '10px',
+                letterSpacing: '0.6px', cursor: scanning ? 'wait' : 'pointer',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              {scanning ? 'SCANNING...' : 'SCAN BOX'}
+            </button>
+          )}
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleScanFile}
+          />
+        </div>
+
+        {scanError && (
+          <div style={{ color: theme.red, fontFamily: 'monospace', fontSize: '10px', marginBottom: '12px', padding: '6px 8px', backgroundColor: 'rgba(255,107,107,0.08)', borderRadius: '4px', border: '0.5px solid ' + theme.red }}>
+            {scanError}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
-          <div><label style={labelStyle}>Caliber *</label><input type="text" placeholder="9mm Luger" value={caliber} onChange={(e) => setCaliber(e.target.value)} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Brand *</label><input type="text" placeholder="Federal" value={brand} onChange={(e) => setBrand(e.target.value)} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Grain Weight *</label><input type="number" placeholder="124" value={grainWeight} onChange={(e) => setGrainWeight(e.target.value)} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Quantity (rounds) *</label><input type="number" placeholder="500" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Caliber *</label><TypeaheadInput value={caliber} onChange={setCaliber} suggestions={AMMO_CALIBERS} placeholder="9mm Luger" inputStyle={inputStyle} /></div>
+          <div><label style={labelStyle}>Brand *</label><TypeaheadInput value={brand} onChange={setBrand} suggestions={AMMO_BRANDS} placeholder="Federal" inputStyle={inputStyle} /></div>
+          <div><label style={labelStyle}>Grain Weight *</label><input type="number" inputMode="numeric" placeholder="124" value={grainWeight} onChange={(e) => setGrainWeight(e.target.value)} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Quantity (rounds) *</label><input type="number" inputMode="numeric" placeholder="500" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} /></div>
           <div>
             <label style={labelStyle}>Category *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -1513,7 +1690,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
         {showAdvanced && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
             <div><label style={labelStyle}>Product Line</label><input type="text" placeholder="HST" value={productLine} onChange={(e) => setProductLine(e.target.value)} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Bullet Type</label><input type="text" placeholder="JHP" value={bulletType} onChange={(e) => setBulletType(e.target.value)} style={inputStyle} /></div>
+            <div><label style={labelStyle}>Bullet Type</label><TypeaheadInput value={bulletType} onChange={setBulletType} suggestions={AMMO_BULLET_TYPES} placeholder="JHP" inputStyle={inputStyle} /></div>
             <div><label style={labelStyle}>Purchase Date</label><input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} style={inputStyle} /></div>
             <div><label style={labelStyle}>Cost Per Round ($)</label><input type="number" step="0.01" placeholder="0.35" value={costPerRound} onChange={(e) => setCostPerRound(e.target.value)} style={inputStyle} /></div>
             <div><label style={labelStyle}>Lot Number</label><input type="text" placeholder="ABC123" value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} style={inputStyle} /></div>

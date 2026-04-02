@@ -155,6 +155,58 @@ Only return valid JSON, no other text.`;
   }
 }
 
+// ── Ammo box scan ────────────────────────────────────────────────────────────
+
+export interface AmmoBoxScanResult {
+  caliber?: string;
+  brand?: string;
+  productLine?: string;
+  grainWeight?: number;
+  bulletType?: string;
+  quantity?: number;
+}
+
+export async function analyzeAmmoBox(imageBase64: string): Promise<AmmoBoxScanResult> {
+  const systemPrompt = `You are an expert at reading ammunition box labels. Extract structured data from ammo box images. Return only valid JSON.`;
+
+  const userPrompt = `Read this ammunition box and extract the following fields. Return a JSON object:
+{
+  "caliber": "e.g. '9mm Luger', '.308 Winchester', '5.56x45mm NATO' — exact caliber as printed",
+  "brand": "manufacturer name e.g. 'Federal', 'Hornady', 'Winchester'",
+  "productLine": "product line / series e.g. 'HST', 'Critical Defense', 'Gold Dot' — or null if not visible",
+  "grainWeight": 124,
+  "bulletType": "e.g. 'JHP', 'FMJ', 'SP', 'TMJ', 'HP' — abbreviation preferred",
+  "quantity": 50
+}
+Use null for any field you cannot read clearly. Return only the JSON object.`;
+
+  const raw = await callClaude(
+    [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg',
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+            },
+          },
+          { type: 'text', text: userPrompt },
+        ],
+      },
+    ],
+    systemPrompt
+  );
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
 // ── Maintenance alerts ───────────────────────────────────────────────────────
 
 export function getMaintenanceAlerts(

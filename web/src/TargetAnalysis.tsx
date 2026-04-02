@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { theme } from './theme';
 import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns } from './storage';
 import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
+import { getSettings } from './SettingsPanel';
 
 type Step = 1 | 2 | 3 | 4;
 type MarkMode = 'calib' | 'poa' | 'shots';
@@ -143,6 +144,261 @@ function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, sta
   });
 }
 
+// ── Drum picker — slot-machine style bullet diameter selector ─────────────────
+const ITEM_H = 52;
+const VISIBLE_ROWS = 5;
+
+function DrumPicker({ items, value, onChange }: {
+  items: { label: string; sub: string; inVal: number }[];
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const isUserScrolling = useRef(false);
+
+  const selectedIdx = useMemo(() => {
+    const i = items.findIndex(b => Math.abs(b.inVal - value) < 0.002);
+    return i < 0 ? 0 : i;
+  }, [value, items]);
+
+  // Scroll the selected item into center on external value change
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || isUserScrolling.current) return;
+    el.scrollTop = selectedIdx * ITEM_H;
+  }, [selectedIdx]);
+
+  const handleScroll = () => {
+    isUserScrolling.current = true;
+    clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const idx = Math.max(0, Math.min(items.length - 1, Math.round(el.scrollTop / ITEM_H)));
+      onChange(items[idx].inVal);
+      el.scrollTop = idx * ITEM_H; // snap to exact position
+      isUserScrolling.current = false;
+    }, 120);
+  };
+
+  const containerH = ITEM_H * VISIBLE_ROWS;
+
+  return (
+    <div style={{ position: 'relative', height: containerH, borderRadius: 12, border: '1px solid ' + theme.border, overflow: 'hidden' }}>
+      {/* Center selection highlight */}
+      <div style={{ position: 'absolute', top: ITEM_H * 2, left: 0, right: 0, height: ITEM_H, background: 'rgba(255,212,59,0.08)', borderTop: '1px solid rgba(255,212,59,0.3)', borderBottom: '1px solid rgba(255,212,59,0.3)', pointerEvents: 'none', zIndex: 2 }} />
+      {/* Top/bottom fade masks */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(' + theme.surface + ', transparent)', pointerEvents: 'none', zIndex: 2 }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(transparent, ' + theme.surface + ')', pointerEvents: 'none', zIndex: 2 }} />
+      {/* Scroll container */}
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        style={{
+          height: containerH,
+          overflowY: 'scroll',
+          scrollbarWidth: 'none',
+          paddingTop: ITEM_H * 2,
+          paddingBottom: ITEM_H * 2,
+          boxSizing: 'content-box',
+        } as React.CSSProperties}
+      >
+        {items.map((b) => {
+          const isSelected = Math.abs(b.inVal - value) < 0.002;
+          return (
+            <div
+              key={b.inVal}
+              onClick={() => onChange(b.inVal)}
+              style={{ height: ITEM_H, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', cursor: 'pointer' }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? theme.accent : theme.textPrimary }}>{b.label}</div>
+                {isSelected && <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.sub}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Crop step — shown after photo selection, before Step 1 ───────────────────
+function CropStep({ imageUrl, onCrop, onSkip }: {
+  imageUrl: string;
+  onCrop: (url: string) => void;
+  onSkip: () => void;
+}) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState({ x1: 0.05, y1: 0.05, x2: 0.95, y2: 0.95 });
+  const [imgBounds, setImgBounds] = useState<{ x: number; y: number; w: number; h: number; cW: number; cH: number } | null>(null);
+  const dragRef = useRef<{ corner: string; startNx: number; startNy: number; startRect: typeof rect } | null>(null);
+
+  // Compute and update image display bounds (accounts for objectFit: contain letterboxing)
+  useEffect(() => {
+    function update() {
+      const img = imgRef.current;
+      const el = containerRef.current;
+      if (!img || !el || !img.naturalWidth) return;
+      const cW = el.clientWidth, cH = el.clientHeight;
+      const iW = img.naturalWidth, iH = img.naturalHeight;
+      const scale = Math.min(cW / iW, cH / iH);
+      const w = iW * scale, h = iH * scale;
+      setImgBounds({ x: (cW - w) / 2, y: (cH - h) / 2, w, h, cW, cH });
+    }
+    const img = imgRef.current;
+    if (img?.complete) { update(); } else { img?.addEventListener('load', update); }
+    const ro = containerRef.current ? new ResizeObserver(update) : null;
+    if (ro && containerRef.current) ro.observe(containerRef.current);
+    return () => { img?.removeEventListener('load', update); ro?.disconnect(); };
+  }, []);
+
+  function toNorm(clientX: number, clientY: number) {
+    const el = containerRef.current;
+    const b = imgBounds;
+    if (!el || !b) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      nx: Math.max(0, Math.min(1, (clientX - r.left - b.x) / b.w)),
+      ny: Math.max(0, Math.min(1, (clientY - r.top - b.y) / b.h)),
+    };
+  }
+
+  function startDrag(corner: string, e: React.PointerEvent) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const n = toNorm(e.clientX, e.clientY);
+    if (!n) return;
+    dragRef.current = { corner, startNx: n.nx, startNy: n.ny, startRect: { ...rect } };
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    const n = toNorm(e.clientX, e.clientY);
+    if (!n) return;
+    const dx = n.nx - d.startNx, dy = n.ny - d.startNy;
+    const MIN = 0.08;
+    setRect(() => {
+      let { x1, y1, x2, y2 } = d.startRect;
+      switch (d.corner) {
+        case 'tl': x1 = Math.min(x2 - MIN, Math.max(0, x1 + dx)); y1 = Math.min(y2 - MIN, Math.max(0, y1 + dy)); break;
+        case 'tr': x2 = Math.max(x1 + MIN, Math.min(1, x2 + dx)); y1 = Math.min(y2 - MIN, Math.max(0, y1 + dy)); break;
+        case 'bl': x1 = Math.min(x2 - MIN, Math.max(0, x1 + dx)); y2 = Math.max(y1 + MIN, Math.min(1, y2 + dy)); break;
+        case 'br': x2 = Math.max(x1 + MIN, Math.min(1, x2 + dx)); y2 = Math.max(y1 + MIN, Math.min(1, y2 + dy)); break;
+        case 'move': {
+          const w = x2 - x1, h = y2 - y1;
+          x1 = Math.max(0, Math.min(1 - w, x1 + dx));
+          y1 = Math.max(0, Math.min(1 - h, y1 + dy));
+          x2 = x1 + w; y2 = y1 + h;
+          break;
+        }
+      }
+      return { x1, y1, x2, y2 };
+    });
+  }
+
+  function applyCrop() {
+    const img = imgRef.current;
+    if (!img) return;
+    const sx = Math.round(rect.x1 * img.naturalWidth);
+    const sy = Math.round(rect.y1 * img.naturalHeight);
+    const sw = Math.round((rect.x2 - rect.x1) * img.naturalWidth);
+    const sh = Math.round((rect.y2 - rect.y1) * img.naturalHeight);
+    if (sw < 10 || sh < 10) { onSkip(); return; }
+    const canvas = document.createElement('canvas');
+    canvas.width = sw; canvas.height = sh;
+    canvas.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    onCrop(canvas.toDataURL('image/jpeg', 0.93));
+  }
+
+  // Compute SVG overlay coords from image-normalized rect + imgBounds
+  const b = imgBounds;
+  const ov = b ? {
+    px1: (b.x + rect.x1 * b.w) / b.cW,
+    py1: (b.y + rect.y1 * b.h) / b.cH,
+    px2: (b.x + rect.x2 * b.w) / b.cW,
+    py2: (b.y + rect.y2 * b.h) / b.cH,
+  } : null;
+  const p = (v: number) => (v * 100).toFixed(2) + '%';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: theme.surfaceAlt, borderBottom: '1px solid ' + theme.border, flexShrink: 0 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: '0.8px', color: theme.textMuted }}>CROP PHOTO</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onSkip} style={{ padding: '7px 14px', borderRadius: 8, background: 'transparent', color: theme.textSecondary, border: '1px solid ' + theme.border, fontFamily: 'monospace', fontSize: 11, cursor: 'pointer' }}>SKIP</button>
+          <button onClick={applyCrop} style={{ padding: '7px 14px', borderRadius: 8, background: theme.accent, color: '#000', border: 'none', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>CROP</button>
+        </div>
+      </div>
+      <div style={{ padding: '6px 16px', background: theme.surface, borderBottom: '1px solid ' + theme.border, fontFamily: 'monospace', fontSize: 10, color: theme.textMuted, letterSpacing: '0.4px', flexShrink: 0 }}>
+        Drag corners to resize · drag inside to move · SKIP uses full photo
+      </div>
+      <div
+        ref={containerRef}
+        style={{ flex: 1, background: '#000', position: 'relative', overflow: 'hidden', touchAction: 'none' }}
+        onPointerMove={onPointerMove}
+        onPointerUp={() => { dragRef.current = null; }}
+        onPointerLeave={() => { dragRef.current = null; }}
+      >
+        <img
+          ref={imgRef}
+          src={imageUrl}
+          alt="Crop"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', userSelect: 'none', pointerEvents: 'none', draggable: false } as React.CSSProperties}
+        />
+        {ov && (
+          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+            <defs>
+              <mask id="lcrop">
+                <rect width="100%" height="100%" fill="white" />
+                <rect x={p(ov.px1)} y={p(ov.py1)} width={p(ov.px2 - ov.px1)} height={p(ov.py2 - ov.py1)} fill="black" />
+              </mask>
+            </defs>
+            {/* Dim outside */}
+            <rect width="100%" height="100%" fill="rgba(0,0,0,0.52)" mask="url(#lcrop)" />
+            {/* Selection border */}
+            <rect x={p(ov.px1)} y={p(ov.py1)} width={p(ov.px2 - ov.px1)} height={p(ov.py2 - ov.py1)} fill="none" stroke="white" strokeWidth="1.5" />
+            {/* Rule-of-thirds grid */}
+            {[1/3, 2/3].map(t => {
+              const lx = ov.px1 + (ov.px2 - ov.px1) * t;
+              const ly = ov.py1 + (ov.py2 - ov.py1) * t;
+              return (
+                <g key={t} stroke="rgba(255,255,255,0.22)" strokeWidth="0.75">
+                  <line x1={p(lx)} y1={p(ov.py1)} x2={p(lx)} y2={p(ov.py2)} />
+                  <line x1={p(ov.px1)} y1={p(ly)} x2={p(ov.px2)} y2={p(ly)} />
+                </g>
+              );
+            })}
+            {/* Drag-to-move interior hit target */}
+            <rect
+              x={p(ov.px1)} y={p(ov.py1)} width={p(ov.px2 - ov.px1)} height={p(ov.py2 - ov.py1)}
+              fill="transparent" style={{ cursor: 'move', touchAction: 'none' } as React.CSSProperties}
+              onPointerDown={e => startDrag('move', e)}
+            />
+            {/* Corner handles */}
+            {([
+              { corner: 'tl', cx: ov.px1, cy: ov.py1 },
+              { corner: 'tr', cx: ov.px2, cy: ov.py1 },
+              { corner: 'bl', cx: ov.px1, cy: ov.py2 },
+              { corner: 'br', cx: ov.px2, cy: ov.py2 },
+            ] as const).map(({ corner, cx, cy }) => (
+              <circle
+                key={corner}
+                cx={p(cx)} cy={p(cy)} r={16}
+                fill={theme.accent} fillOpacity={0.92} stroke="white" strokeWidth={2.5}
+                style={{ touchAction: 'none' } as React.CSSProperties}
+                onPointerDown={e => startDrag(corner, e)}
+              />
+            ))}
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function TargetAnalysis() {
@@ -162,11 +418,19 @@ export function TargetAnalysis() {
   const [customBullet, setCustomBullet] = useState('');
   const [customRef, setCustomRef] = useState('');
 
+  // Crop state — shown once after photo selection, before step 1
+  const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
+  const [showCrop, setShowCrop] = useState(false);
+
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [calibBannerMsg, setCalibBannerMsg] = useState<string | null>(null);
   const [savedMsg, setSavedMsg] = useState(false);
   const savedRef = useRef(false);
+
+  // Long-press loupe refs (TA4)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const isLongPressLoupeRef = useRef(false);
 
   const [history, setHistory] = useState<TargetAnalysisRecord[]>([]);
   const [guns, setGuns] = useState<ReturnType<typeof getAllGuns>>([]);
@@ -177,12 +441,14 @@ export function TargetAnalysis() {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
   const [showCoach, setShowCoach] = useState(false);
+  const [coachTier, setCoachTier] = useState<1 | 2 | 3>(1);
   const [coachMessages, setCoachMessages] = useState<{ role: string; content: string }[]>([]);
   const [coachInput, setCoachInput] = useState('');
   const [coachLoading, setCoachLoading] = useState(false);
 
   // Loupe magnifier shown during drag
   const [showLoupe, setShowLoupe] = useState(false);
+  const [loupeScreenPos, setLoupeScreenPos] = useState<{ x: number; y: number } | null>(null);
   const loupeRef = useRef<HTMLCanvasElement>(null);
   // Ref so drawCanvas can read without being a dep — avoids infinite re-render
   const loupeCenterRef = useRef<Pt | null>(null);
@@ -246,10 +512,35 @@ export function TargetAnalysis() {
   const clearLoupe = () => {
     loupeCenterRef.current = null;
     setShowLoupe(false);
-    // Clear loupe canvas immediately
+    setLoupeScreenPos(null);
     const loupe = loupeRef.current;
     if (loupe) loupe.getContext('2d')!.clearRect(0, 0, loupe.width, loupe.height);
   };
+
+  // Draw loupe content directly (called from touch-move without waiting for React re-render)
+  const drawLoupeAt = useCallback((canvasPt: Pt) => {
+    const canvas = canvasRef.current;
+    const loupe = loupeRef.current;
+    if (!canvas || !loupe) return;
+    const lctx = loupe.getContext('2d')!;
+    const rect = canvas.getBoundingClientRect();
+    const displayRatio = rect.width > 0 ? canvas.width / rect.width : 1;
+    const LOUPE_CSS = 150, LOUPE_ZOOM = 3;
+    const srcPx = (LOUPE_CSS / LOUPE_ZOOM) * displayRatio;
+    const srcX = Math.max(0, Math.min(canvas.width - srcPx, canvasPt.x - srcPx / 2));
+    const srcY = Math.max(0, Math.min(canvas.height - srcPx, canvasPt.y - srcPx / 2));
+    const LW = loupe.width, LH = loupe.height;
+    lctx.clearRect(0, 0, LW, LH);
+    lctx.drawImage(canvas, srcX, srcY, srcPx, srcPx, 0, 0, LW, LH);
+    const cx = LW / 2, cy = LH / 2;
+    lctx.strokeStyle = 'rgba(255,60,60,0.95)'; lctx.lineWidth = 1.5;
+    lctx.beginPath();
+    lctx.moveTo(cx, cy - 16); lctx.lineTo(cx, cy + 16);
+    lctx.moveTo(cx - 16, cy); lctx.lineTo(cx + 16, cy);
+    lctx.stroke();
+    lctx.strokeStyle = 'rgba(255,60,60,0.6)';
+    lctx.beginPath(); lctx.arc(cx, cy, 5, 0, Math.PI * 2); lctx.stroke();
+  }, []);
 
   // ── Draw canvas (main + loupe) ────────────────────────────────────────────
   const drawCanvas = useCallback(() => {
@@ -409,11 +700,13 @@ export function TargetAnalysis() {
 
   useEffect(() => { if (imageUrl) loadImage(imageUrl); }, [imageUrl, loadImage]);
 
-  // ── Upload ────────────────────────────────────────────────────────────────
+  // ── Upload — routes through crop step first ───────────────────────────────
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageUrl(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    setRawImageUrl(url);
+    setShowCrop(true);
   };
 
   // ── Canvas tap ────────────────────────────────────────────────────────────
@@ -440,6 +733,8 @@ export function TargetAnalysis() {
   // ── Touch handlers ────────────────────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     lastTouchTimeRef.current = Date.now();
+    clearTimeout(longPressTimerRef.current);
+    isLongPressLoupeRef.current = false;
     if (e.touches.length === 2) {
       e.preventDefault();
       const t0 = e.touches[0]; const t1 = e.touches[1];
@@ -455,7 +750,23 @@ export function TargetAnalysis() {
       const pt = toCanvas(t.clientX, t.clientY);
       const draggable = findDraggable(pt);
       draggingRef.current = draggable;
-      if (draggable) { loupeCenterRef.current = pt; setShowLoupe(true); }
+      if (draggable) {
+        loupeCenterRef.current = pt;
+        setLoupeScreenPos({ x: t.clientX, y: t.clientY });
+        setShowLoupe(true);
+      } else {
+        // Long-press activates loupe for precise placement
+        const clientX = t.clientX, clientY = t.clientY;
+        longPressTimerRef.current = setTimeout(() => {
+          isLongPressLoupeRef.current = true;
+          const canvasPt = toCanvas(clientX, clientY);
+          loupeCenterRef.current = canvasPt;
+          setLoupeScreenPos({ x: clientX, y: clientY });
+          setShowLoupe(true);
+          drawLoupeAt(canvasPt);
+          haptic();
+        }, 420);
+      }
     }
   };
 
@@ -476,20 +787,43 @@ export function TargetAnalysis() {
       const t = e.touches[0];
       if (draggingRef.current) {
         updateDragged(toCanvas(t.clientX, t.clientY));
+        setLoupeScreenPos({ x: t.clientX, y: t.clientY });
         touchMovedRef.current = true;
+      } else if (isLongPressLoupeRef.current) {
+        // Slide finger to fine-tune placement — loupe follows without dropping yet
+        const pt = toCanvas(t.clientX, t.clientY);
+        loupeCenterRef.current = pt;
+        setLoupeScreenPos({ x: t.clientX, y: t.clientY });
+        drawLoupeAt(pt);
       } else {
         const start = touchStartRef.current.touches[0];
-        if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) touchMovedRef.current = true;
+        const moved = Math.abs(t.clientX - start.x) > 8 || Math.abs(t.clientY - start.y) > 8;
+        if (moved) {
+          clearTimeout(longPressTimerRef.current); // cancel long-press if panning
+          touchMovedRef.current = true;
+        }
       }
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    clearTimeout(longPressTimerRef.current);
     if (draggingRef.current) {
       draggingRef.current = null;
       touchStartRef.current = null;
       touchMovedRef.current = false;
       clearLoupe();
+      return;
+    }
+    if (isLongPressLoupeRef.current) {
+      // Drop the mark at the current loupe position
+      const touch = e.changedTouches[0];
+      const pt = toCanvas(touch.clientX, touch.clientY);
+      handleCanvasTap(pt.x, pt.y);
+      isLongPressLoupeRef.current = false;
+      clearLoupe();
+      touchStartRef.current = null;
+      touchMovedRef.current = false;
       return;
     }
     if (e.changedTouches.length === 1 && touchStartRef.current?.touches.length === 1 && !touchMovedRef.current) {
@@ -517,7 +851,10 @@ export function TargetAnalysis() {
     const pt = toCanvas(e.clientX, e.clientY);
     const start = mouseDownPtRef.current;
     if (Math.abs(pt.x - start.x) > 4 || Math.abs(pt.y - start.y) > 4) mouseMovedRef.current = true;
-    if (draggingRef.current && mouseMovedRef.current) updateDragged(pt);
+    if (draggingRef.current && mouseMovedRef.current) {
+      updateDragged(pt);
+      setLoupeScreenPos({ x: e.clientX, y: e.clientY });
+    }
   };
 
   const handleCanvasMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -623,7 +960,8 @@ export function TargetAnalysis() {
   // ── Reset ─────────────────────────────────────────────────────────────────
   const resetAll = () => {
     savedRef.current = false;
-    setStep(1); setImageUrl(null); setCalibPts([]); setPixelsPerInch(null);
+    setStep(1); setImageUrl(null); setRawImageUrl(null); setShowCrop(false);
+    setCalibPts([]); setPixelsPerInch(null);
     setMarks([]); setMarkMode('calib'); setStats(null); setScale(1);
     setOffset({ x: 0, y: 0 }); setCalibBannerMsg(null); setSavedMsg(false);
     setOverlayDataUrl(null); setCoachMessages([]); setShowCoach(false);
@@ -655,7 +993,33 @@ export function TargetAnalysis() {
       setCoachMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }]);
     } finally { setCoachLoading(false); }
   };
-  const openCoach = () => { setShowCoach(true); if (coachMessages.length === 0) callCoach('Analyze my shot group and give me 2–3 specific, actionable coaching tips.'); };
+  const openCoachTier = (tier: 1 | 2 | 3) => {
+    setCoachTier(tier);
+    setShowCoach(true);
+    setCoachMessages([]);
+    let prompt = '';
+    if (tier === 1) {
+      prompt = 'Analyze my shot group and give me 2-3 specific, actionable coaching tips.';
+    } else if (tier === 2) {
+      const todayStr = new Date().toDateString();
+      const todayRecords = history.filter(r => new Date(r.createdAt).toDateString() === todayStr);
+      if (todayRecords.length <= 1) {
+        prompt = 'I only have one target from this session. Analyze my shot group and give me 2-3 specific coaching tips.';
+      } else {
+        const sessionCtx = todayRecords.map(r =>
+          r.distanceYds + 'yd: ' + r.stats.shotCount + ' shots, CEP ' + r.stats.cepIn.toFixed(2) + '", ES ' + r.stats.extremeSpreadIn.toFixed(2) + '"'
+        ).join('\n');
+        prompt = 'Compare these targets from my current session and identify patterns:\n' + sessionCtx + '\n\nHow am I improving or degrading through the session? What should I focus on?';
+      }
+    } else {
+      const allCtx = history.slice(0, 20).map(r => {
+        const d = new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return d + ' @ ' + r.distanceYds + 'yd: ' + r.stats.shotCount + ' shots, CEP ' + r.stats.cepIn.toFixed(2) + '", ES ' + r.stats.extremeSpreadIn.toFixed(2) + '"';
+      }).join('\n');
+      prompt = 'Looking at my shooting history across multiple sessions:\n' + allCtx + '\n\nWhat trends do you see? Am I improving overall? What long-term patterns should I address?';
+    }
+    callCoach(prompt);
+  };
 
   // ── UI helpers ────────────────────────────────────────────────────────────
   const chip = (label: string, selected: boolean, onSelect: () => void) => (
@@ -715,26 +1079,11 @@ export function TargetAnalysis() {
 
             <div>
               {sectionLabel('Bullet Diameter')}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {BULLET_PRESETS.map(b => {
-                  const isSelected = Math.abs(b.inVal - bulletDiaIn) < 0.002 && !customBullet;
-                  return (
-                    <button
-                      key={b.label}
-                      onClick={() => { setBulletDiaIn(b.inVal); setCustomBullet(''); }}
-                      style={{
-                        padding: '8px 12px', borderRadius: 8, textAlign: 'left',
-                        border: isSelected ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
-                        background: isSelected ? theme.accentDim : theme.surface,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? theme.accent : theme.textPrimary }}>{b.label}</div>
-                      <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 1 }}>{b.sub}</div>
-                    </button>
-                  );
-                })}
-              </div>
+              <DrumPicker
+                items={BULLET_PRESETS}
+                value={bulletDiaIn}
+                onChange={(v) => { setBulletDiaIn(v); setCustomBullet(''); }}
+              />
             </div>
             <button onClick={() => setStep(2)} style={{ padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Continue →</button>
           </>
@@ -745,7 +1094,8 @@ export function TargetAnalysis() {
 
   // ── STEP 2: Reference Scale ───────────────────────────────────────────────
   const renderStep2 = () => {
-    const displayRefIn = refUnit === 'mm' ? `${Math.round(refIn * 25.4)}mm` : `${refIn}"`;
+    const isMetric = getSettings().units === 'metric';
+    const displayRefIn = isMetric ? `${Math.round(refIn * 25.4)}mm` : `${refIn}"`;
     return (
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         {imageUrl && (
@@ -760,10 +1110,10 @@ export function TargetAnalysis() {
           {sectionLabel('Reference Distance')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
             {REF_PRESETS_IN.map(r => {
-              const label = `${r}" / ${Math.round(r * 25.4)}mm`;
+              const label = isMetric ? `${Math.round(r * 25.4)}mm` : `${r}"`;
               return chip(label, Math.abs(refIn - r) < 0.01 && !customRef, () => { setRefIn(r); setCustomRef(''); });
             })}
-            <input type="number" step="0.25" placeholder='inches' value={customRef} onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
+            <input type="number" step={isMetric ? '1' : '0.25'} placeholder={isMetric ? 'mm' : 'inches'} value={customRef} onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(isMetric ? Number(e.target.value) / 25.4 : Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
@@ -808,13 +1158,23 @@ export function TargetAnalysis() {
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
           />
-          {/* Loupe magnifier — appears in top-right corner during drag */}
+          {/* Loupe magnifier — follows finger, offset 90px above touch point */}
           {showLoupe && (
             <canvas
               ref={loupeRef}
               width={300}
               height={300}
-              style={{ position: 'absolute', top: 12, right: 12, width: 150, height: 150, borderRadius: 10, border: '2px solid rgba(255,255,255,0.65)', boxShadow: '0 4px 20px rgba(0,0,0,0.75)', pointerEvents: 'none', background: '#000' }}
+              style={{
+                position: 'fixed',
+                left: loupeScreenPos ? Math.max(4, Math.min(window.innerWidth - 154, loupeScreenPos.x - 75)) : 'auto',
+                top: loupeScreenPos ? Math.max(4, loupeScreenPos.y - 90 - 150) : 12,
+                right: loupeScreenPos ? 'auto' : 12,
+                width: 150, height: 150, borderRadius: '50%',
+                border: '2px solid rgba(255,255,255,0.65)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.75)',
+                pointerEvents: 'none', background: '#000',
+                zIndex: 9999,
+              }}
             />
           )}
         </div>
@@ -905,11 +1265,36 @@ export function TargetAnalysis() {
             </div>
 
             {!showCoach ? (
-              <button onClick={openCoach} style={{ padding: 13, borderRadius: 12, border: 'none', background: theme.accent, color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px' }}>GET COACHING</button>
+              <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '10px 14px', background: theme.surfaceAlt, borderBottom: `1px solid ${theme.border}` }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: theme.accent, letterSpacing: '0.8px' }}>GET COACHING</span>
+                </div>
+                {([
+                  { tier: 1 as const, label: 'THIS TARGET', desc: 'Analyze this shot group' },
+                  { tier: 2 as const, label: 'THIS SESSION', desc: 'Compare targets from today' },
+                  { tier: 3 as const, label: 'TRENDS', desc: 'Cross-session pattern analysis' },
+                ] as const).map(({ tier, label, desc }) => (
+                  <button key={tier} onClick={() => openCoachTier(tier)} style={{
+                    display: 'flex', alignItems: 'center', width: '100%', padding: '12px 14px',
+                    background: 'transparent', border: 'none', borderBottom: tier < 3 ? `1px solid ${theme.border}` : 'none',
+                    cursor: 'pointer', gap: 10, textAlign: 'left',
+                  }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: theme.surface, border: `1px solid ${theme.border}`, fontSize: 10, fontWeight: 700, color: theme.accent, fontFamily: 'monospace' }}>{tier}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'monospace', fontSize: 11, color: theme.textPrimary, fontWeight: 700, letterSpacing: '0.5px' }}>{label}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 10, color: theme.textMuted, marginTop: 2 }}>{desc}</div>
+                    </div>
+                    <span style={{ color: theme.textMuted, fontSize: 16, lineHeight: 1 }}>›</span>
+                  </button>
+                ))}
+              </div>
             ) : (
               <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '10px 14px', background: theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: theme.accent }}>🎯 AI Coach</span>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: theme.accent, fontFamily: 'monospace', letterSpacing: '0.6px' }}>AI COACH</span>
+                    <span style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', marginLeft: 8 }}>TIER {coachTier}</span>
+                  </div>
                   <button onClick={() => setShowCoach(false)} style={{ padding: '3px 8px', borderRadius: 6, background: 'transparent', color: theme.textMuted, border: 'none', fontSize: 12, cursor: 'pointer' }}>✕</button>
                 </div>
                 <div style={{ maxHeight: 280, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -966,7 +1351,15 @@ export function TargetAnalysis() {
   const stepLabels = ['Setup', 'Scale', 'Mark', 'Results'];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      {step !== 3 && (
+      {/* Crop step — shown immediately after photo selection */}
+      {showCrop && rawImageUrl && (
+        <CropStep
+          imageUrl={rawImageUrl}
+          onCrop={url => { setImageUrl(url); setShowCrop(false); }}
+          onSkip={() => { setImageUrl(rawImageUrl!); setShowCrop(false); }}
+        />
+      )}
+      {!showCrop && step !== 3 && (
         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', gap: 4, flexShrink: 0 }}>
           {stepLabels.map((label, i) => {
             const s = (i + 1) as Step; const active = s === step; const done = s < step;
@@ -982,12 +1375,12 @@ export function TargetAnalysis() {
           })}
         </div>
       )}
-      <div style={{ flex: 1, overflowY: step === 3 || (step === 4 && resultTab === 'overlay') ? 'hidden' : 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      {!showCrop && <div style={{ flex: 1, overflowY: step === 3 || (step === 4 && resultTab === 'overlay') ? 'hidden' : 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
-      </div>
+      </div>}
     </div>
   );
 }

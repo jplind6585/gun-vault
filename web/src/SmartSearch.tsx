@@ -214,30 +214,13 @@ export function SmartSearch({ onClose, onNavigate }: SmartSearchProps) {
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '12px 16px',
-          borderTop: `0.5px solid ${theme.border}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '6px 14px',
-              backgroundColor: 'transparent',
-              border: `0.5px solid ${theme.border}`,
-              borderRadius: '4px',
-              color: theme.textMuted,
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-            }}
-          >
-            ✕ CLOSE
-          </button>
-          {query.length >= 2 && (
+        {query.length >= 2 && results.length > 0 && (
+          <div style={{
+            padding: '8px 16px',
+            borderTop: `0.5px solid ${theme.border}`,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}>
             <div style={{
               fontSize: '11px',
               color: theme.textMuted,
@@ -245,8 +228,8 @@ export function SmartSearch({ onClose, onNavigate }: SmartSearchProps) {
             }}>
               {results.length} results
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

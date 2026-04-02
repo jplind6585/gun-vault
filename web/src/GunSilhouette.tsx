@@ -115,18 +115,23 @@ export function GunSilhouette({ gun, color = 'rgba(255,255,255,0.9)', size = 160
       return <IconAK color={color} width={size} />;
     }
     // AR / modern sporting rifle
+    const isSemiAuto = gun.action === 'Semi-Auto' || gun.action === 'Semi';
     if (m.includes('ar') || m.includes('m4') || m.includes('m16') ||
         m.includes('mcx') || m.includes('m&p15') || m.includes('mp15') ||
-        gun.action === 'Semi-Auto' && (make.includes('daniel') || make.includes('bcm') ||
+        isSemiAuto && (make.includes('daniel') || make.includes('bcm') ||
         make.includes('larue') || make.includes('aero') || make.includes('noveske') ||
         make.includes('colt') && m.includes('le'))) {
       return <IconAR color={color} width={size} />;
     }
-    // Bolt action (default for rifles that aren't AR/AK)
+    // Bolt action
     if (gun.action === 'Bolt') {
       return <IconBoltAction color={color} width={size} />;
     }
-    // Lever / pump / other long guns — bolt-action silhouette is closest
+    // Other semi-auto rifles (e.g. Beretta CX4, pistol-caliber carbines) → AR silhouette
+    if (isSemiAuto) {
+      return <IconAR color={color} width={size} />;
+    }
+    // Lever / pump / break / other long guns → bolt-action silhouette
     return <IconBoltAction color={color} width={size} />;
   }
 

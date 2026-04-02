@@ -758,6 +758,23 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
   return (
     <div style={{ minHeight: '100vh', backgroundColor: theme.bg, padding: '16px', paddingBottom: '100px', maxWidth: '480px', margin: '0 auto' }}>
 
+      {/* Page header */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '4px' }}>
+          NEW SESSION
+        </div>
+        {preselectedGun && (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary }}>
+              {preselectedGun.displayName || (preselectedGun.make + ' ' + preselectedGun.model)}
+            </span>
+            <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.accent }}>
+              {preselectedGun.caliber}
+            </span>
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
         {/* Date */}
@@ -783,16 +800,17 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               {recentLocations.map(loc => (
                 <button
                   key={loc}
-                  onClick={() => setLocation(loc)}
+                  onClick={() => setLocation(location === loc ? '' : loc)}
                   style={{
-                    padding: '4px 8px',
+                    padding: '5px 10px',
                     backgroundColor: location === loc ? theme.accent : theme.surface,
                     color: location === loc ? theme.bg : theme.textMuted,
-                    border: `0.5px solid ${location === loc ? theme.accent : theme.border}`,
+                    border: '0.5px solid ' + (location === loc ? theme.accent : theme.border),
                     borderRadius: '4px',
                     fontFamily: 'monospace',
                     fontSize: '10px',
                     cursor: 'pointer',
+                    fontWeight: location === loc ? 700 : 400,
                   }}
                 >
                   {loc}
@@ -800,14 +818,17 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               ))}
             </div>
           )}
-          <input
-            type="text"
-            inputMode="text"
-            placeholder="e.g., SRGC, Backyard, Indoor Range"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            style={inputStyle}
-          />
+          {/* Only show text field when no chip is selected (for new locations) */}
+          {(!recentLocations.includes(location) || location === '') && (
+            <input
+              type="text"
+              inputMode="text"
+              placeholder="New location (e.g., SRGC, Backyard)"
+              value={recentLocations.includes(location) ? '' : location}
+              onChange={e => setLocation(e.target.value)}
+              style={inputStyle}
+            />
+          )}
         </div>
 
         {/* Indoor / Outdoor */}
@@ -1072,7 +1093,7 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.5"/>
             </svg>
-            CAPTURE TARGET PHOTO
+            ANALYZE TARGET
           </button>
         </div>
 

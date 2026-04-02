@@ -44,8 +44,9 @@ export interface Gun {
   id: string;
   make: string;
   model: string;
+  displayName?: string;
   caliber: string;
-  action: 'Semi-Auto' | 'Bolt' | 'Lever' | 'Pump' | 'Revolver' | 'Break' | 'Single Shot';
+  action: 'Semi-Auto' | 'Semi' | 'Bolt' | 'Lever' | 'Pump' | 'Revolver' | 'Break' | 'Single Shot';
   type: 'Pistol' | 'Rifle' | 'Shotgun' | 'Suppressor' | 'NFA';
   serialNumber?: string;
   acquiredDate?: string;

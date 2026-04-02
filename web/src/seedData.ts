@@ -466,7 +466,7 @@ export const seedGuns: Omit<Gun, 'id' | 'createdAt' | 'updatedAt' | 'roundCount'
     "make": "Walther",
     "model": "PPK/S",
     "caliber": ".380 ACP",
-    "action": "Revolver",
+    "action": "Semi",
     "type": "Pistol",
     "serialNumber": "1596",
     "status": "Active",
@@ -644,7 +644,7 @@ export const seedGuns: Omit<Gun, 'id' | 'createdAt' | 'updatedAt' | 'roundCount'
     "make": "Beretta",
     "model": "CX4",
     "caliber": "9mm",
-    "action": "Bolt",
+    "action": "Semi",
     "type": "Rifle",
     "status": "Active",
     "notes": ""

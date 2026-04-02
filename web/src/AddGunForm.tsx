@@ -10,16 +10,24 @@ interface AddGunFormProps {
 
 const TYPES: Gun['type'][] = ['Pistol', 'Rifle', 'Shotgun', 'Suppressor', 'NFA'];
 const ACTIONS: Gun['action'][] = ['Semi-Auto', 'Bolt', 'Lever', 'Pump', 'Revolver', 'Break', 'Single Shot'];
+
+const CALIBER_SUGGESTIONS: Record<string, string[]> = {
+  Pistol:  ['9mm', '.45 ACP', '.40 S&W', '10mm', '.380 ACP'],
+  Rifle:   ['5.56mm', '.308 Win', '6.5 Creedmoor', '.223 Rem', '.300 Win Mag'],
+  Shotgun: ['12 Gauge', '20 Gauge', '.410 Bore'],
+};
 const CONDITIONS: NonNullable<Gun['condition']>[] = ['New', 'Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 const STATUSES: Gun['status'][] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold'];
 
 export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   // Required
+  const [displayName, setDisplayName] = useState('');
   const [make, setMake]       = useState('');
   const [model, setModel]     = useState('');
   const [caliber, setCaliber] = useState('');
   const [type, setType]       = useState<Gun['type'] | null>(null);
   const [action, setAction]   = useState<Gun['action'] | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Autocomplete state
   const [makeSuggestions, setMakeSuggestions] = useState<string[]>([]);
@@ -117,6 +125,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     onSave({
       make: make.trim(),
       model: model.trim(),
+      displayName: displayName.trim() || undefined,
       caliber: caliber.trim(),
       type: type!,
       action: action!,
@@ -146,8 +155,20 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           <div style={styles.body}>
 
-            {/* ── IDENTIFICATION ── */}
-            <SectionHeader title="Identification" note="* required" />
+            {/* ── BASIC FIELDS (always shown) ── */}
+            <SectionHeader title="Basic Info" note="* required" />
+
+            {/* Display Name */}
+            <Field label="Display Name (optional)">
+              <input
+                style={styles.input}
+                placeholder="e.g. STC Glock 43 build (OD Green)"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                autoCapitalize="words"
+                autoComplete="off"
+              />
+            </Field>
 
             {/* Make with autocomplete */}
             <div style={{ marginBottom: '14px', position: 'relative' }}>
@@ -231,16 +252,12 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               </div>
               {/* Contextual caliber suggestions based on selected type */}
               {!caliber && (() => {
-                const suggestions: string[] =
-                  type === 'Pistol' ? ['9mm', '.45 ACP', '.40 S&W', '10mm', '.380 ACP'] :
-                  type === 'Rifle' ? ['5.56mm', '.308 Win', '6.5 Creedmoor', '.223 Rem', '.300 Win Mag'] :
-                  type === 'Shotgun' ? ['12 Gauge', '20 Gauge', '.410 Bore'] :
-                  ['9mm', '5.56mm', '.308 Win', '12 Gauge', '.22 LR'];
+                const suggestions: string[] = (type && CALIBER_SUGGESTIONS[type]) || ['9mm', '5.56mm', '.308 Win', '12 Gauge', '.22 LR'];
                 return (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '6px' }}>
                     {suggestions.map(s => (
                       <button key={s} type="button" onClick={() => { setCaliber(s); setAutoFilled(false); }} style={{
-                        padding: '5px 10px', borderRadius: '3px', border: `0.5px solid ${theme.border}`,
+                        padding: '5px 10px', borderRadius: '3px', border: '0.5px solid ' + theme.border,
                         backgroundColor: theme.surface, color: theme.textSecondary,
                         fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
                       }}>
@@ -260,6 +277,26 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               <ChipGroup options={ACTIONS} selected={action} onSelect={v => setAction(v as Gun['action'])} autoHighlight={autoFilled} />
             </Field>
 
+            {/* ── ADVANCED TOGGLE ── */}
+            {!showAdvanced && (
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(true)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: 'monospace', fontSize: '10px',
+                  color: 'rgba(255,212,59,0.7)', letterSpacing: '0.5px',
+                  padding: '8px 0', marginBottom: '8px', textAlign: 'left',
+                }}
+              >
+                + SHOW ADVANCED
+              </button>
+            )}
+
+            {/* ── ADVANCED SECTION (collapsed by default) ── */}
+            {showAdvanced && (
+              <>
+
             {/* ── CONDITION & STATUS ── */}
             <SectionHeader title="Condition & Status" />
 
@@ -278,9 +315,11 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               <Field label="Date Acquired">
                 <input
                   style={styles.input}
-                  type="date"
+                  type="text"
+                  placeholder="MM/DD/YYYY"
                   value={acquiredDate}
                   onChange={e => setAcquiredDate(e.target.value)}
+                  inputMode="numeric"
                 />
               </Field>
               <Field label="Purchase Price ($)">
@@ -404,26 +443,34 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               onToggle={setSuppressorHost}
             />
 
-            <div style={{ marginTop: '16px' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, lineHeight: '1.6' }}>
-                Everything can be updated after adding — accessories, maintenance logs, market value, and more are all editable from the gun's detail page.
-              </div>
-            </div>
+            </>
+            )} {/* end showAdvanced */}
 
           </div>
 
           {/* Footer */}
-          <div style={styles.footer}>
-            <button type="button" style={styles.cancelBtn} onClick={onCancel}>
-              CANCEL
-            </button>
-            <button
-              type="submit"
-              style={{ ...styles.saveBtn, ...(!isValid ? styles.saveBtnDisabled : {}) }}
-              disabled={!isValid}
-            >
-              ADD TO VAULT
-            </button>
+          <div style={{ ...styles.footer, flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, lineHeight: '1.6', textAlign: 'center' }}>
+              Everything can be updated after adding from the gun detail page.
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', width: '100%' }}>
+              <button type="button" style={styles.cancelBtn} onClick={onCancel}>
+                CANCEL
+              </button>
+              <button
+                type="submit"
+                style={{
+                  ...styles.saveBtn,
+                  backgroundColor: isValid ? theme.accent : 'rgba(255,212,59,0.2)',
+                  color: isValid ? theme.bg : 'rgba(255,255,255,0.4)',
+                  cursor: isValid ? 'pointer' : 'not-allowed',
+                  border: 'none',
+                }}
+                disabled={!isValid}
+              >
+                ADD TO VAULT
+              </button>
+            </div>
           </div>
         </form>
       </div>

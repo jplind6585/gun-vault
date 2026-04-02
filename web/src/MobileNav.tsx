@@ -1,7 +1,7 @@
 // Bottom tab bar — primary navigation on mobile
 import { theme } from './theme';
 
-type NavView = 'home' | 'vault' | 'sessions' | 'target-analysis';
+type NavView = 'home' | 'vault' | 'sessions' | 'target-analysis' | 'more';
 
 interface MobileNavProps {
   currentView: string;
@@ -9,6 +9,7 @@ interface MobileNavProps {
   onNavigateToVault: () => void;
   onNavigateToSessions: () => void;
   onNavigateToTargetAnalysis: () => void;
+  onNavigateToMore: () => void;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -71,11 +72,35 @@ function TargetIcon({ active }: { active: boolean }) {
   );
 }
 
+function MoreIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="8" height="8" rx="1.5"
+        stroke="currentColor" strokeWidth="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0}
+      />
+      <rect x="13" y="3" width="8" height="8" rx="1.5"
+        stroke="currentColor" strokeWidth="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0}
+      />
+      <rect x="3" y="13" width="8" height="8" rx="1.5"
+        stroke="currentColor" strokeWidth="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0}
+      />
+      <rect x="13" y="13" width="8" height="8" rx="1.5"
+        stroke="currentColor" strokeWidth="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0}
+      />
+    </svg>
+  );
+}
+
 const TABS: { id: NavView; label: string; Icon: React.FC<{ active: boolean }> }[] = [
   { id: 'home',            label: 'Home',     Icon: HomeIcon },
   { id: 'vault',           label: 'Vault',    Icon: VaultIcon },
   { id: 'sessions',        label: 'Sessions', Icon: SessionIcon },
   { id: 'target-analysis', label: 'Targets',  Icon: TargetIcon },
+  { id: 'more',            label: 'More',     Icon: MoreIcon },
 ];
 
 import React from 'react';
@@ -86,16 +111,22 @@ export function MobileNav({
   onNavigateToVault,
   onNavigateToSessions,
   onNavigateToTargetAnalysis,
+  onNavigateToMore,
 }: MobileNavProps) {
   const handlers: Record<NavView, () => void> = {
     home:              onNavigateToHome,
     vault:             onNavigateToVault,
     sessions:          onNavigateToSessions,
     'target-analysis': onNavigateToTargetAnalysis,
+    more:              onNavigateToMore,
   };
 
-  // treat gun-detail as vault for active state
-  const activeId = currentView === 'gun-detail' ? 'vault' : currentView;
+  // Normalize secondary views to 'more' for active state
+  const secondaryViews = ['more', 'field-guide', 'caliber', 'ballistics', 'training', 'reloading', 'gear', 'wishlist'];
+  const activeId: NavView = currentView === 'gun-detail' ? 'vault'
+    : currentView === 'session-log' ? 'sessions'
+    : secondaryViews.includes(currentView) ? 'more'
+    : currentView as NavView;
 
   return (
     <div style={{

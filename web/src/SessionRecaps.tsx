@@ -70,7 +70,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
 
   // Stats
   const now = new Date();
-  const thisMonth = now.toISOString().slice(0, 7);
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const roundsThisMonth = sessions
     .filter(s => s.date.startsWith(thisMonth))
     .reduce((sum, s) => sum + s.roundsExpended, 0);
@@ -182,7 +182,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         {statCard('Sessions', sessions.length, 'all time')}
         {statCard('This Month', roundsThisMonth.toLocaleString(), 'rounds', theme.green)}
-        {statCard('Gap', gapDays === Infinity ? '—' : `${gapDays}d`, 'since last trip', gapDays > 14 ? '#ff6b6b' : theme.textSecondary)}
+        {statCard('Last Session', gapDays === Infinity ? '—' : gapDays + 'd', 'ago', gapDays > 14 ? '#ff6b6b' : theme.textSecondary)}
       </div>
 
       {mostActiveGunId && gunMap.get(mostActiveGunId) && (
@@ -295,24 +295,6 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
               ✦ AI INSIGHTS
             </button>
           )}
-          <button
-            onClick={() => onLogSession()}
-            style={{
-              padding: '8px 14px',
-              backgroundColor: theme.accent,
-              border: 'none',
-              borderRadius: '6px',
-              color: theme.bg,
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              letterSpacing: '0.8px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            + LOG
-          </button>
         </div>
       </div>
 
@@ -778,8 +760,11 @@ function SessionCard({
         style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary, marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {gun ? `${gun.make} ${gun.model}` : 'Unknown Gun'}
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '4px', marginTop: '1px' }}>
+            {new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </div>
           {/* Narrative or metadata row */}
           {session.aiNarrative ? (

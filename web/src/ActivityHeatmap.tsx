@@ -1,11 +1,11 @@
-// GitHub-style contribution heatmap — 52 weeks of range activity
-import { useState } from 'react';
+// GitHub-style contribution heatmap — range activity
+import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import type { Session } from './types';
 
 interface ActivityHeatmapProps {
   sessions: Session[];
-  weekCount?: number; // default 52; pass 12 for collapsed view
+  weekCount?: number; // 12 or 52
 }
 
 function getRoundColor(rounds: number): string {
@@ -18,6 +18,29 @@ function getRoundColor(rounds: number): string {
 
 export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapProps) {
   const [tooltip, setTooltip] = useState<{ date: string; rounds: number; x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cellSize, setCellSize] = useState(10);
+  const GAP = 2;
+
+  // Measure container width on mount and resize
+  useEffect(() => {
+    function measure() {
+      if (!containerRef.current) return;
+      const w = containerRef.current.clientWidth;
+      if (weekCount <= 12) {
+        // Fill available width for short modes
+        const size = Math.floor((w - (weekCount - 1) * GAP) / weekCount);
+        setCellSize(Math.max(8, Math.min(size, 18)));
+      } else {
+        // Fixed size for scrollable long mode
+        setCellSize(10);
+      }
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [weekCount]);
 
   // Build a map of date → total rounds
   const roundsByDate = new Map<string, number>();
@@ -26,50 +49,55 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
     roundsByDate.set(s.date, prev + s.roundsExpended);
   });
 
-  // Build weeks ending today
+  // Build exactly weekCount weeks ending today
   const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
   const startDate = new Date(today);
   startDate.setDate(startDate.getDate() - (weekCount * 7) + 1);
-  // Align to Sunday
+  // Align to Sunday of that week
   startDate.setDate(startDate.getDate() - startDate.getDay());
 
-  const weeks: Array<Array<{ dateStr: string; rounds: number }>> = [];
+  const weeks: Array<Array<{ dateStr: string; rounds: number; isFuture: boolean }>> = [];
   let current = new Date(startDate);
 
-  for (let w = 0; w < weekCount + 1; w++) {
-    const week: Array<{ dateStr: string; rounds: number }> = [];
+  for (let w = 0; w < weekCount; w++) {
+    const week: Array<{ dateStr: string; rounds: number; isFuture: boolean }> = [];
     for (let d = 0; d < 7; d++) {
       const dateStr = current.toISOString().split('T')[0];
-      week.push({ dateStr, rounds: roundsByDate.get(dateStr) || 0 });
+      const isFuture = dateStr > todayStr;
+      week.push({ dateStr, rounds: roundsByDate.get(dateStr) || 0, isFuture });
       current.setDate(current.getDate() + 1);
     }
     weeks.push(week);
   }
 
+  // Month labels — one per month change
   const monthLabels: Array<{ label: string; col: number }> = [];
   let lastMonth = -1;
   weeks.forEach((week, wi) => {
     const m = new Date(week[0].dateStr + 'T12:00:00').getMonth();
     if (m !== lastMonth) {
-      monthLabels.push({ label: new Date(week[0].dateStr + 'T12:00:00').toLocaleString('en-US', { month: 'short' }), col: wi });
+      monthLabels.push({
+        label: new Date(week[0].dateStr + 'T12:00:00').toLocaleString('en-US', { month: 'short' }),
+        col: wi,
+      });
       lastMonth = m;
     }
   });
 
-  const CELL = 10;
-  const GAP = 2;
-  const stride = CELL + GAP;
+  const stride = cellSize + GAP;
+  const totalWidth = weeks.length * stride - GAP;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={containerRef} style={{ width: '100%', overflowX: weekCount > 12 ? 'auto' : 'hidden', position: 'relative' }}>
       {/* Month labels */}
-      <div style={{ position: 'relative', height: '14px', marginBottom: '2px' }}>
+      <div style={{ position: 'relative', height: '14px', marginBottom: '2px', minWidth: totalWidth }}>
         {monthLabels.map(({ label, col }) => (
           <span
-            key={`${label}-${col}`}
+            key={label + '-' + col}
             style={{
               position: 'absolute',
-              left: `${col * stride}px`,
+              left: col * stride,
               fontFamily: 'monospace',
               fontSize: '8px',
               color: theme.textMuted,
@@ -84,12 +112,10 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
 
       {/* Grid */}
       <div style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', gap: `${GAP}px`, overflowX: weekCount <= 12 ? 'hidden' : 'auto', paddingBottom: '4px' }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px` }}>
-            {week.map(({ dateStr, rounds }) => {
-              const isFuture = dateStr > today.toISOString().split('T')[0];
-              return (
+        <div style={{ display: 'flex', gap: GAP, minWidth: totalWidth }}>
+          {weeks.map((week, wi) => (
+            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+              {week.map(({ dateStr, rounds, isFuture }) => (
                 <div
                   key={dateStr}
                   onMouseEnter={(e) => {
@@ -100,34 +126,33 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
                   }}
                   onMouseLeave={() => setTooltip(null)}
                   style={{
-                    width: `${CELL}px`,
-                    height: `${CELL}px`,
-                    borderRadius: '2px',
+                    width: cellSize,
+                    height: cellSize,
+                    borderRadius: 2,
                     backgroundColor: isFuture ? 'transparent' : getRoundColor(rounds),
-                    cursor: rounds > 0 ? 'pointer' : 'default',
+                    cursor: rounds > 0 && !isFuture ? 'pointer' : 'default',
                     flexShrink: 0,
                   }}
                 />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      {/* Right-edge fade for 12-week view hinting more data */}
-      {weekCount <= 12 && (
-        <div style={{
-          position: 'absolute', top: 0, right: 0, bottom: 0,
-          width: '24px', pointerEvents: 'none',
-          background: 'linear-gradient(to right, transparent, rgba(7,7,26,0.9))',
-        }} />
-      )}
+              ))}
+            </div>
+          ))}
+        </div>
+        {/* Right fade hint for 12-week view */}
+        {weekCount <= 12 && (
+          <div style={{
+            position: 'absolute', top: 0, right: 0, bottom: 0,
+            width: '24px', pointerEvents: 'none',
+            background: 'linear-gradient(to right, transparent, rgba(7,7,26,0.9))',
+          }} />
+        )}
       </div>
 
       {/* Legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>LESS</span>
         {[0, 30, 100, 200, 400].map(r => (
-          <div key={r} style={{ width: `${CELL}px`, height: `${CELL}px`, borderRadius: '2px', backgroundColor: getRoundColor(r) }} />
+          <div key={r} style={{ width: cellSize, height: cellSize, borderRadius: 2, backgroundColor: getRoundColor(r) }} />
         ))}
         <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>MORE</span>
       </div>
@@ -139,7 +164,7 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
           top: tooltip.y - 40,
           left: tooltip.x,
           backgroundColor: theme.surface,
-          border: `0.5px solid ${theme.border}`,
+          border: '0.5px solid ' + theme.border,
           borderRadius: '4px',
           padding: '4px 8px',
           fontFamily: 'monospace',
@@ -150,8 +175,8 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
           whiteSpace: 'nowrap',
         }}>
           {tooltip.rounds > 0
-            ? `${tooltip.rounds} rounds · ${tooltip.date}`
-            : `No range · ${tooltip.date}`}
+            ? tooltip.rounds + ' rounds · ' + tooltip.date
+            : 'No range · ' + tooltip.date}
         </div>
       )}
     </div>
