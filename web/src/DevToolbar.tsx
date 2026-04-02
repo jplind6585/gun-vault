@@ -2,10 +2,24 @@
 import { useState, useEffect } from 'react';
 import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { resetAllData } from './storage';
+import { getClaudeApiKey, setClaudeApiKey } from './claudeApi';
 
 export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeySaved, setApiKeySaved] = useState(false);
+
+  const savedKey = getClaudeApiKey();
+
+  function handleSaveApiKey() {
+    if (apiKeyInput.trim()) {
+      setClaudeApiKey(apiKeyInput.trim());
+      setApiKeyInput('');
+      setApiKeySaved(true);
+      setTimeout(() => setApiKeySaved(false), 2000);
+    }
+  }
 
   useEffect(() => {
     const handler = () => setUpdateAvailable(true);
@@ -124,6 +138,55 @@ export function DevToolbar({ open, onToggle }: { open: boolean; onToggle: () => 
               borderColor={theme.border}
               onClick={toggleOutdoorMode}
             />
+
+            {/* Claude API Key */}
+            <div style={{ borderTop: `0.5px solid ${theme.border}`, paddingTop: '8px', marginTop: '2px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.5px', marginBottom: '6px' }}>
+                CLAUDE API KEY {savedKey ? <span style={{ color: theme.green }}>● SET</span> : <span style={{ color: theme.red }}>● NOT SET</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <input
+                  type="password"
+                  placeholder="sk-ant-api03-..."
+                  value={apiKeyInput}
+                  onChange={e => setApiKeyInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveApiKey(); }}
+                  style={{
+                    flex: 1,
+                    padding: '5px 8px',
+                    backgroundColor: theme.bg,
+                    border: `0.5px solid ${theme.border}`,
+                    borderRadius: '4px',
+                    color: theme.textPrimary,
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    minWidth: 0,
+                  }}
+                />
+                <button
+                  onClick={handleSaveApiKey}
+                  style={{
+                    padding: '5px 8px',
+                    backgroundColor: apiKeySaved ? theme.green : theme.accent,
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: theme.bg,
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  {apiKeySaved ? '✓' : 'SAVE'}
+                </button>
+              </div>
+              {savedKey && (
+                <div style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace', marginTop: '4px' }}>
+                  {savedKey.slice(0, 12)}...{savedKey.slice(-4)}
+                </div>
+              )}
+            </div>
 
             <ToolButton
               label="CHECK FOR UPDATE"

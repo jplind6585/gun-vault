@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
 import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
 import type { Gun, Session, AmmoLot } from './types';
@@ -17,6 +17,69 @@ interface HomePageProps {
 }
 
 type TimePeriod = 'week' | 'month' | 'year';
+
+function InsightsCarousel({ insights, card, sectionLabel }: {
+  insights: string[];
+  card: React.CSSProperties;
+  sectionLabel: React.CSSProperties;
+}) {
+  const [index, setIndex] = useState(0);
+  const startXRef = useRef<number | null>(null);
+
+  if (insights.length === 0) {
+    return (
+      <div style={card}>
+        <div style={sectionLabel}>Training Insights</div>
+        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#666' }}>Log sessions to see insights.</div>
+      </div>
+    );
+  }
+
+  function onTouchStart(e: React.TouchEvent) {
+    startXRef.current = e.touches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (startXRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - startXRef.current;
+    if (dx < -40) setIndex(i => Math.min(i + 1, insights.length - 1));
+    else if (dx > 40) setIndex(i => Math.max(i - 1, 0));
+    startXRef.current = null;
+  }
+
+  return (
+    <div style={card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={sectionLabel}>Training Insights</div>
+        {insights.length > 1 && (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {insights.map((_, i) => (
+              <div
+                key={i}
+                onClick={() => setIndex(i)}
+                style={{
+                  width: '5px', height: '5px', borderRadius: '50%',
+                  backgroundColor: i === index ? '#ffd43b' : 'rgba(255,255,255,0.2)',
+                  cursor: 'pointer', transition: 'background-color 0.2s',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{
+        padding: '7px 10px',
+        backgroundColor: '#07071a',
+        borderLeft: '2px solid #51cf66',
+        borderRadius: '0 4px 4px 0',
+        fontFamily: 'monospace', fontSize: '11px',
+        color: 'rgba(255,255,255,0.6)',
+        minHeight: '28px',
+      }}>
+        {insights[index]}
+      </div>
+    </div>
+  );
+}
 
 // Categorise an ammo lot by matching its caliber to guns in vault
 function ammoType(lot: AmmoLot, guns: Gun[]): 'Handgun' | 'Rifle' | 'Shotgun' | 'Other' {
@@ -406,22 +469,7 @@ export function HomePage({
           }
         </div>
 
-        <div style={card}>
-          <div style={sectionLabel}>Training Insights</div>
-          {insights.length === 0
-            ? <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>Log sessions to see insights.</div>
-            : insights.map((ins, i) => (
-              <div key={i} style={{
-                padding: '7px 10px', marginBottom: i < insights.length - 1 ? '6px' : 0,
-                backgroundColor: theme.bg,
-                borderLeft: `2px solid ${theme.green}`,
-                borderRadius: '0 4px 4px 0',
-                fontFamily: 'monospace', fontSize: '11px',
-                color: theme.textSecondary,
-              }}>{ins}</div>
-            ))
-          }
-        </div>
+        <InsightsCarousel insights={insights} card={card} sectionLabel={sectionLabel} />
 
       </div>
 

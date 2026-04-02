@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { theme } from './theme';
 import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns } from './storage';
+import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
 
@@ -19,24 +20,28 @@ interface Stats {
   horizontalSdIn: number; horizontalSdMoa: number;
   extremeSpreadIn: number; extremeSpreadMoa: number;
   meanRadiusIn: number; meanRadiusMoa: number;
+  overallWidthIn: number; overallWidthMoa: number;
+  overallHeightIn: number; overallHeightMoa: number;
 }
 
-const BULLET_PRESETS: { label: string; inVal: number }[] = [
-  { label: '.17 / 4.3mm',  inVal: 0.172 },
-  { label: '.20 / 5.0mm',  inVal: 0.204 },
-  { label: '.22 / 5.6mm',  inVal: 0.224 },
-  { label: '.243 / 6.2mm', inVal: 0.243 },
-  { label: '.264 / 6.7mm', inVal: 0.264 },
-  { label: '.277 / 7.0mm', inVal: 0.277 },
-  { label: '.284 / 7.2mm', inVal: 0.284 },
-  { label: '.308 / 7.8mm', inVal: 0.308 },
-  { label: '.338 / 8.6mm', inVal: 0.338 },
-  { label: '.355 / 9.0mm', inVal: 0.355 },
-  { label: '.357 / 9.1mm', inVal: 0.357 },
-  { label: '.40 / 10.2mm', inVal: 0.400 },
-  { label: '.44 / 11.2mm', inVal: 0.429 },
-  { label: '.45 / 11.5mm', inVal: 0.452 },
-  { label: '.50 / 12.7mm', inVal: 0.500 },
+const BULLET_PRESETS: { label: string; sub: string; inVal: number }[] = [
+  { label: '.17 / 4.4mm',   sub: '17 HMR, 17 WSM',                  inVal: 0.172 },
+  { label: '.20 / 5.0mm',   sub: '204 Ruger',                        inVal: 0.204 },
+  { label: '.22 / 5.56mm',  sub: '.22 LR, .223, 5.56 NATO',          inVal: 0.224 },
+  { label: '.243 / 6mm',    sub: '6mm Creedmoor, 6mm GT, 243 Win',   inVal: 0.243 },
+  { label: '.257 / 6.5mm',  sub: '6.5 Creedmoor, 6.5 PRC, 260 Rem', inVal: 0.264 },
+  { label: '.277 / 7mm',    sub: '.270 Win, .277 Fury',               inVal: 0.277 },
+  { label: '.284 / 7.2mm',  sub: '7mm Rem Mag, 7mm PRC',             inVal: 0.284 },
+  { label: '.308 / 7.62mm', sub: '.308 Win, .30-06, 7.62x39',        inVal: 0.308 },
+  { label: '.338 / 8.6mm',  sub: '.338 Lapua, .338 Win Mag',         inVal: 0.338 },
+  { label: '.355 / 9mm',    sub: '9mm, .357 Mag, .357 SIG',          inVal: 0.355 },
+  { label: '.375 / 9.5mm',  sub: '.375 H&H, .375 Ruger',             inVal: 0.375 },
+  { label: '.400 / 10mm',   sub: '.40 S&W, 10mm Auto',               inVal: 0.400 },
+  { label: '.452 / 11.5mm', sub: '.45 ACP, .45 Colt',                inVal: 0.452 },
+  { label: '.50 / 12.7mm',  sub: '.50 BMG, .500 S&W',                inVal: 0.500 },
+  { label: '.410 / 10.4mm', sub: '.410 Bore',                        inVal: 0.410 },
+  { label: '20 Ga / 15.6mm',sub: '20 Gauge',                         inVal: 0.615 },
+  { label: '12 Ga / 18.5mm',sub: '12 Gauge',                         inVal: 0.729 },
 ];
 
 const DIST_PRESETS = [25, 50, 100, 200, 300];
@@ -552,6 +557,8 @@ export function TargetAnalysis() {
         const dx = (shots[i].x - shots[j].x) / ppi; const dy = (shots[i].y - shots[j].y) / ppi;
         extremeSpreadIn = Math.max(extremeSpreadIn, Math.sqrt(dx * dx + dy * dy));
       }
+    const overallWidthIn = shots.length > 1 ? (Math.max(...windages) - Math.min(...windages)) : 0;
+    const overallHeightIn = shots.length > 1 ? (Math.max(...elevations) - Math.min(...elevations)) : 0;
     return {
       shotCount: shots.length, windageIn, elevationIn,
       windageMoa: toMoa(Math.abs(windageIn), distanceYds), elevationMoa: toMoa(Math.abs(elevationIn), distanceYds),
@@ -561,6 +568,8 @@ export function TargetAnalysis() {
       horizontalSdIn: stddev(windages), horizontalSdMoa: toMoa(stddev(windages), distanceYds),
       extremeSpreadIn, extremeSpreadMoa: toMoa(extremeSpreadIn, distanceYds),
       meanRadiusIn, meanRadiusMoa: toMoa(meanRadiusIn, distanceYds),
+      overallWidthIn, overallWidthMoa: toMoa(overallWidthIn, distanceYds),
+      overallHeightIn, overallHeightMoa: toMoa(overallHeightIn, distanceYds),
     };
   };
 
@@ -632,21 +641,18 @@ export function TargetAnalysis() {
   ].join('\n') : '';
 
   const callCoach = async (userMsg: string) => {
+    if (!hasClaudeApiKey()) {
+      setCoachMessages(prev => [...prev, { role: 'user', content: userMsg }, { role: 'assistant', content: '⚠️ No API key set. Open Dev Tools (tap version 7×) and paste your Anthropic API key.' }]);
+      return;
+    }
     const newMessages = [...coachMessages, { role: 'user', content: userMsg }];
     setCoachMessages(newMessages); setCoachInput(''); setCoachLoading(true);
     try {
-      const res = await fetch('/.netlify/functions/coach', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statsContext, messages: newMessages }),
-      });
-      const data = await res.json() as { reply?: string };
-      if (!res.ok) {
-        setCoachMessages(prev => [...prev, { role: 'assistant', content: res.status === 503 ? '⚠️ Coach not configured. Add ANTHROPIC_API_KEY to Netlify environment variables.' : '⚠️ Coach unavailable.' }]);
-      } else {
-        setCoachMessages(prev => [...prev, { role: 'assistant', content: data.reply ?? '' }]);
-      }
-    } catch {
-      setCoachMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Could not reach coaching service.' }]);
+      const reply = await callTargetCoach(statsContext, newMessages);
+      setCoachMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setCoachMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }]);
     } finally { setCoachLoading(false); }
   };
   const openCoach = () => { setShowCoach(true); if (coachMessages.length === 0) callCoach('Analyze my shot group and give me 2–3 specific, actionable coaching tips.'); };
@@ -674,7 +680,6 @@ export function TargetAnalysis() {
 
   // ── STEP 1: Upload + Distance + Bullet ────────────────────────────────────
   const renderStep1 = () => {
-    const selectedBullet = BULLET_PRESETS.find(b => Math.abs(b.inVal - bulletDiaIn) < 0.001);
     return (
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         {!imageUrl ? (
@@ -709,22 +714,26 @@ export function TargetAnalysis() {
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                {sectionLabel('Bullet Diameter')}
-                {unitToggle(bulletUnit, setBulletUnit)}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center', marginBottom: 8 }}>
+              {sectionLabel('Bullet Diameter')}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {BULLET_PRESETS.map(b => {
-                  const isSelected = Math.abs(b.inVal - bulletDiaIn) < 0.001 && !customBullet;
-                  const displayLabel = bulletUnit === 'mm' ? `${inToMm(b.inVal)}mm` : b.label.split(' / ')[0];
-                  return chip(displayLabel, isSelected, () => { setBulletDiaIn(b.inVal); setCustomBullet(''); });
+                  const isSelected = Math.abs(b.inVal - bulletDiaIn) < 0.002 && !customBullet;
+                  return (
+                    <button
+                      key={b.label}
+                      onClick={() => { setBulletDiaIn(b.inVal); setCustomBullet(''); }}
+                      style={{
+                        padding: '8px 12px', borderRadius: 8, textAlign: 'left',
+                        border: isSelected ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
+                        background: isSelected ? theme.accentDim : theme.surface,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? theme.accent : theme.textPrimary }}>{b.label}</div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 1 }}>{b.sub}</div>
+                    </button>
+                  );
                 })}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="number" step={bulletUnit === 'mm' ? '0.1' : '0.001'} placeholder={bulletUnit === 'mm' ? 'mm' : 'inches'} value={customBullet} onChange={e => { setCustomBullet(e.target.value); if (e.target.value) setBulletDiaIn(bulletUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 100 }} />
-                {selectedBullet && !customBullet && (
-                  <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'monospace' }}>{bulletUnit === 'mm' ? `= ${selectedBullet.label.split(' / ')[0]}` : `= ${inToMm(bulletDiaIn)}mm`}</span>
-                )}
               </div>
             </div>
             <button onClick={() => setStep(2)} style={{ padding: 14, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Continue →</button>
@@ -748,16 +757,13 @@ export function TargetAnalysis() {
           Next, tap two points on the photo that are exactly <strong style={{ color: theme.textPrimary }}>{displayRefIn}</strong> apart, then drag to fine-tune. Use a ruler, target grid line, or any known distance.
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            {sectionLabel('Reference Distance')}
-            {unitToggle(refUnit, (u) => { setRefUnit(u); setCustomRef(''); })}
-          </div>
+          {sectionLabel('Reference Distance')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
             {REF_PRESETS_IN.map(r => {
-              const displayVal = refUnit === 'mm' ? `${Math.round(r * 25.4)}mm` : `${r}"`;
-              return chip(displayVal, Math.abs(refIn - r) < 0.01 && !customRef, () => { setRefIn(r); setCustomRef(''); });
+              const label = `${r}" / ${Math.round(r * 25.4)}mm`;
+              return chip(label, Math.abs(refIn - r) < 0.01 && !customRef, () => { setRefIn(r); setCustomRef(''); });
             })}
-            <input type="number" step={refUnit === 'mm' ? '1' : '0.25'} placeholder={refUnit === 'mm' ? 'mm' : 'inches'} value={customRef} onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(refUnit === 'mm' ? mmToIn(Number(e.target.value)) : Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
+            <input type="number" step="0.25" placeholder='inches' value={customRef} onChange={e => { setCustomRef(e.target.value); if (e.target.value) setRefIn(Number(e.target.value)); }} style={{ padding: '7px 12px', borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.surface, color: theme.textPrimary, fontSize: 13, width: 90 }} />
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
@@ -840,8 +846,6 @@ export function TargetAnalysis() {
 
   const renderStep4 = () => {
     if (!stats) return null;
-    const wDir = stats.windageIn >= 0 ? 'R ' : 'L ';
-    const eDir = stats.elevationIn >= 0 ? 'U ' : 'D ';
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
@@ -872,19 +876,27 @@ export function TargetAnalysis() {
             </div>
             {savedMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Saved to history ✓</div>}
 
+            {/* GROUP SIZE */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
-              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Offset from POA</div>
-              <StatRow label="Windage"   val={`${wDir}${Math.abs(stats.windageIn).toFixed(2)}"`}   moa={`${stats.windageMoa.toFixed(2)} MOA`} />
-              <StatRow label="Elevation" val={`${eDir}${Math.abs(stats.elevationIn).toFixed(2)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
+              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</div>
+              <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} />
+              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
+              <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
+              <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
             </div>
+            {/* POA OFFSET */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
-              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Precision</div>
-              <StatRow label="CEP"            val={`${stats.cepIn.toFixed(2)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} />
-              <StatRow label="Radial SD"      val={`${stats.radialSdIn.toFixed(2)}"`}      moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
-              <StatRow label="Vertical SD"    val={`${stats.verticalSdIn.toFixed(2)}"`}    moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
-              <StatRow label="Horizontal SD"  val={`${stats.horizontalSdIn.toFixed(2)}"`}  moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
-              <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(2)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} />
-              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(2)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
+              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>POA Offset</div>
+              <StatRow label="Elevation" val={`${stats.elevationIn >= 0 ? 'UP' : 'DOWN'} ${Math.abs(stats.elevationIn).toFixed(3)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
+              <StatRow label="Windage"   val={`${stats.windageIn >= 0 ? 'RIGHT' : 'LEFT'} ${Math.abs(stats.windageIn).toFixed(3)}"`}   moa={`${stats.windageMoa.toFixed(2)} MOA`} />
+            </div>
+            {/* PRECISION DETAIL */}
+            <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
+              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Precision Detail</div>
+              <StatRow label="CEP"           val={`${stats.cepIn.toFixed(3)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} />
+              <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}      moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
+              <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}    moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
+              <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`}  moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -893,7 +905,7 @@ export function TargetAnalysis() {
             </div>
 
             {!showCoach ? (
-              <button onClick={openCoach} style={{ padding: 13, borderRadius: 12, border: `1px solid ${theme.accent}`, background: theme.accentDim, color: theme.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>🎯 Get Coaching</button>
+              <button onClick={openCoach} style={{ padding: 13, borderRadius: 12, border: 'none', background: theme.accent, color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px' }}>GET COACHING</button>
             ) : (
               <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '10px 14px', background: theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -915,7 +927,7 @@ export function TargetAnalysis() {
               </div>
             )}
 
-            <button onClick={resetAll} style={{ padding: 11, borderRadius: 12, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>+ New Analysis</button>
+            <button onClick={resetAll} style={{ padding: 11, borderRadius: 12, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>+ NEW TARGET</button>
 
             {history.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

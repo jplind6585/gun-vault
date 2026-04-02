@@ -173,6 +173,7 @@ export interface AmmoLot {
   quantityPurchased?: number;
   purchaseDate?: string;
   purchasePricePerRound?: number;
+  currentMarketPrice?: number; // Current market price per round (manual, for replacement cost)
   averageCostPerRound?: number; // Calculated from all purchases
 
   // Organization

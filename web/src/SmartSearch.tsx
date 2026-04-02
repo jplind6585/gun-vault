@@ -221,20 +221,31 @@ export function SmartSearch({ onClose, onNavigate }: SmartSearchProps) {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <div style={{
-            fontSize: '11px',
-            color: theme.textMuted,
-            fontFamily: 'monospace'
-          }}>
-            ESC to close
-          </div>
-          <div style={{
-            fontSize: '11px',
-            color: theme.textMuted,
-            fontFamily: 'monospace'
-          }}>
-            {results.length} results
-          </div>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '6px 14px',
+              backgroundColor: 'transparent',
+              border: `0.5px solid ${theme.border}`,
+              borderRadius: '4px',
+              color: theme.textMuted,
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+            }}
+          >
+            ✕ CLOSE
+          </button>
+          {query.length >= 2 && (
+            <div style={{
+              fontSize: '11px',
+              color: theme.textMuted,
+              fontFamily: 'monospace'
+            }}>
+              {results.length} results
+            </div>
+          )}
         </div>
       </div>
     </div>

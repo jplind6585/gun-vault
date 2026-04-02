@@ -254,6 +254,27 @@ export function getAmmoCorrelation(
   return results.sort((a, b) => b.issueRate - a.issueRate);
 }
 
+// ── Target coaching ──────────────────────────────────────────────────────────
+
+export async function callTargetCoach(
+  statsContext: string,
+  messages: { role: string; content: string }[]
+): Promise<string> {
+  const systemPrompt = `You are an expert firearms instructor and precision shooting coach. \
+You analyze shot group data and give specific, actionable feedback. \
+Keep responses to 3-4 sentences max per insight. Be direct and specific — not generic. \
+Format: zero correction first, then group diagnosis, then one next step.`;
+
+  const anthropicMessages = messages.map(m => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.role === 'user' && messages.indexOf(m) === 0
+      ? `Shot group data:\n${statsContext}\n\n${m.content}`
+      : m.content,
+  }));
+
+  return callClaude(anthropicMessages, systemPrompt);
+}
+
 // ── Training gap ─────────────────────────────────────────────────────────────
 
 export function getTrainingGapDays(sessions: Session[]): number {

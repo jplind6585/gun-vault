@@ -289,7 +289,7 @@ export function GunVault({ onGunSelect, onAddGun }: GunVaultProps) {
       {/* ── TYPE CHIPS + FILTERS ROW ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         {/* Chips — scrollable, don't overflow into FILTERS */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, scrollbarWidth: 'none', paddingRight: '8px' }}>
           {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
             .filter(t => typeCounts[t] > 0)
             .map(t => {

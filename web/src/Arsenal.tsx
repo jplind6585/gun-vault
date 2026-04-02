@@ -12,9 +12,16 @@ type CategoryFilter = 'all' | 'Match' | 'Practice' | 'Self Defense' | 'Hunting';
 // ============================================================================
 
 const CALIBER_GROUPS: Array<{ members: string[]; label: string }> = [
-  { members: ['9mm', '9mm Luger', '9mm +P', '9mm+P', '9mm +P+', '9mm+P+', '9×19mm', '9x19mm', '9x19', '9mm NATO', '9mm Parabellum'], label: '9mm' },
-  { members: ['5.56x45mm', '5.56x45mm NATO', '.223 Remington', '.223 Rem', '5.56'], label: '5.56x45 / .223 Rem' },
-  { members: ['.308 Winchester', '.308 Win', '7.62x51mm', '7.62x51mm NATO', '7.62x51'], label: '.308 / 7.62x51' },
+  { members: ['9mm', '9mm Luger', '9mm +P', '9mm+P', '9mm +P+', '9mm+P+', '9mm Luger +P', '9mm Luger +P+', '9×19mm', '9x19mm', '9x19', '9mm NATO', '9mm Parabellum'], label: '9mm' },
+  { members: ['5.56x45mm', '5.56x45mm NATO', '.223 Remington', '.223 Rem', '5.56', '5.56 NATO'], label: '5.56x45 / .223 Rem' },
+  { members: ['.308 Winchester', '.308 Win', '7.62x51mm', '7.62x51mm NATO', '7.62x51', '.308'], label: '.308 / 7.62x51' },
+  { members: ['.30-06 Springfield', '.30-06', '.30-06 Sprg', '.30-06 Spfld', '30-06'], label: '.30-06 Springfield' },
+  { members: ['.45 ACP', '.45ACP', '45 ACP', '45 Auto', '.45 Auto'], label: '.45 ACP' },
+  { members: ['.40 S&W', '.40 SW', '40 S&W', '.40 Smith & Wesson'], label: '.40 S&W' },
+  { members: ['.380 ACP', '.380 Auto', '380 ACP', '9mm Short', '9x17mm'], label: '.380 ACP' },
+  { members: ['10mm Auto', '10mm', '10mm Automatic'], label: '10mm Auto' },
+  { members: ['.22 LR', '.22 Long Rifle', '22 LR', '22 Long Rifle', '.22'], label: '.22 LR' },
+  { members: ['6.5 Creedmoor', '6.5CM', '6.5 CM'], label: '6.5 Creedmoor' },
 ];
 
 function normalizeCaliberLabel(caliber: string): string {
@@ -277,39 +284,38 @@ export function Arsenal() {
   // All cartridges from database (for search section)
   const allCartridges = useMemo(() => getAllCartridges(), [allAmmo]);
 
-  // Build consolidated caliber summary
-  const rawCaliberSummary = getAmmoSummaryByCaliber();
-
-  const consolidatedSummary = new Map<string, { totalRounds: number; lots: number }>();
-  for (const [caliber, data] of rawCaliberSummary.entries()) {
-    const label = normalizeCaliberLabel(caliber);
-    const existing = consolidatedSummary.get(label) || { totalRounds: 0, lots: 0 };
+  // Build consolidated caliber summary — groups variants and stores actual lot objects for sorting
+  const consolidatedSummary = new Map<string, { totalRounds: number; lotCount: number; lots: AmmoLot[] }>();
+  for (const lot of allAmmo) {
+    const label = normalizeCaliberLabel(lot.caliber);
+    const existing = consolidatedSummary.get(label) || { totalRounds: 0, lotCount: 0, lots: [] };
     consolidatedSummary.set(label, {
-      totalRounds: existing.totalRounds + data.totalRounds,
-      lots: existing.lots + data.lots
+      totalRounds: existing.totalRounds + lot.quantity,
+      lotCount: existing.lotCount + 1,
+      lots: [...existing.lots, lot],
     });
   }
 
   // Build sorted calibers list
   const sortedCalibersBase = Array.from(consolidatedSummary.entries());
 
-  // Apply sort
+  // Apply sort — uses actual lot objects for velocity/energy/price
   const sortedCalibersAll = [...sortedCalibersBase].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortField === 'alpha') return dir * normalizeCaliberLabel(a[0]).localeCompare(normalizeCaliberLabel(b[0]));
+    if (sortField === 'alpha') return dir * a[0].localeCompare(b[0]);
     if (sortField === 'velocity') {
-      const va = a[1].lots[0]?.advertisedFPS ?? 0;
-      const vb = b[1].lots[0]?.advertisedFPS ?? 0;
+      const va = Math.max(0, ...a[1].lots.map(l => l.advertisedFPS ?? 0));
+      const vb = Math.max(0, ...b[1].lots.map(l => l.advertisedFPS ?? 0));
       return dir * (va - vb);
     }
     if (sortField === 'energy') {
-      const ea = a[1].lots[0]?.muzzleEnergy ?? 0;
-      const eb = b[1].lots[0]?.muzzleEnergy ?? 0;
+      const ea = Math.max(0, ...a[1].lots.map(l => l.muzzleEnergy ?? 0));
+      const eb = Math.max(0, ...b[1].lots.map(l => l.muzzleEnergy ?? 0));
       return dir * (ea - eb);
     }
     if (sortField === 'price') {
-      const pa = a[1].lots[0]?.purchasePricePerRound ?? 0;
-      const pb = b[1].lots[0]?.purchasePricePerRound ?? 0;
+      const pa = Math.max(0, ...a[1].lots.map(l => l.currentMarketPrice ?? l.purchasePricePerRound ?? 0));
+      const pb = Math.max(0, ...b[1].lots.map(l => l.currentMarketPrice ?? l.purchasePricePerRound ?? 0));
       return dir * (pa - pb);
     }
     // rounds (default)
@@ -365,8 +371,11 @@ export function Arsenal() {
     return true;
   });
 
-  const replacementCost = allAmmo.reduce((sum, lot) =>
-    sum + (lot.purchasePricePerRound ? lot.quantity * lot.purchasePricePerRound : 0), 0);
+  // Replacement cost uses current market price (manually set); falls back to purchase price
+  const replacementCost = allAmmo.reduce((sum, lot) => {
+    const price = lot.currentMarketPrice ?? lot.purchasePricePerRound;
+    return sum + (price ? lot.quantity * price : 0);
+  }, 0);
 
   // Task 9: Total invested (based on quantityPurchased * purchasePricePerRound)
   const totalInvested = allAmmo.reduce((sum, l) =>
@@ -572,7 +581,7 @@ export function Arsenal() {
 
       {/* Task 8: Inventory mix distribution line */}
       {inventoryMix && inventoryMix.length > 0 && (
-        <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', padding: '8px 0' }}>
+        <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', padding: '8px 0', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
           INVENTORY MIX{' '}
           {inventoryMix.map(({ cat, pct }, i) => (
             <span key={cat}>
@@ -830,7 +839,7 @@ export function Arsenal() {
                       color: theme.textSecondary,
                       marginBottom: '6px'
                     }}>
-                      <span>{stats.lots} lots</span>
+                      <span>{stats.lotCount} lots</span>
                       <span>{Array.from(new Set(lotsForCaliber.map(l => l.brand))).length} brands</span>
                     </div>
 
@@ -862,7 +871,13 @@ export function Arsenal() {
                     {/* Consumption rate */}
                     {rdsPerWeek > 0 && (
                       <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', marginTop: '4px' }}>
-                        ~{rdsPerWeek.toFixed(0)} rds/wk · ~{runwayWeeks.toFixed(0)} wks remaining
+                        ~{rdsPerWeek.toFixed(0)} rds/wk · ~{
+                          runwayWeeks >= 104
+                            ? `${(runwayWeeks / 52).toFixed(1)} yrs remaining`
+                            : runwayWeeks >= 4
+                              ? `${Math.round(runwayWeeks)} wks remaining`
+                              : `${Math.round(runwayWeeks * 7)} days remaining`
+                        }
                       </div>
                     )}
 
@@ -1717,6 +1732,8 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
   const [newTarget, setNewTarget] = useState('');
   const [showFullDetails, setShowFullDetails] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
+  const [editingMarketPrice, setEditingMarketPrice] = useState(false);
+  const [newMarketPrice, setNewMarketPrice] = useState('');
   const [newPrice, setNewPrice] = useState('');
 
   // Task 11: purchase history state
@@ -1803,6 +1820,16 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
       reloadLot();
       setEditingPrice(false);
       setNewPrice('');
+    }
+  }
+
+  function handleSaveMarketPrice() {
+    const p = parseFloat(newMarketPrice);
+    if (!isNaN(p) && p >= 0) {
+      updateAmmo(currentLot.id, { currentMarketPrice: p });
+      reloadLot();
+      setEditingMarketPrice(false);
+      setNewMarketPrice('');
     }
   }
 
@@ -2269,6 +2296,39 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
               </>
             )}
           </div>
+        </div>
+
+        {/* Market price row — for replacement cost calculation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          {!editingMarketPrice ? (
+            <>
+              <span style={{ fontSize: '13px', color: theme.textPrimary, fontFamily: 'monospace' }}>
+                Market price/rd: {currentLot.currentMarketPrice != null
+                  ? `$${currentLot.currentMarketPrice.toFixed(3)} (${(currentLot.currentMarketPrice * 100).toFixed(0)}¢)`
+                  : 'not set'}
+              </span>
+              <button
+                onClick={() => {
+                  setEditingMarketPrice(true);
+                  setNewMarketPrice(currentLot.currentMarketPrice != null ? currentLot.currentMarketPrice.toString() : '');
+                }}
+                style={{ background: 'none', border: 'none', color: theme.accent, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                EDIT
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                type="number" step="0.001" value={newMarketPrice}
+                onChange={e => setNewMarketPrice(e.target.value)}
+                placeholder="0.350"
+                style={{ ...inputStyle, width: '100px' }}
+              />
+              <button onClick={handleSaveMarketPrice} style={{ padding: '5px 12px', backgroundColor: theme.accent, color: theme.bg, border: 'none', borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 600 }}>SAVE</button>
+              <button onClick={() => setEditingMarketPrice(false)} style={{ background: 'none', border: 'none', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+            </>
+          )}
         </div>
 
         {/* Task 11: Purchase History section */}
