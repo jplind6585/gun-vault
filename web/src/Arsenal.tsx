@@ -1912,6 +1912,9 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
   const [editingMarketPrice, setEditingMarketPrice] = useState(false);
   const [newMarketPrice, setNewMarketPrice] = useState('');
   const [newPrice, setNewPrice] = useState('');
+  const [editingChrono, setEditingChrono] = useState(false);
+  const [chronoFpsInput, setChronoFpsInput] = useState('');
+  const [chronoSdInput, setChronoSdInput] = useState('');
 
   // Task 11: purchase history state
   const [showAddPurchase, setShowAddPurchase] = useState(false);
@@ -2007,6 +2010,18 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
       reloadLot();
       setEditingMarketPrice(false);
       setNewMarketPrice('');
+    }
+  }
+
+  function handleSaveChrono() {
+    const fps = parseFloat(chronoFpsInput);
+    const sd = parseFloat(chronoSdInput);
+    if (!isNaN(fps) && fps > 0 && !isNaN(sd) && sd >= 0) {
+      updateAmmo(currentLot.id, { actualFPS: fps, standardDeviation: sd });
+      reloadLot();
+      setEditingChrono(false);
+      setChronoFpsInput('');
+      setChronoSdInput('');
     }
   }
 
@@ -2506,6 +2521,98 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
               <button onClick={() => setEditingMarketPrice(false)} style={{ background: 'none', border: 'none', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer' }}>✕</button>
             </>
           )}
+        </div>
+
+        {/* Chrono Data section */}
+        <div style={{
+          padding: '12px', backgroundColor: theme.surfaceAlt, borderRadius: '6px',
+          border: '0.5px solid ' + theme.border, marginBottom: '14px'
+        }}>
+          <span style={sectionLabel}>CHRONO DATA</span>
+
+          {/* Actual FPS row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', color: theme.textPrimary, fontFamily: 'monospace', minWidth: '90px' }}>
+              Actual FPS:
+            </span>
+            {!editingChrono ? (
+              <>
+                <span style={{ fontSize: '13px', color: theme.textPrimary, fontFamily: 'monospace' }}>
+                  {currentLot.actualFPS != null ? currentLot.actualFPS + ' fps' : '\u2014'}
+                </span>
+                <button
+                  onClick={() => {
+                    setEditingChrono(true);
+                    setChronoFpsInput(currentLot.actualFPS != null ? currentLot.actualFPS.toString() : '');
+                    setChronoSdInput(currentLot.standardDeviation != null ? currentLot.standardDeviation.toString() : '');
+                  }}
+                  style={{
+                    background: 'none', border: 'none', color: theme.accent,
+                    fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline'
+                  }}
+                >
+                  EDIT
+                </button>
+              </>
+            ) : (
+              <input
+                type="number"
+                value={chronoFpsInput}
+                onChange={(e) => setChronoFpsInput(e.target.value)}
+                placeholder="fps"
+                style={{ ...inputStyle, width: '90px' }}
+              />
+            )}
+          </div>
+
+          {/* Standard Deviation row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: theme.textPrimary, fontFamily: 'monospace', minWidth: '90px' }}>
+              Std Dev:
+            </span>
+            {!editingChrono ? (
+              <span style={{
+                fontSize: '13px', fontFamily: 'monospace', fontWeight: 600,
+                color: currentLot.standardDeviation == null
+                  ? theme.textPrimary
+                  : currentLot.standardDeviation <= 10
+                    ? theme.green
+                    : currentLot.standardDeviation <= 15
+                      ? theme.orange
+                      : theme.red
+              }}>
+                {currentLot.standardDeviation != null ? currentLot.standardDeviation + ' fps SD' : '\u2014'}
+              </span>
+            ) : (
+              <>
+                <input
+                  type="number"
+                  value={chronoSdInput}
+                  onChange={(e) => setChronoSdInput(e.target.value)}
+                  placeholder="fps SD"
+                  style={{ ...inputStyle, width: '90px' }}
+                />
+                <button
+                  onClick={handleSaveChrono}
+                  style={{
+                    padding: '5px 12px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
+                    borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 600
+                  }}
+                >
+                  SAVE
+                </button>
+                <button
+                  onClick={() => setEditingChrono(false)}
+                  style={{
+                    background: 'none', border: 'none', color: theme.textSecondary,
+                    fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer'
+                  }}
+                >
+                  ✕
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Task 11: Purchase History section */}

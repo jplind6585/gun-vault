@@ -7,7 +7,7 @@ import {
   hasClaudeApiKey, getClaudeApiKey, setClaudeApiKey,
 } from './claudeApi';
 import { ActivityHeatmap } from './ActivityHeatmap';
-import type { Session, Gun, AmmoLot, SessionPurpose } from './types';
+import type { Session, Gun, AmmoLot, SessionPurpose, IssueType } from './types';
 
 interface SessionRecapsProps {
   onLogSession: (gun?: Gun) => void;
@@ -568,6 +568,23 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         </div>
       )}
 
+      {/* Session Detail Modal */}
+      {editingId && (() => {
+        const s = sessions.find(x => x.id === editingId);
+        if (!s) return null;
+        return (
+          <SessionDetailModal
+            session={s}
+            gun={gunMap.get(s.gunId)}
+            ammoLot={s.ammoLotId ? ammoMap.get(s.ammoLotId) : undefined}
+            allGuns={guns}
+            allAmmo={ammoLots}
+            onClose={() => setEditingId(null)}
+            onSaved={reload}
+          />
+        );
+      })()}
+
       {/* Filter bottom sheet */}
       {showFilterSheet && (
         <>
@@ -679,7 +696,7 @@ interface SessionCardProps {
 
 function SessionCard({
   session, gun, ammoLot, expanded, onToggle,
-  onDelete, onLogSimilar,
+  onEdit, onDelete, onLogSimilar,
 }: SessionCardProps) {
   const hasPhotos = (session.targetPhotos?.length || 0) > 0;
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -876,6 +893,12 @@ function SessionCard({
             >
               LOG SIMILAR
             </button>
+            <button
+              onClick={onEdit}
+              style={{ flex: 1, padding: '8px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.accent, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 700 }}
+            >
+              EDIT
+            </button>
           </div>
         </div>
       )}
@@ -926,6 +949,392 @@ function ExpandedAnalysis({ analysis }: { analysis: import('./types').TargetPhot
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// ── Session Detail Modal ──────────────────────────────────────────────────────
+
+interface SessionDetailModalProps {
+  session: Session;
+  gun?: Gun;
+  ammoLot?: AmmoLot;
+  allGuns: Gun[];
+  allAmmo: AmmoLot[];
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+const ALL_ISSUE_TYPES: IssueType[] = ['FTF', 'FTE', 'Double Feed', 'Stovepipe', 'Trigger Reset', 'Accuracy', 'Sighting', 'Other'];
+const ALL_PURPOSES: SessionPurpose[] = ['Warmup', 'Drills', 'Zeroing', 'Qualification', 'Competition', 'Fun', 'Carry Eval'];
+
+function SessionDetailModal({ session, gun, ammoLot, onClose, onSaved }: SessionDetailModalProps) {
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [notes, setNotes] = useState(session.notes || '');
+  const [location, setLocation] = useState(session.location || '');
+  const [distanceYards, setDistanceYards] = useState<number | ''>(session.distanceYards ?? '');
+  const [hasIssues, setHasIssues] = useState(session.issues || false);
+  const [issueTypes, setIssueTypes] = useState<IssueType[]>(session.issueTypes || []);
+  const [purposes, setPurposes] = useState<SessionPurpose[]>(session.purpose || []);
+  const [roundsExpended, setRoundsExpended] = useState<number | ''>(session.roundsExpended);
+
+  function toggleIssueType(t: IssueType) {
+    setIssueTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
+
+  function togglePurpose(p: SessionPurpose) {
+    setPurposes(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  }
+
+  function handleSave() {
+    updateSession(session.id, {
+      notes,
+      location,
+      distanceYards: distanceYards === '' ? undefined : Number(distanceYards),
+      issues: hasIssues,
+      issueTypes: hasIssues ? issueTypes : [],
+      purpose: purposes,
+      roundsExpended: roundsExpended === '' ? session.roundsExpended : Number(roundsExpended),
+    });
+    onSaved();
+    onClose();
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted,
+    textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px',
+  };
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '8px 10px',
+    backgroundColor: theme.bg,
+    border: '0.5px solid ' + theme.border,
+    borderRadius: '4px',
+    color: theme.textPrimary,
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    boxSizing: 'border-box',
+    outline: 'none',
+  };
+  const chipStyle = (active: boolean, activeColor?: string): React.CSSProperties => ({
+    padding: '4px 10px',
+    borderRadius: '3px',
+    border: '0.5px solid ' + (active ? (activeColor || theme.accent) : theme.border),
+    backgroundColor: active ? (activeColor || theme.accent) : 'transparent',
+    color: active ? theme.bg : theme.textMuted,
+    fontFamily: 'monospace',
+    fontSize: '9px',
+    cursor: 'pointer',
+    fontWeight: active ? 700 : 400,
+  });
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 3000 }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '480px',
+          backgroundColor: theme.surface,
+          borderRadius: '12px 12px 0 0',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          zIndex: 3001,
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 16px 10px',
+          borderBottom: '0.5px solid ' + theme.border,
+          position: 'sticky', top: 0, backgroundColor: theme.surface, zIndex: 1,
+        }}>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '18px', cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+          >
+            ×
+          </button>
+          <span style={{ fontFamily: 'monospace', fontSize: '10px', fontWeight: 700, color: theme.textSecondary, letterSpacing: '1px' }}>
+            SESSION DETAIL
+          </span>
+          {mode === 'view' ? (
+            <button
+              onClick={() => setMode('edit')}
+              style={{ background: 'none', border: '0.5px solid ' + theme.accent, borderRadius: '3px', color: theme.accent, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer', padding: '4px 10px', fontWeight: 700 }}
+            >
+              EDIT
+            </button>
+          ) : (
+            <button
+              onClick={handleSave}
+              style={{ background: theme.accent, border: 'none', borderRadius: '3px', color: theme.bg, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer', padding: '4px 10px', fontWeight: 700 }}
+            >
+              SAVE
+            </button>
+          )}
+        </div>
+
+        <div style={{ padding: '16px' }}>
+          {mode === 'view' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Gun + caliber */}
+              <div>
+                <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, color: theme.accent, lineHeight: 1.2 }}>
+                  {gun ? gun.make + ' ' + gun.model : 'Unknown Gun'}
+                </div>
+                {gun && (
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginTop: '2px' }}>
+                    {gun.caliber}
+                  </div>
+                )}
+              </div>
+
+              {/* Date */}
+              <div>
+                <div style={labelStyle}>Date</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>
+                  {new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+              </div>
+
+              {/* Rounds */}
+              <div>
+                <div style={labelStyle}>Rounds Expended</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: theme.textPrimary }}>
+                  {session.roundsExpended}
+                </div>
+              </div>
+
+              {/* Location + indoor/outdoor */}
+              {(session.location || session.indoorOutdoor) && (
+                <div>
+                  <div style={labelStyle}>Location</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>
+                    {session.location || ''}
+                    {session.location && session.indoorOutdoor ? ' · ' : ''}
+                    {session.indoorOutdoor ? session.indoorOutdoor.charAt(0).toUpperCase() + session.indoorOutdoor.slice(1) : ''}
+                  </div>
+                </div>
+              )}
+
+              {/* Distance */}
+              {session.distanceYards && (
+                <div>
+                  <div style={labelStyle}>Distance</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>
+                    {session.distanceYards} yards
+                  </div>
+                </div>
+              )}
+
+              {/* Purposes */}
+              {session.purpose && session.purpose.length > 0 && (
+                <div>
+                  <div style={labelStyle}>Purposes</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {session.purpose.map(p => (
+                      <span key={p} style={{ fontFamily: 'monospace', fontSize: '9px', color: PURPOSE_COLORS[p] || theme.textMuted, padding: '3px 8px', border: '0.5px solid ' + (PURPOSE_COLORS[p] || theme.border), borderRadius: '3px' }}>
+                        {p.toUpperCase()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ammo */}
+              {ammoLot && (
+                <div>
+                  <div style={labelStyle}>Ammo</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>
+                    {ammoLot.brand}
+                    {ammoLot.productLine ? ' ' + ammoLot.productLine : ''}
+                    {' · '}
+                    {ammoLot.grainWeight}gr {ammoLot.bulletType}
+                  </div>
+                </div>
+              )}
+
+              {/* Issues */}
+              {session.issues && (
+                <div>
+                  <div style={labelStyle}>Issues</div>
+                  {session.issueTypes && session.issueTypes.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '6px' }}>
+                      {session.issueTypes.map(t => (
+                        <span key={t} style={{ fontFamily: 'monospace', fontSize: '9px', color: '#ff6b6b', padding: '3px 8px', border: '0.5px solid #ff6b6b', borderRadius: '3px' }}>
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {session.issueDescription && (
+                    <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff9999', lineHeight: 1.4 }}>
+                      {session.issueDescription}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              {session.notes && (
+                <div>
+                  <div style={labelStyle}>Notes</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.5 }}>
+                    {session.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Narrative */}
+              {session.aiNarrative && (
+                <div>
+                  <div style={labelStyle}>AI Narrative</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, fontStyle: 'italic', lineHeight: 1.5 }}>
+                    {session.aiNarrative}
+                  </div>
+                </div>
+              )}
+
+              {/* Target photos */}
+              {session.targetPhotos && session.targetPhotos.length > 0 && (
+                <div>
+                  <div style={labelStyle}>Target Photos</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {session.targetPhotos.map((photo, idx) => (
+                      <img
+                        key={photo.id}
+                        src={photo.dataUrl}
+                        alt={'Target ' + (idx + 1)}
+                        style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '0.5px solid ' + theme.border }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Session cost */}
+              {session.sessionCost && (
+                <div>
+                  <div style={labelStyle}>Session Cost</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>
+                    {'$' + session.sessionCost.toFixed(2)}
+                  </div>
+                </div>
+              )}
+
+              {/* Strings */}
+              {session.strings && session.strings.length > 1 && (
+                <div>
+                  <div style={labelStyle}>Strings</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {session.strings.map((str, idx) => (
+                      <div key={idx} style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, padding: '6px 10px', border: '0.5px solid ' + theme.border, borderRadius: '4px' }}>
+                        {'#' + (idx + 1)}
+                        {str.rounds ? ' · ' + str.rounds + ' rds' : ''}
+                        {str.distanceYards ? ' · ' + str.distanceYards + 'yd' : ''}
+                        {str.notes ? ' · ' + str.notes : ''}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Notes */}
+              <div>
+                <div style={labelStyle}>Notes</div>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Location */}
+              <div>
+                <div style={labelStyle}>Location</div>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Distance */}
+              <div>
+                <div style={labelStyle}>Distance (yards)</div>
+                <input
+                  type="number"
+                  value={distanceYards}
+                  onChange={e => setDistanceYards(e.target.value === '' ? '' : Number(e.target.value))}
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Issues toggle */}
+              <div>
+                <div style={labelStyle}>Issues</div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <button onClick={() => setHasIssues(false)} style={chipStyle(!hasIssues)}>NO ISSUES</button>
+                  <button onClick={() => setHasIssues(true)} style={chipStyle(hasIssues, '#ff6b6b')}>HAS ISSUES</button>
+                </div>
+                {hasIssues && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {ALL_ISSUE_TYPES.map(t => (
+                      <button key={t} onClick={() => toggleIssueType(t)} style={chipStyle(issueTypes.includes(t), '#ff6b6b')}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Purposes */}
+              <div>
+                <div style={labelStyle}>Purposes</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                  {ALL_PURPOSES.map(p => (
+                    <button key={p} onClick={() => togglePurpose(p)} style={chipStyle(purposes.includes(p), PURPOSE_COLORS[p])}>
+                      {p.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rounds expended */}
+              <div>
+                <div style={labelStyle}>Rounds Expended</div>
+                <input
+                  type="number"
+                  value={roundsExpended}
+                  onChange={e => setRoundsExpended(e.target.value === '' ? '' : Number(e.target.value))}
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setMode('view')}
+                style={{ width: '100%', padding: '10px', backgroundColor: 'transparent', border: '0.5px solid ' + theme.border, borderRadius: '4px', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer' }}
+              >
+                CANCEL
+              </button>
+            </div>
+          )}
+        </div>
+        {/* bottom safe area padding */}
+        <div style={{ height: 'calc(env(safe-area-inset-bottom) + 16px)' }} />
+      </div>
     </div>
   );
 }

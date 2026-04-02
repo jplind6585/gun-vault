@@ -14,7 +14,7 @@ interface GunDetailProps {
   onLogSession?: (gun: Gun) => void;
 }
 
-type DetailTab = 'overview' | 'sessions';
+type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline';
 type Period = 'week' | 'month' | 'year';
 
 const PURPOSE_LABELS = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'] as const;
@@ -210,16 +210,22 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
 
       {/* ── TABS (at very top) ── */}
       <div style={{ display: 'flex', margin: '0 16px 12px', border: `0.5px solid ${theme.border}`, borderRadius: '6px', overflow: 'hidden' }}>
-        {(['overview', 'sessions'] as DetailTab[]).map(t => (
+        {([
+          ['overview', 'OVERVIEW'],
+          ['sessions', sessions.length > 0 ? 'SESSIONS (' + sessions.length + ')' : 'SESSIONS'],
+          ['maintenance', 'MAINT'],
+          ['ammo', 'AMMO'],
+          ['timeline', 'TIMELINE'],
+        ] as [DetailTab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} style={{
-            flex: 1, padding: '10px',
+            flex: 1, padding: '10px 2px',
             backgroundColor: tab === t ? theme.textPrimary : 'transparent',
             border: 'none', color: tab === t ? theme.bg : theme.textMuted,
-            fontFamily: 'monospace', fontSize: '10px',
-            letterSpacing: '0.8px', fontWeight: tab === t ? 700 : 400,
+            fontFamily: 'monospace', fontSize: '9px',
+            letterSpacing: '0.5px', fontWeight: tab === t ? 700 : 400,
             cursor: 'pointer', textTransform: 'uppercase',
           }}>
-            {t}{t === 'sessions' && sessions.length > 0 ? ` (${sessions.length})` : ''}
+            {label}
           </button>
         ))}
       </div>
@@ -811,6 +817,404 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* ══ MAINTENANCE TAB ══ */}
+        {tab === 'maintenance' && (
+          <>
+
+            {/* ── CLEANING STATUS ── */}
+            <div style={card}>
+              <div style={sectionLabel}>CLEANING STATUS</div>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={labelStyle}>Shots Since Last Clean</div>
+                <div style={{
+                  fontFamily: 'monospace', fontSize: '24px', fontWeight: 700,
+                  color: shotsSinceClean == null ? theme.textMuted
+                    : shotsSinceClean < 300 ? theme.green
+                    : shotsSinceClean <= 500 ? theme.orange
+                    : theme.red,
+                }}>
+                  {shotsSinceClean == null ? 'Never recorded' : shotsSinceClean.toLocaleString()}
+                </div>
+              </div>
+              {gun.lastCleanedDate && (
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={labelStyle}>Last Cleaned</div>
+                  <div style={valStyle}>{formatDate(gun.lastCleanedDate)}</div>
+                </div>
+              )}
+              {gun.lastCleanedRoundCount != null && (
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={labelStyle}>Last Cleaned At</div>
+                  <div style={valStyle}>{gun.lastCleanedRoundCount.toLocaleString() + ' rounds'}</div>
+                </div>
+              )}
+              <button onClick={logClean} style={{
+                width: '100%', padding: '13px', backgroundColor: accent,
+                border: 'none', borderRadius: '6px', color: theme.bg,
+                fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.8px',
+                fontWeight: 700, cursor: 'pointer', minHeight: '44px',
+              }}>
+                MARK CLEANED
+              </button>
+            </div>
+
+            {/* ── ZERO DATA ── */}
+            <div style={card}>
+              <div style={sectionLabel}>ZERO DATA</div>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={labelStyle}>Last Zero Date</div>
+                <div style={{ ...valStyle, color: gun.lastZeroDate ? theme.textPrimary : theme.textMuted }}>
+                  {gun.lastZeroDate ? formatDate(gun.lastZeroDate) : 'Never zeroed'}
+                </div>
+              </div>
+              {gun.lastZeroDistance && (
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={labelStyle}>Zero Distance</div>
+                  <div style={valStyle}>{gun.lastZeroDistance + ' yds'}</div>
+                </div>
+              )}
+              {showZeroForm ? (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={labelStyle}>Zero Distance (yards)</div>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                    <input
+                      type="number"
+                      value={zeroDistInput}
+                      onChange={e => setZeroDistInput(e.target.value)}
+                      placeholder="e.g. 100"
+                      autoFocus
+                      min={1}
+                      style={{ ...inputStyle, flex: 1 }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') logZero();
+                        if (e.key === 'Escape') { setShowZeroForm(false); setZeroDistInput(''); }
+                      }}
+                    />
+                    <button onClick={logZero} style={{
+                      padding: '8px 14px', backgroundColor: accent,
+                      border: 'none', borderRadius: '4px', color: theme.bg,
+                      fontFamily: 'monospace', fontSize: '9px', fontWeight: 700, cursor: 'pointer', flexShrink: 0, minHeight: '44px',
+                    }}>SAVE</button>
+                    <button onClick={() => { setShowZeroForm(false); setZeroDistInput(''); }} style={{
+                      padding: '8px 10px', backgroundColor: 'transparent',
+                      border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+                      color: theme.textMuted, fontFamily: 'monospace', fontSize: '13px', cursor: 'pointer', flexShrink: 0, minHeight: '44px',
+                    }}>×</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowZeroForm(true)} style={{
+                  width: '100%', padding: '11px', backgroundColor: 'transparent',
+                  border: `0.5px solid ${theme.border}`, borderRadius: '6px',
+                  color: theme.textSecondary, fontFamily: 'monospace', fontSize: '10px',
+                  letterSpacing: '0.5px', fontWeight: 600, cursor: 'pointer', minHeight: '44px',
+                }}>
+                  LOG ZERO
+                </button>
+              )}
+            </div>
+
+            {/* ── OPEN ISSUES ── */}
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={sectionLabel}>OPEN ISSUES</div>
+                {!editingIssues && (
+                  <button onClick={() => { setIssuesDraft(gun.openIssues || ''); setEditingIssues(true); }} style={{
+                    padding: '3px 8px', backgroundColor: 'transparent',
+                    border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+                    color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer',
+                  }}>EDIT</button>
+                )}
+              </div>
+              {editingIssues ? (
+                <>
+                  <textarea
+                    value={issuesDraft}
+                    onChange={e => setIssuesDraft(e.target.value)}
+                    rows={4}
+                    autoFocus
+                    placeholder="Describe any current known issues..."
+                    style={{ ...inputStyle, resize: 'vertical', marginBottom: '8px' }}
+                  />
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => setEditingIssues(false)} style={{
+                      flex: 1, padding: '10px', backgroundColor: 'transparent',
+                      border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+                      color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer', minHeight: '44px',
+                    }}>CANCEL</button>
+                    <button onClick={saveIssues} style={{
+                      flex: 2, padding: '10px', backgroundColor: accent,
+                      border: 'none', borderRadius: '4px', color: theme.bg,
+                      fontFamily: 'monospace', fontSize: '9px', fontWeight: 700, cursor: 'pointer', minHeight: '44px',
+                    }}>SAVE</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.6', color: gun.openIssues ? theme.red : theme.textMuted }}>
+                  {gun.openIssues || 'None'}
+                </div>
+              )}
+            </div>
+
+            {/* ── ACCESSORIES ── */}
+            <div style={card}>
+              <div style={sectionLabel}>ACCESSORIES</div>
+              {(() => {
+                const acc = gun.accessories;
+                if (!acc || Object.values(acc).every(v => !v)) {
+                  return <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>No accessories recorded.</div>;
+                }
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {([
+                      ['optic',             'Optic'],
+                      ['opticMagnification','Magnification'],
+                      ['muzzleDevice',      'Muzzle Device'],
+                      ['suppressor',        'Suppressor'],
+                      ['weaponLight',       'Weapon Light'],
+                      ['laser',             'Laser / IR'],
+                      ['sling',             'Sling'],
+                      ['bipod',             'Bipod'],
+                      ['foregrip',          'Foregrip'],
+                      ['stockGrip',         'Stock / Grip'],
+                      ['magazineUpgrade',   'Magazine'],
+                      ['other',             'Other'],
+                    ] as [keyof GunAccessories, string][])
+                      .filter(([f]) => acc[f])
+                      .map(([f, l]) => (
+                        <div key={f} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={labelStyle}>{l}</div>
+                          <div style={{ ...valStyle, textAlign: 'right', maxWidth: '60%' }}>{acc[f]}</div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                );
+              })()}
+            </div>
+
+          </>
+        )}
+
+        {/* ══ AMMO TAB ══ */}
+        {tab === 'ammo' && (
+          <>
+
+            <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.2px', color: accent, marginBottom: '12px' }}>
+              {'CALIBER: ' + gun.caliber}
+            </div>
+
+            {ammoLots.length === 0 ? (
+              <div style={{
+                ...card, textAlign: 'center', padding: '40px 20px',
+              }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>
+                  {'No ' + gun.caliber + ' ammo in inventory'}
+                </div>
+              </div>
+            ) : (
+              <>
+                {ammoLots.map(lot => {
+                  const qtyColor = (lot.quantity || 0) < 50 ? theme.red
+                    : (lot.quantity || 0) < 200 ? theme.orange
+                    : accent;
+                  const sdColor = lot.sd == null ? theme.textMuted
+                    : lot.sd <= 10 ? theme.green
+                    : lot.sd <= 15 ? theme.orange
+                    : theme.red;
+                  return (
+                    <div key={lot.id} style={card}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary }}>
+                            {lot.brand}
+                          </div>
+                          {lot.productLine && (
+                            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, marginTop: '1px' }}>
+                              {lot.productLine}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: qtyColor, lineHeight: 1 }}>
+                            {(lot.quantity || 0).toLocaleString()}
+                          </div>
+                          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '2px' }}>ROUNDS</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {lot.grainWeight && (
+                          <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
+                            {lot.grainWeight + 'gr'}
+                          </span>
+                        )}
+                        {lot.bulletType && (
+                          <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
+                            {lot.bulletType}
+                          </span>
+                        )}
+                        {lot.category && (
+                          <span style={{
+                            padding: '2px 7px', backgroundColor: theme.bg,
+                            border: `0.5px solid ${theme.border}`, borderRadius: '3px',
+                            fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px',
+                          }}>
+                            {lot.category.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {(lot.sd != null || lot.actualFPS) && (
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
+                          {lot.sd != null && (
+                            <div>
+                              <div style={labelStyle}>Std Dev</div>
+                              <div style={{ ...valStyle, color: sdColor }}>{lot.sd + ' fps'}</div>
+                            </div>
+                          )}
+                          {lot.actualFPS && (
+                            <div>
+                              <div style={labelStyle}>Actual FPS</div>
+                              <div style={valStyle}>{lot.actualFPS.toLocaleString() + ' fps'}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <div style={{ ...card, backgroundColor: theme.bg }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.8px' }}>
+                      {'TOTAL ' + gun.caliber + ' IN INVENTORY'}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: accent }}>
+                      {ammoLots.reduce((sum, l) => sum + (l.quantity || 0), 0).toLocaleString() + ' rds'}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+          </>
+        )}
+
+        {/* ══ TIMELINE TAB ══ */}
+        {tab === 'timeline' && (
+          <div style={{ position: 'relative', paddingLeft: '24px' }}>
+
+            {/* Vertical line */}
+            <div style={{
+              position: 'absolute', left: '7px', top: '8px', bottom: '8px',
+              width: '2px', backgroundColor: theme.border,
+            }} />
+
+            {(() => {
+              const dot: React.CSSProperties = {
+                position: 'absolute', left: '-20px', top: '4px',
+                width: '8px', height: '8px', borderRadius: '50%',
+                backgroundColor: accent, flexShrink: 0,
+              };
+              const itemWrap: React.CSSProperties = {
+                position: 'relative', marginBottom: '20px',
+              };
+              const itemLabel: React.CSSProperties = {
+                fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px',
+                color: accent, textTransform: 'uppercase', marginBottom: '4px',
+              };
+              const itemVal: React.CSSProperties = {
+                fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.6,
+              };
+
+              const MILESTONES = [100, 500, 1000, 2500, 5000];
+              const milestoneEvents: { milestone: number; date: string }[] = [];
+              if (sessions.length > 0) {
+                const sorted = sessions.slice().reverse();
+                let running = 0;
+                let mIdx = 0;
+                for (const s of sorted) {
+                  const prev = running;
+                  running += s.roundsExpended;
+                  while (mIdx < MILESTONES.length && MILESTONES[mIdx] <= running) {
+                    if (MILESTONES[mIdx] > prev) {
+                      milestoneEvents.push({ milestone: MILESTONES[mIdx], date: s.date });
+                    }
+                    mIdx++;
+                  }
+                }
+              }
+
+              const oldestSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+              const newestSession = sessions.length > 0 ? sessions[0] : null;
+
+              return (
+                <>
+                  {gun.acquiredDate && (
+                    <div style={itemWrap}>
+                      <div style={dot} />
+                      <div style={itemLabel}>ACQUIRED</div>
+                      <div style={itemVal}>{formatDate(gun.acquiredDate)}</div>
+                      {gun.acquiredFrom && <div style={itemVal}>{'From: ' + gun.acquiredFrom}</div>}
+                      {gun.acquiredPrice && (
+                        <div style={itemVal}>{'Price: $' + gun.acquiredPrice.toLocaleString()}</div>
+                      )}
+                      {gun.condition && <div style={itemVal}>{'Condition: ' + gun.condition}</div>}
+                    </div>
+                  )}
+
+                  {oldestSession && (
+                    <div style={itemWrap}>
+                      <div style={dot} />
+                      <div style={itemLabel}>FIRST SESSION</div>
+                      <div style={itemVal}>{formatDate(oldestSession.date)}</div>
+                      <div style={itemVal}>{oldestSession.roundsExpended + ' rounds'}</div>
+                    </div>
+                  )}
+
+                  {milestoneEvents.map(me => (
+                    <div key={me.milestone} style={itemWrap}>
+                      <div style={{ ...dot, backgroundColor: theme.border, border: '2px solid ' + accent }} />
+                      <div style={itemLabel}>{me.milestone.toLocaleString() + ' ROUNDS'}</div>
+                      <div style={itemVal}>{formatDate(me.date)}</div>
+                    </div>
+                  ))}
+
+                  {newestSession && newestSession !== oldestSession && (
+                    <div style={itemWrap}>
+                      <div style={dot} />
+                      <div style={itemLabel}>LAST SESSION</div>
+                      <div style={itemVal}>{formatDate(newestSession.date)}</div>
+                      {newestSession.location && <div style={itemVal}>{newestSession.location}</div>}
+                    </div>
+                  )}
+
+                  <div style={itemWrap}>
+                    <div style={{ ...dot, backgroundColor: accent }} />
+                    <div style={itemLabel}>CURRENT STATUS</div>
+                    <div style={{ marginBottom: '4px' }}>
+                      <span style={{
+                        padding: '2px 8px', backgroundColor: theme.bg,
+                        border: `0.5px solid ${gun.status === 'Active' ? theme.green : theme.border}`,
+                        borderRadius: '3px', fontFamily: 'monospace', fontSize: '9px',
+                        color: gun.status === 'Active' ? theme.green : theme.textMuted,
+                        letterSpacing: '0.5px',
+                      }}>
+                        {gun.status ? gun.status.toUpperCase() : 'UNKNOWN'}
+                      </span>
+                    </div>
+                    <div style={itemVal}>{(gun.roundCount || 0).toLocaleString() + ' total rounds'}</div>
+                    {gun.soldDate && (
+                      <div style={{ ...itemVal, color: theme.red }}>
+                        {'SOLD on ' + formatDate(gun.soldDate) + (gun.soldPrice ? ' for $' + gun.soldPrice.toLocaleString() : '')}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
