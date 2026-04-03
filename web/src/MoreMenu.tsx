@@ -74,6 +74,14 @@ export function MoreMenu({ onNavigate }: MoreMenuProps) {
       available: true,
       onPress: () => onNavigate('wishlist'),
     },
+    {
+      id: 'optics',
+      emoji: '🔭',
+      label: 'Optics',
+      sub: 'Glass tracker',
+      available: true,
+      onPress: () => onNavigate('optics'),
+    },
     // Future placeholders — remove 'coming soon' as they get built:
     {
       id: 'gunsmithing',

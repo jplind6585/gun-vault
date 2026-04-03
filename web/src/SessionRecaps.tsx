@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
 import { haptic } from './haptic';
 import { getAllSessions, getAllGuns, getAllAmmo, deleteSession, updateSession } from './storage';
@@ -179,13 +179,33 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
       )}
 
       {/* Stats bar */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
         {statCard('Sessions', sessions.length, 'all time')}
         {statCard('This Month', roundsThisMonth.toLocaleString(), 'rounds', theme.green)}
         {statCard('Last Session', gapDays === Infinity ? '—' : gapDays + 'd', 'ago', gapDays > 14 ? '#ff6b6b' : theme.textSecondary)}
       </div>
 
-      {mostActiveGunId && gunMap.get(mostActiveGunId) && (
+      {/* LIST / INSIGHTS tab switcher */}
+      <div style={{ display: 'flex', gap: '0', marginBottom: '16px', border: `0.5px solid ${theme.border}`, borderRadius: '6px', overflow: 'hidden' }}>
+        {(['list', 'insights'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            style={{
+              flex: 1, padding: '8px',
+              backgroundColor: activeTab === t ? theme.accent : 'transparent',
+              border: 'none',
+              color: activeTab === t ? theme.bg : theme.textSecondary,
+              fontFamily: 'monospace', fontSize: '10px', fontWeight: 700,
+              letterSpacing: '0.8px', cursor: 'pointer', textTransform: 'uppercase',
+            }}
+          >
+            {t === 'list' ? 'SESSION LOG' : 'ANALYTICS'}
+          </button>
+        ))}
+      </div>
+
+      {mostActiveGunId && gunMap.get(mostActiveGunId) && activeTab === 'list' && (
         <div style={{
           backgroundColor: theme.surface,
           border: `0.5px solid ${theme.border}`,
@@ -211,8 +231,13 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         </div>
       )}
 
-      {/* Activity heatmap */}
-      {sessions.length > 0 && (
+      {/* ANALYTICS TAB */}
+      {activeTab === 'insights' && (
+        <AnalyticsPanel sessions={sessions} guns={guns} ammoLots={ammoLots} totalCost={totalCost} />
+      )}
+
+      {/* Activity heatmap — list tab only */}
+      {activeTab === 'list' && sessions.length > 0 && (
         <div style={{
           backgroundColor: theme.surface,
           border: `0.5px solid ${theme.border}`,
@@ -242,8 +267,8 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         </div>
       )}
 
-      {/* Maintenance alerts */}
-      {maintenanceAlerts.length > 0 && (
+      {/* Maintenance alerts — list tab only */}
+      {activeTab === 'list' && maintenanceAlerts.length > 0 && (
         <div style={{
           backgroundColor: 'rgba(255,107,107,0.07)',
           border: `0.5px solid rgba(255,107,107,0.4)`,
@@ -262,7 +287,8 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         </div>
       )}
 
-      {/* Header row */}
+      {/* LIST TAB — header + search + sessions + ammo insights */}
+      {activeTab === 'list' && <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
           {displayed.length} sessions · {displayed.reduce((s, x) => s + x.roundsExpended, 0).toLocaleString()} rds
@@ -470,6 +496,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           ))}
         </div>
       )}
+      </>}
 
       {/* Undo delete toast */}
       {pendingDeleteId && (
@@ -1334,6 +1361,262 @@ function SessionDetailModal({ session, gun, ammoLot, onClose, onSaved }: Session
         </div>
         {/* bottom safe area padding */}
         <div style={{ height: 'calc(env(safe-area-inset-bottom) + 16px)' }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics Panel ──────────────────────────────────────────────────────────
+
+function AnalyticsPanel({
+  sessions,
+  guns,
+  ammoLots,
+  totalCost,
+}: {
+  sessions: import('./types').Session[];
+  guns: import('./types').Gun[];
+  ammoLots: import('./types').AmmoLot[];
+  totalCost: number;
+}) {
+  if (sessions.length === 0) {
+    return (
+      <div style={{ padding: '48px 24px', textAlign: 'center', color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px' }}>
+        No sessions yet. Start logging to see analytics.
+      </div>
+    );
+  }
+
+  const gunMap = new Map(guns.map(g => [g.id, g]));
+  const ammoMap = new Map(ammoLots.map(a => [a.id, a]));
+
+  // ── Monthly rounds (last 13 months) ─────────────────────────────────────
+  const now = new Date();
+  const months: { key: string; label: string; rounds: number; sessions: number; cost: number }[] = [];
+  for (let i = 12; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const label = d.toLocaleDateString('en-US', { month: 'short' });
+    months.push({ key, label, rounds: 0, sessions: 0, cost: 0 });
+  }
+  for (const s of sessions) {
+    const mk = s.date.slice(0, 7);
+    const m = months.find(x => x.key === mk);
+    if (m) { m.rounds += s.roundsExpended; m.sessions++; m.cost += s.sessionCost || 0; }
+  }
+  const maxRounds = Math.max(...months.map(m => m.rounds), 1);
+
+  // ── Per-gun breakdown ────────────────────────────────────────────────────
+  const gunStats: { id: string; name: string; rounds: number; sessions: number; issues: number }[] = [];
+  for (const s of sessions) {
+    let entry = gunStats.find(x => x.id === s.gunId);
+    if (!entry) {
+      const g = gunMap.get(s.gunId);
+      entry = { id: s.gunId, name: g ? g.make + ' ' + g.model : 'Unknown', rounds: 0, sessions: 0, issues: 0 };
+      gunStats.push(entry);
+    }
+    entry.rounds += s.roundsExpended;
+    entry.sessions++;
+    if (s.issues) entry.issues++;
+  }
+  gunStats.sort((a, b) => b.rounds - a.rounds);
+  const maxGunRounds = Math.max(...gunStats.map(g => g.rounds), 1);
+
+  // ── Purpose breakdown ────────────────────────────────────────────────────
+  const purposeCounts: Record<string, number> = {};
+  for (const s of sessions) {
+    for (const p of s.purpose || []) {
+      purposeCounts[p] = (purposeCounts[p] || 0) + 1;
+    }
+  }
+  const purposes = Object.entries(purposeCounts).sort((a, b) => b[1] - a[1]);
+  const maxPurpose = Math.max(...purposes.map(p => p[1]), 1);
+
+  // ── Location breakdown ───────────────────────────────────────────────────
+  const locCounts: Record<string, number> = {};
+  for (const s of sessions) {
+    if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1;
+  }
+  const locations = Object.entries(locCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxLoc = Math.max(...locations.map(l => l[1]), 1);
+
+  // ── Caliber/ammo breakdown ───────────────────────────────────────────────
+  const caliberRounds: Record<string, number> = {};
+  for (const s of sessions) {
+    const lot = s.ammoLotId ? ammoMap.get(s.ammoLotId) : undefined;
+    const cal = lot?.caliber || (gunMap.get(s.gunId)?.caliber) || 'Unknown';
+    caliberRounds[cal] = (caliberRounds[cal] || 0) + s.roundsExpended;
+  }
+  const calibers = Object.entries(caliberRounds).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const totalRoundsAll = sessions.reduce((s, x) => s + x.roundsExpended, 0);
+
+  // ── Indoor / Outdoor ─────────────────────────────────────────────────────
+  const indoor = sessions.filter(s => s.indoorOutdoor === 'Indoor').length;
+  const outdoor = sessions.filter(s => s.indoorOutdoor === 'Outdoor').length;
+  const ioTotal = indoor + outdoor;
+
+  // ── Issue rate ────────────────────────────────────────────────────────────
+  const issueCount = sessions.filter(s => s.issues).length;
+  const issueRate = sessions.length > 0 ? Math.round((issueCount / sessions.length) * 100) : 0;
+
+  const sectionLabel: React.CSSProperties = {
+    fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px',
+    color: theme.textMuted, textTransform: 'uppercase', marginBottom: '12px',
+  };
+  const card: React.CSSProperties = {
+    backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+    borderRadius: '8px', padding: '14px', marginBottom: '14px',
+  };
+
+  return (
+    <div style={{ paddingBottom: '32px' }}>
+
+      {/* ── Monthly Rounds Chart ─────────────────────────────────── */}
+      <div style={card}>
+        <div style={sectionLabel}>ROUNDS FIRED — MONTHLY</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '64px' }}>
+          {months.map(m => (
+            <div key={m.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <div
+                title={`${m.label}: ${m.rounds} rds`}
+                style={{
+                  width: '100%', borderRadius: '2px 2px 0 0',
+                  height: m.rounds === 0 ? '2px' : `${Math.max(4, Math.round((m.rounds / maxRounds) * 56))}px`,
+                  backgroundColor: m.key === months[months.length - 1].key ? theme.accent : theme.border,
+                  transition: 'height 0.3s',
+                }}
+              />
+              <div style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted, lineHeight: 1 }}>
+                {m.label.slice(0, 1)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '8px' }}>
+          {totalRoundsAll.toLocaleString()} total rounds · {sessions.length} sessions
+          {totalCost > 0 && ` · $${totalCost.toFixed(0)} spent`}
+        </div>
+      </div>
+
+      {/* ── Rounds by Gun ──────────────────────────────────────────── */}
+      <div style={card}>
+        <div style={sectionLabel}>ROUNDS BY PLATFORM</div>
+        {gunStats.slice(0, 8).map(g => (
+          <div key={g.id} style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textPrimary, fontWeight: 600 }}>
+                {g.name}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
+                {g.rounds.toLocaleString()} rds
+                {g.issues > 0 && <span style={{ color: '#ff9999', marginLeft: '6px' }}>⚠ {g.issues}</span>}
+              </div>
+            </div>
+            <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.round((g.rounds / maxGunRounds) * 100)}%`,
+                backgroundColor: g.issues / g.sessions > 0.2 ? '#ff6b6b' : theme.accent,
+                borderRadius: '2px',
+                transition: 'width 0.3s',
+              }} />
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginTop: '2px' }}>
+              {g.sessions} sessions · {g.issues > 0 ? `${Math.round((g.issues / g.sessions) * 100)}% issue rate` : 'clean record'}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Caliber Breakdown ──────────────────────────────────────── */}
+      {calibers.length > 0 && (
+        <div style={card}>
+          <div style={sectionLabel}>ROUNDS BY CALIBER</div>
+          {calibers.map(([cal, rds]) => {
+            const pct = Math.round((rds / totalRoundsAll) * 100);
+            return (
+              <div key={cal} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, width: '90px', flexShrink: 0 }}>
+                  {cal}
+                </div>
+                <div style={{ flex: 1, height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, backgroundColor: theme.blue, borderRadius: '2px' }} />
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, width: '40px', textAlign: 'right', flexShrink: 0 }}>
+                  {pct}%
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Purpose + Location row ─────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+        {/* Purpose */}
+        {purposes.length > 0 && (
+          <div style={{ ...card, flex: 1, marginBottom: 0 }}>
+            <div style={sectionLabel}>PURPOSE</div>
+            {purposes.slice(0, 5).map(([p, count]) => (
+              <div key={p} style={{ marginBottom: '7px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textSecondary }}>{p}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{count}</span>
+                </div>
+                <div style={{ height: '3px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.round((count / maxPurpose) * 100)}%`, backgroundColor: PURPOSE_COLORS[p] || theme.textMuted, borderRadius: '2px' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Location */}
+        {locations.length > 0 && (
+          <div style={{ ...card, flex: 1, marginBottom: 0 }}>
+            <div style={sectionLabel}>TOP RANGES</div>
+            {locations.map(([loc, count]) => (
+              <div key={loc} style={{ marginBottom: '7px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{loc}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, flexShrink: 0 }}>{count}</span>
+                </div>
+                <div style={{ height: '3px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.round((count / maxLoc) * 100)}%`, backgroundColor: theme.green, borderRadius: '2px' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Summary row ────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {ioTotal > 0 && (
+          <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>INDOOR / OUTDOOR</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary }}>
+              {Math.round((outdoor / ioTotal) * 100)}%
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>outdoor</div>
+          </div>
+        )}
+        <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>ISSUE RATE</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: issueRate > 20 ? '#ff6b6b' : theme.green }}>
+            {issueRate}%
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>of sessions</div>
+        </div>
+        {totalCost > 0 && (
+          <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>CPR AVG</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textSecondary }}>
+              ${totalRoundsAll > 0 ? (totalCost / totalRoundsAll).toFixed(2) : '—'}
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>per round</div>
+          </div>
+        )}
       </div>
     </div>
   );

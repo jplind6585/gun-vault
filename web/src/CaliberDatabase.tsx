@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { theme } from './theme';
 import type { Cartridge } from './types';
-import { getAllCartridges, updateCartridge } from './storage';
+import { getAllCartridges } from './storage';
 
-type FilterType = 'all' | 'rifle' | 'pistol' | 'revolver' | 'shotgun';
+type FilterType = 'all' | 'rifle' | 'pistol' | 'revolver' | 'shotgun' | 'rimfire';
 type FilterAvailability = 'all' | 'abundant' | 'common' | 'limited' | 'scarce';
 type FilterEnergy = 'all' | 'light' | 'medium' | 'heavy' | 'magnum';
 type FilterOwnership = 'all' | 'ownGun' | 'ownAmmo' | 'wishlist';
@@ -14,169 +14,50 @@ export function CaliberDatabase() {
   const [allCartridges] = useState<Cartridge[]>(getAllCartridges());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
-  const [filterAvailability, setFilterAvailability] = useState<FilterAvailability>('all');
-  const [filterEnergy, setFilterEnergy] = useState<FilterEnergy>('all');
   const [filterOwnership, setFilterOwnership] = useState<FilterOwnership>('all');
-  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set());
-  const [filterUseCases, setFilterUseCases] = useState<Set<string>>(new Set());
-  const [filterWildcats, setFilterWildcats] = useState(false);
   const [selectedCartridge, setSelectedCartridge] = useState<Cartridge | null>(null);
-  const [showImageRecognition, setShowImageRecognition] = useState(false);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
-  const [longRangeMode, setLongRangeMode] = useState(false);
-  const [selectedForLongRange, setSelectedForLongRange] = useState<Set<string>>(new Set());
+  const [showComparisonTable, setShowComparisonTable] = useState(false);
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
-  // Filter and sort cartridges
   const filteredCartridges = useMemo(() => {
     let filtered = allCartridges.filter(cart => {
-      // Search filter
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        const matchesName = cart.name.toLowerCase().includes(search);
-        const matchesAlt = cart.alternateNames?.some(n => n.toLowerCase().includes(search));
-        const matchesCountry = cart.countryOfOrigin.toLowerCase().includes(search);
-        if (!matchesName && !matchesAlt && !matchesCountry) return false;
+        if (!cart.name.toLowerCase().includes(search) &&
+            !cart.alternateNames?.some(n => n.toLowerCase().includes(search)) &&
+            !cart.countryOfOrigin.toLowerCase().includes(search)) return false;
       }
-
-      // Type filter
       if (filterType !== 'all' && cart.type.toLowerCase() !== filterType) return false;
-
-      // Availability filter
-      if (filterAvailability !== 'all' && cart.availability.toLowerCase() !== filterAvailability) return false;
-
-      // Energy filter
-      if (filterEnergy !== 'all') {
-        const maxEnergy = cart.energyRangeFTLBS.max;
-        if (filterEnergy === 'light' && maxEnergy > 500) return false;
-        if (filterEnergy === 'medium' && (maxEnergy <= 500 || maxEnergy > 1500)) return false;
-        if (filterEnergy === 'heavy' && (maxEnergy <= 1500 || maxEnergy > 3000)) return false;
-        if (filterEnergy === 'magnum' && maxEnergy <= 3000) return false;
-      }
-
-      // Ownership filter
       if (filterOwnership === 'ownGun' && !cart.ownGunForThis) return false;
       if (filterOwnership === 'ownAmmo' && !cart.ownAmmoForThis) return false;
       if (filterOwnership === 'wishlist' && !cart.onWishlist) return false;
-
-      // Category filter (multi-select)
-      if (filterCategories.size > 0) {
-        const cartType = cart.type.toLowerCase();
-        if (!filterCategories.has(cartType)) return false;
-      }
-
-      // Use case filter (multi-select)
-      if (filterUseCases.size > 0) {
-        const hasMatchingUseCase = cart.primaryUse.some(use =>
-          filterUseCases.has(use.toLowerCase())
-        );
-        if (!hasMatchingUseCase) return false;
-      }
-
-      // Wildcat filter
-      if (filterWildcats && cart.standardization !== 'Wildcat') return false;
-
       return true;
     });
 
-    // Sort
     filtered.sort((a, b) => {
       let aVal: any;
       let bVal: any;
-
       switch (sortField) {
-        case 'name':
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case 'year':
-          aVal = a.yearIntroduced;
-          bVal = b.yearIntroduced;
-          break;
-        case 'type':
-          aVal = a.type.toLowerCase();
-          bVal = b.type.toLowerCase();
-          break;
-        case 'bulletDia':
-          aVal = a.bulletDiameterInch;
-          bVal = b.bulletDiameterInch;
-          break;
-        case 'velocity':
-          aVal = (a.velocityRangeFPS.min + a.velocityRangeFPS.max) / 2;
-          bVal = (b.velocityRangeFPS.min + b.velocityRangeFPS.max) / 2;
-          break;
-        case 'energy':
-          aVal = (a.energyRangeFTLBS.min + a.energyRangeFTLBS.max) / 2;
-          bVal = (b.energyRangeFTLBS.min + b.energyRangeFTLBS.max) / 2;
-          break;
-        case 'psi':
-          aVal = a.maxPressurePSI || 0;
-          bVal = b.maxPressurePSI || 0;
-          break;
-        case 'status':
-          aVal = a.productionStatus.toLowerCase();
-          bVal = b.productionStatus.toLowerCase();
-          break;
-        case 'availability':
-          aVal = a.availability.toLowerCase();
-          bVal = b.availability.toLowerCase();
-          break;
-        default:
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
+        case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
+        case 'year': aVal = a.yearIntroduced; bVal = b.yearIntroduced; break;
+        case 'type': aVal = a.type.toLowerCase(); bVal = b.type.toLowerCase(); break;
+        case 'bulletDia': aVal = a.bulletDiameterInch; bVal = b.bulletDiameterInch; break;
+        case 'velocity': aVal = (a.velocityRangeFPS.min + a.velocityRangeFPS.max) / 2; bVal = (b.velocityRangeFPS.min + b.velocityRangeFPS.max) / 2; break;
+        case 'energy': aVal = (a.energyRangeFTLBS.min + a.energyRangeFTLBS.max) / 2; bVal = (b.energyRangeFTLBS.min + b.energyRangeFTLBS.max) / 2; break;
+        case 'psi': aVal = a.maxPressurePSI || 0; bVal = b.maxPressurePSI || 0; break;
+        default: aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase();
       }
-
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return filtered;
-  }, [allCartridges, searchTerm, filterType, filterAvailability, filterEnergy, filterOwnership, sortField, sortDirection]);
-
-  const stats = useMemo(() => ({
-    total: allCartridges.length,
-    filtered: filteredCartridges.length,
-    ownGuns: allCartridges.filter(c => c.ownGunForThis).length,
-    ownAmmo: allCartridges.filter(c => c.ownAmmoForThis).length,
-    wishlist: allCartridges.filter(c => c.onWishlist).length,
-  }), [allCartridges, filteredCartridges]);
-
-  const toggleComparison = (cartId: string) => {
-    const newSet = new Set(selectedForComparison);
-    if (newSet.has(cartId)) {
-      newSet.delete(cartId);
-    } else {
-      if (newSet.size >= 5) {
-        alert('Maximum 5 cartridges can be compared at once');
-        return;
-      }
-      newSet.add(cartId);
-    }
-    setSelectedForComparison(newSet);
-  };
-
-  const clearComparison = () => {
-    setSelectedForComparison(new Set());
-    setComparisonMode(false);
-  };
-
-  const comparedCartridges = useMemo(() => {
-    return Array.from(selectedForComparison)
-      .map(id => allCartridges.find(c => c.id === id))
-      .filter(Boolean) as Cartridge[];
-  }, [selectedForComparison, allCartridges]);
-
-  const toggleWishlist = (cartId: string) => {
-    const cart = allCartridges.find(c => c.id === cartId);
-    if (cart) {
-      updateCartridge(cartId, { onWishlist: !cart.onWishlist });
-      window.location.reload();
-    }
-  };
+  }, [allCartridges, searchTerm, filterType, filterOwnership, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -187,556 +68,398 @@ export function CaliberDatabase() {
     }
   };
 
-  const getTop3Weights = (weights: number[]): string => {
-    const top3 = weights.slice(0, 3);
-    return top3.join(', ') + ' gr';
-  };
+  const comparedCartridges = useMemo(() => {
+    return Array.from(selectedForComparison)
+      .map(id => allCartridges.find(c => c.id === id))
+      .filter(Boolean) as Cartridge[];
+  }, [selectedForComparison, allCartridges]);
+
+  const TYPE_CHIPS: { value: FilterType; label: string }[] = [
+    { value: 'all', label: 'ALL' },
+    { value: 'rifle', label: 'RIFLE' },
+    { value: 'pistol', label: 'PISTOL' },
+    { value: 'revolver', label: 'REVOLVER' },
+    { value: 'shotgun', label: 'SHOTGUN' },
+    { value: 'rimfire', label: 'RIMFIRE' },
+  ];
+
+  const OWN_CHIPS: { value: FilterOwnership; label: string }[] = [
+    { value: 'all', label: 'ALL' },
+    { value: 'ownGun', label: 'MY GUNS' },
+    { value: 'ownAmmo', label: 'MY AMMO' },
+    { value: 'wishlist', label: 'WISHLIST' },
+  ];
+
+  const SORT_OPTIONS: { field: SortField; label: string }[] = [
+    { field: 'name', label: 'NAME' },
+    { field: 'year', label: 'YEAR' },
+    { field: 'type', label: 'TYPE' },
+    { field: 'bulletDia', label: 'BULLET DIA' },
+    { field: 'velocity', label: 'VELOCITY' },
+    { field: 'energy', label: 'ENERGY' },
+    { field: 'psi', label: 'MAX PSI' },
+  ];
+
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    padding: '5px 10px',
+    backgroundColor: active ? theme.caliberRed : theme.surface,
+    border: '0.5px solid ' + (active ? theme.caliberRed : theme.border),
+    borderRadius: '16px',
+    color: active ? '#fff' : theme.textSecondary,
+    fontFamily: 'monospace',
+    fontSize: '10px',
+    fontWeight: active ? 700 : 400,
+    letterSpacing: '0.5px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
+    WebkitTapHighlightColor: 'transparent',
+    outline: 'none',
+  });
 
   return (
-    <div style={{ padding: '8px', maxWidth: '1600px', margin: '0 auto' }}>
-      {/* Header */}
+    <div style={{ backgroundColor: theme.bg, minHeight: '100%', paddingBottom: '100px' }}>
+
+      {/* ── FILTER BAR ── sticky */}
       <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        backgroundColor: theme.bg,
+        borderBottom: '0.5px solid ' + theme.border,
+        padding: '10px 16px 8px',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '10px'
+        flexDirection: 'column',
+        gap: '8px',
       }}>
-        <div>
-          <h1 style={{
-            fontFamily: 'monospace',
-            fontSize: '20px',
-            letterSpacing: '1px',
-            margin: '0 0 2px 0',
-            color: theme.caliberRed
-          }}>
-            CALIBER ENCYCLOPEDIA
-          </h1>
-          <p style={{
-            fontSize: '10px',
-            color: theme.textSecondary,
-            margin: 0
-          }}>
-            Comprehensive cartridge database • History • Ballistics • Technical specs
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button
-            onClick={() => setComparisonMode(!comparisonMode)}
+
+        {/* Row 1: Search + Sort + Compare */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search cartridges..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              padding: '6px 10px',
-              backgroundColor: comparisonMode ? theme.caliberRed : theme.surface,
-              border: `1px solid ${comparisonMode ? theme.caliberRed : theme.border}`,
-              borderRadius: '3px',
-              color: comparisonMode ? theme.bg : theme.textPrimary,
-              fontFamily: 'monospace',
-              fontSize: '9px',
-              letterSpacing: '0.8px',
-              cursor: 'pointer',
-              fontWeight: 600
-            }}
-          >
-            {comparisonMode ? '✓ COMPARE MODE' : 'COMPARE'}
-          </button>
-          <button
-            onClick={() => {
-              setLongRangeMode(!longRangeMode);
-              if (!longRangeMode) {
-                setComparisonMode(false);
-              }
-            }}
-            style={{
-              padding: '6px 10px',
-              backgroundColor: longRangeMode ? theme.blue : theme.surface,
-              border: `1px solid ${longRangeMode ? theme.blue : theme.border}`,
-              borderRadius: '3px',
-              color: longRangeMode ? theme.bg : theme.textPrimary,
-              fontFamily: 'monospace',
-              fontSize: '9px',
-              letterSpacing: '0.8px',
-              cursor: 'pointer',
-              fontWeight: 600
-            }}
-          >
-            {longRangeMode ? '✓ LONG RANGE' : 'LONG RANGE ANALYSIS'}
-          </button>
-          <button
-            onClick={() => setShowImageRecognition(true)}
-            style={{
-              padding: '6px 10px',
-              backgroundColor: theme.caliberRed,
-              border: 'none',
-              borderRadius: '3px',
+              flex: 1,
+              backgroundColor: theme.surface,
+              border: '0.5px solid ' + theme.border,
+              borderRadius: '8px',
               color: theme.textPrimary,
               fontFamily: 'monospace',
-              fontSize: '9px',
-              letterSpacing: '0.8px',
+              fontSize: '13px',
+              padding: '8px 12px',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => setShowSortMenu(s => !s)}
+            style={{
+              padding: '8px 10px',
+              backgroundColor: showSortMenu ? theme.caliberRed : theme.surface,
+              border: '0.5px solid ' + (showSortMenu ? theme.caliberRed : theme.border),
+              borderRadius: '8px',
+              color: showSortMenu ? '#fff' : theme.textSecondary,
+              fontFamily: 'monospace',
+              fontSize: '10px',
               cursor: 'pointer',
-              fontWeight: 600
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap',
+              WebkitTapHighlightColor: 'transparent',
+              outline: 'none',
             }}
           >
-            IDENTIFY CARTRIDGE
+            ≡ {sortField !== 'name' ? sortField.toUpperCase() : 'SORT'} {sortDirection === 'asc' ? '↑' : '↓'}
+          </button>
+          <button
+            onClick={() => { setComparisonMode(c => !c); setSelectedForComparison(new Set()); setShowComparisonTable(false); }}
+            style={{
+              padding: '8px 10px',
+              backgroundColor: comparisonMode ? theme.caliberRed : theme.surface,
+              border: '0.5px solid ' + (comparisonMode ? theme.caliberRed : theme.border),
+              borderRadius: '8px',
+              color: comparisonMode ? '#fff' : theme.textSecondary,
+              fontFamily: 'monospace',
+              fontSize: '10px',
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap',
+              WebkitTapHighlightColor: 'transparent',
+              outline: 'none',
+            }}
+          >
+            {comparisonMode ? 'CANCEL' : '≈ COMPARE'}
           </button>
         </div>
-      </div>
 
-      {/* Stats Bar */}
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        padding: '6px 8px',
-        backgroundColor: theme.surface,
-        borderRadius: '4px',
-        marginBottom: '8px',
-        alignItems: 'center',
-        fontSize: '9px'
-      }}>
-        <div>
-          <span style={{ color: theme.textMuted }}>TOTAL</span>
-          <span style={{ marginLeft: '6px', fontSize: '14px', fontWeight: 600 }}>{stats.total}</span>
-        </div>
-        <div style={{ height: '16px', width: '1px', backgroundColor: theme.border }} />
-        <div>
-          <span style={{ color: theme.textMuted }}>SHOWING</span>
-          <span style={{ marginLeft: '6px', fontSize: '14px', fontWeight: 600, color: theme.caliberRed }}>{stats.filtered}</span>
-        </div>
-        <div style={{ height: '16px', width: '1px', backgroundColor: theme.border }} />
-        <div>
-          <span style={{ color: theme.textMuted }}>OWN GUNS</span>
-          <span style={{ marginLeft: '6px', fontSize: '11px', color: theme.green }}>{stats.ownGuns}</span>
-        </div>
-        <div>
-          <span style={{ color: theme.textMuted }}>OWN AMMO</span>
-          <span style={{ marginLeft: '6px', fontSize: '11px', color: theme.green }}>{stats.ownAmmo}</span>
-        </div>
-        <div>
-          <span style={{ color: theme.textMuted }}>WISHLIST</span>
-          <span style={{ marginLeft: '6px', fontSize: '11px', color: theme.accent }}>{stats.wishlist}</span>
-        </div>
-        {comparisonMode && (
-          <>
-            <div style={{ height: '16px', width: '1px', backgroundColor: theme.border }} />
-            <div>
-              <span style={{ color: theme.textMuted }}>SELECTED</span>
-              <span style={{ marginLeft: '6px', fontSize: '11px', color: theme.blue }}>{selectedForComparison.size}/5</span>
-            </div>
-          </>
+        {/* Sort menu */}
+        {showSortMenu && (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.field}
+                onClick={() => {
+                  if (sortField === opt.field) {
+                    setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    setSortField(opt.field);
+                    setSortDirection('asc');
+                  }
+                  setShowSortMenu(false);
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: sortField === opt.field ? theme.caliberRed : theme.surface,
+                  border: '0.5px solid ' + (sortField === opt.field ? theme.caliberRed : theme.border),
+                  borderRadius: '6px',
+                  color: sortField === opt.field ? '#fff' : theme.textSecondary,
+                  fontFamily: 'monospace',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  letterSpacing: '0.5px',
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                }}
+              >
+                {opt.label} {sortField === opt.field ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+              </button>
+            ))}
+          </div>
         )}
-      </div>
 
-      {/* Search and Filters */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto auto auto auto',
-        gap: '6px',
-        marginBottom: '8px'
-      }}>
-        <input
-          type="text"
-          placeholder="Search cartridges..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            padding: '6px 8px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '10px',
-            fontFamily: 'monospace'
-          }}
-        />
+        {/* Row 2: Type chips */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+          {TYPE_CHIPS.map(chip => (
+            <button key={chip.value} onClick={() => setFilterType(chip.value)} style={chipStyle(filterType === chip.value)}>
+              {chip.label}
+            </button>
+          ))}
+        </div>
 
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value as FilterType)}
-          style={{
-            padding: '6px 8px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="all">ALL TYPES</option>
-          <option value="rifle">RIFLE</option>
-          <option value="pistol">PISTOL</option>
-          <option value="revolver">REVOLVER</option>
-          <option value="shotgun">SHOTGUN</option>
-        </select>
-
-        <select
-          value={filterEnergy}
-          onChange={(e) => setFilterEnergy(e.target.value as FilterEnergy)}
-          style={{
-            padding: '6px 8px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="all">ALL POWER</option>
-          <option value="light">0-500 ft-lbs</option>
-          <option value="medium">501-1500 ft-lbs</option>
-          <option value="heavy">1501-3000 ft-lbs</option>
-          <option value="magnum">3000+ ft-lbs</option>
-        </select>
-
-        <select
-          value={filterAvailability}
-          onChange={(e) => setFilterAvailability(e.target.value as FilterAvailability)}
-          style={{
-            padding: '6px 8px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="all">ALL AVAILABILITY</option>
-          <option value="abundant">ABUNDANT</option>
-          <option value="common">COMMON</option>
-          <option value="limited">LIMITED</option>
-          <option value="scarce">SCARCE</option>
-        </select>
-
-        <select
-          value={filterOwnership}
-          onChange={(e) => setFilterOwnership(e.target.value as FilterOwnership)}
-          style={{
-            padding: '6px 8px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="all">ALL CARTRIDGES</option>
-          <option value="ownGun">I OWN GUN</option>
-          <option value="ownAmmo">I OWN AMMO</option>
-          <option value="wishlist">WISHLIST</option>
-        </select>
-      </div>
-
-      {/* Advanced Filters - Categories and Use Cases */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        padding: '8px',
-        backgroundColor: theme.surface,
-        borderRadius: '4px',
-        marginBottom: '8px',
-        fontSize: '9px',
-        flexWrap: 'wrap'
-      }}>
-        {/* Category Filters */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <span style={{ color: theme.textMuted, fontSize: '8px', fontWeight: 600, letterSpacing: '0.5px' }}>CATEGORY</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {['rifle', 'pistol', 'revolver', 'shotgun'].map(cat => (
-              <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={filterCategories.has(cat)}
-                  onChange={(e) => {
-                    const newSet = new Set(filterCategories);
-                    if (e.target.checked) {
-                      newSet.add(cat);
-                    } else {
-                      newSet.delete(cat);
-                    }
-                    setFilterCategories(newSet);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ color: theme.textPrimary, textTransform: 'capitalize' }}>
-                  {cat === 'rifle' ? 'Rifle Cartridge' :
-                   cat === 'pistol' ? 'Pistol Cartridge' :
-                   cat === 'revolver' ? 'Revolver Cartridge' :
-                   'Shotgun Shell'}
-                </span>
-              </label>
+        {/* Row 3: Ownership chips + count */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {OWN_CHIPS.map(chip => (
+              <button key={chip.value} onClick={() => setFilterOwnership(chip.value)} style={chipStyle(filterOwnership === chip.value)}>
+                {chip.label}
+              </button>
             ))}
           </div>
-        </div>
-
-        <div style={{ width: '1px', backgroundColor: theme.border }} />
-
-        {/* Use Case Filters */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <span style={{ color: theme.textMuted, fontSize: '8px', fontWeight: 600, letterSpacing: '0.5px' }}>USE CASE</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {['military', 'hunting', 'self defense', 'target', 'competition'].map(useCase => (
-              <label key={useCase} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={filterUseCases.has(useCase)}
-                  onChange={(e) => {
-                    const newSet = new Set(filterUseCases);
-                    if (e.target.checked) {
-                      newSet.add(useCase);
-                    } else {
-                      newSet.delete(useCase);
-                    }
-                    setFilterUseCases(newSet);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ color: theme.textPrimary, textTransform: 'capitalize' }}>{useCase}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ width: '1px', backgroundColor: theme.border }} />
-
-        {/* Wildcat Filter */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <span style={{ color: theme.textMuted, fontSize: '8px', fontWeight: 600, letterSpacing: '0.5px' }}>SPECIAL</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filterWildcats}
-              onChange={(e) => setFilterWildcats(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            <span style={{ color: theme.textPrimary }}>Wildcats Only</span>
-          </label>
+          <span style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', flexShrink: 0, marginLeft: '8px' }}>
+            {filteredCartridges.length}/{allCartridges.length}
+          </span>
         </div>
       </div>
 
-      {/* Comparison View */}
-      {comparisonMode && comparedCartridges.length >= 2 && (
+      {/* Comparison banner */}
+      {comparisonMode && (
+        <div style={{
+          padding: '8px 16px',
+          backgroundColor: theme.caliberRed + '15',
+          borderBottom: '0.5px solid ' + theme.caliberRed + '40',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <span style={{ fontSize: '10px', fontFamily: 'monospace', color: theme.caliberRed, flex: 1 }}>
+            {'Select up to 5 · ' + selectedForComparison.size + ' selected'}
+          </span>
+          {selectedForComparison.size >= 2 && (
+            <button
+              onClick={() => setShowComparisonTable(true)}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: theme.caliberRed,
+                border: 'none',
+                borderRadius: '4px',
+                color: '#fff',
+                fontFamily: 'monospace',
+                fontSize: '9px',
+                cursor: 'pointer',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+              }}
+            >
+              VIEW TABLE
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Comparison Table */}
+      {showComparisonTable && comparedCartridges.length >= 2 && (
         <ComparisonTable
           cartridges={comparedCartridges}
-          onClose={clearComparison}
+          onClose={() => { setShowComparisonTable(false); setSelectedForComparison(new Set()); setComparisonMode(false); }}
         />
       )}
 
-      {/* Long Range Analysis View */}
-      {longRangeMode && selectedForLongRange.size >= 2 && (
-        <LongRangeAnalysis
-          cartridges={allCartridges.filter(c => selectedForLongRange.has(c.id))}
-          onClose={() => {
-            setSelectedForLongRange(new Set());
-          }}
-        />
-      )}
-
-      {/* Cartridge Table */}
+      {/* Table */}
       {filteredCartridges.length > 0 ? (
-        <div style={{
-          backgroundColor: theme.surface,
-          borderRadius: '4px',
-          border: `1px solid ${theme.border}`,
-          overflow: 'auto'
-        }}>
+        <div style={{ overflowX: 'auto' }}>
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '9px',
+            fontSize: '11px',
             fontFamily: 'monospace',
-            tableLayout: 'fixed'
+            minWidth: '480px',
           }}>
             <thead>
-              <tr style={{
-                backgroundColor: theme.surfaceAlt,
-                borderBottom: `2px solid ${theme.border}`
-              }}>
-                {(comparisonMode || longRangeMode) && (
-                  <th style={{
-                    padding: '6px',
-                    textAlign: 'center',
-                    position: 'sticky',
-                    top: 0,
-                    backgroundColor: theme.surfaceAlt,
-                    zIndex: 1,
-                    width: '30px'
-                  }}>
-                    <input type="checkbox" style={{ cursor: 'pointer' }} disabled />
-                  </th>
+              <tr style={{ backgroundColor: theme.surface, borderBottom: '1px solid ' + theme.border }}>
+                {comparisonMode && (
+                  <th style={{ width: '32px', padding: '6px', backgroundColor: theme.surface }} />
                 )}
-                <SortableHeader
-                  field="name"
-                  label="NAME"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  sticky
-                  width="180px"
-                />
-                <th style={{
-                  padding: '6px',
-                  textAlign: 'left',
-                  color: theme.textMuted,
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
-                  fontSize: '8px',
-                  position: 'sticky',
-                  top: 0,
-                  backgroundColor: theme.surfaceAlt,
-                  zIndex: 1,
-                  width: '120px'
-                }}>
-                  ALT NAMES
+                <th
+                  onClick={() => handleSort('name')}
+                  style={{
+                    padding: '7px 8px',
+                    textAlign: 'left',
+                    color: sortField === 'name' ? theme.caliberRed : theme.textMuted,
+                    fontSize: '9px',
+                    letterSpacing: '0.8px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: theme.surface,
+                    zIndex: 2,
+                    width: '140px',
+                  }}
+                >
+                  NAME {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                 </th>
-                <SortableHeader
-                  field="year"
-                  label="YEAR"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="70px"
-                />
-                <SortableHeader
-                  field="type"
-                  label="TYPE"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="80px"
-                />
-                <SortableHeader
-                  field="bulletDia"
-                  label="BULLET DIA"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="90px"
-                />
-                <SortableHeader
-                  field="velocity"
-                  label="VELOCITY"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="120px"
-                />
-                <SortableHeader
-                  field="energy"
-                  label="ENERGY"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="110px"
-                />
-                <SortableHeader
-                  field="psi"
-                  label="MAX PSI"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="100px"
-                />
-                <th style={{
-                  padding: '6px',
-                  textAlign: 'left',
-                  color: theme.textMuted,
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
-                  fontSize: '8px',
-                  position: 'sticky',
-                  top: 0,
-                  backgroundColor: theme.surfaceAlt,
-                  zIndex: 1,
-                  width: '100px'
-                }}>
-                  WEIGHTS
+                <th onClick={() => handleSort('type')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'type' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '65px' }}>
+                  TYPE {sortField === 'type' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                 </th>
-                <SortableHeader
-                  field="status"
-                  label="STATUS"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="90px"
-                />
-                <SortableHeader
-                  field="availability"
-                  label="AVAIL"
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={handleSort}
-                  width="80px"
-                />
-                <th style={{
-                  padding: '6px',
-                  textAlign: 'center',
-                  color: theme.textMuted,
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
-                  fontSize: '8px',
-                  position: 'sticky',
-                  top: 0,
-                  backgroundColor: theme.surfaceAlt,
-                  zIndex: 1,
-                  width: '80px'
-                }}>
-                  ACTIONS
+                <th onClick={() => handleSort('year')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'year' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '50px' }}>
+                  YEAR {sortField === 'year' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th onClick={() => handleSort('bulletDia')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'bulletDia' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '55px' }}>
+                  DIA {sortField === 'bulletDia' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th onClick={() => handleSort('velocity')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'velocity' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '95px' }}>
+                  FPS {sortField === 'velocity' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th onClick={() => handleSort('energy')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'energy' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '95px' }}>
+                  FT·LBS {sortField === 'energy' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th style={{ padding: '7px 8px', textAlign: 'left', color: theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', fontWeight: 700, width: '70px' }}>
+                  AVAIL
                 </th>
               </tr>
             </thead>
             <tbody>
-              {filteredCartridges.map(cart => (
-                <CartridgeTableRow
-                  key={cart.id}
-                  cartridge={cart}
-                  comparisonMode={comparisonMode}
-                  longRangeMode={longRangeMode}
-                  isSelected={selectedForComparison.has(cart.id)}
-                  isSelectedLongRange={selectedForLongRange.has(cart.id)}
-                  isExpanded={expandedRow === cart.id}
-                  onToggleComparison={toggleComparison}
-                  onToggleLongRange={(id: string) => {
-                    const newSet = new Set(selectedForLongRange);
-                    if (newSet.has(id)) {
-                      newSet.delete(id);
-                    } else {
-                      if (newSet.size < 5) {
-                        newSet.add(id);
+              {filteredCartridges.map((cart) => {
+                const isSelected = selectedForComparison.has(cart.id);
+                return (
+                  <tr
+                    key={cart.id}
+                    onClick={() => {
+                      if (comparisonMode) {
+                        const newSet = new Set(selectedForComparison);
+                        if (newSet.has(cart.id)) {
+                          newSet.delete(cart.id);
+                        } else if (newSet.size < 5) {
+                          newSet.add(cart.id);
+                        }
+                        setSelectedForComparison(newSet);
+                      } else {
+                        setSelectedCartridge(cart);
                       }
-                    }
-                    setSelectedForLongRange(newSet);
-                  }}
-                  onToggleWishlist={toggleWishlist}
-                  onToggleExpand={() => setExpandedRow(expandedRow === cart.id ? null : cart.id)}
-                  onViewDetails={() => setSelectedCartridge(cart)}
-                  getTop3Weights={getTop3Weights}
-                  allCartridges={allCartridges}
-                />
-              ))}
+                    }}
+                    style={{
+                      borderBottom: '0.5px solid ' + theme.border,
+                      cursor: 'pointer',
+                      backgroundColor: isSelected ? theme.caliberRed + '12' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = theme.surface + '80'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isSelected ? theme.caliberRed + '12' : 'transparent'; }}
+                  >
+                    {comparisonMode && (
+                      <td style={{ padding: '7px 8px', textAlign: 'center' }}>
+                        <div style={{
+                          width: '14px',
+                          height: '14px',
+                          borderRadius: '3px',
+                          border: '1.5px solid ' + (isSelected ? theme.caliberRed : theme.border),
+                          backgroundColor: isSelected ? theme.caliberRed : 'transparent',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          {isSelected && <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700 }}>✓</span>}
+                        </div>
+                      </td>
+                    )}
+                    <td style={{
+                      padding: '8px 8px',
+                      fontWeight: 600,
+                      color: theme.caliberRed,
+                      position: 'sticky',
+                      left: 0,
+                      backgroundColor: isSelected ? theme.caliberRed + '12' : theme.bg,
+                      fontSize: '11px',
+                    }}>
+                      <div>{cart.name}</div>
+                      {(cart.ownGunForThis || cart.ownAmmoForThis || cart.onWishlist) && (
+                        <div style={{ display: 'flex', gap: '3px', marginTop: '2px' }}>
+                          {cart.ownGunForThis && <span style={{ fontSize: '8px', padding: '1px 4px', backgroundColor: theme.green + '25', color: theme.green, borderRadius: '3px' }}>GUN</span>}
+                          {cart.ownAmmoForThis && <span style={{ fontSize: '8px', padding: '1px 4px', backgroundColor: theme.green + '25', color: theme.green, borderRadius: '3px' }}>AMMO</span>}
+                          {cart.onWishlist && <span style={{ fontSize: '8px', padding: '1px 4px', backgroundColor: theme.accent + '25', color: theme.accent, borderRadius: '3px' }}>★</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '8px 8px' }}>
+                      <span style={{
+                        fontSize: '9px',
+                        padding: '2px 5px',
+                        backgroundColor: theme.surface,
+                        border: '0.5px solid ' + theme.border,
+                        borderRadius: '4px',
+                        color: theme.textSecondary,
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
+                      }}>
+                        {cart.type}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 8px', color: theme.textSecondary, fontSize: '10px' }}>
+                      {cart.yearIntroduced}
+                    </td>
+                    <td style={{ padding: '8px 8px', color: theme.textSecondary, fontSize: '10px' }}>
+                      {cart.bulletDiameterInch}"
+                    </td>
+                    <td style={{ padding: '8px 8px', color: theme.textPrimary, fontSize: '10px' }}>
+                      {cart.velocityRangeFPS.min}–{cart.velocityRangeFPS.max}
+                    </td>
+                    <td style={{ padding: '8px 8px', color: theme.caliberRed, fontWeight: 600, fontSize: '10px' }}>
+                      {cart.energyRangeFTLBS.min}–{cart.energyRangeFTLBS.max}
+                    </td>
+                    <td style={{ padding: '8px 8px', fontSize: '10px' }}>
+                      <span style={{
+                        color: cart.availability === 'Abundant' ? theme.green
+                             : cart.availability === 'Common' ? theme.textPrimary
+                             : cart.availability === 'Limited' ? theme.orange
+                             : theme.red,
+                      }}>
+                        {cart.availability}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
-        <div style={{
-          textAlign: 'center',
-          padding: '40px 20px',
-          color: theme.textMuted,
-          backgroundColor: theme.surface,
-          borderRadius: '4px',
-          border: `1px solid ${theme.border}`
-        }}>
-          <p style={{ fontSize: '11px', marginBottom: '4px' }}>No cartridges found</p>
-          <p style={{ fontSize: '10px', color: theme.textSecondary }}>
-            Try adjusting your filters or search term
-          </p>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: theme.textMuted, fontFamily: 'monospace' }}>
+          <div style={{ fontSize: '28px', marginBottom: '12px' }}>🔍</div>
+          <div style={{ fontSize: '12px', marginBottom: '4px' }}>No cartridges found</div>
+          <div style={{ fontSize: '10px', color: theme.textSecondary }}>Try adjusting your filters or search term</div>
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* Detail bottom sheet */}
       {selectedCartridge && (
         <CartridgeDetailModal
           cartridge={selectedCartridge}
@@ -744,328 +467,6 @@ export function CaliberDatabase() {
           allCartridges={allCartridges}
         />
       )}
-
-      {/* Image Recognition Modal */}
-      {showImageRecognition && (
-        <ImageRecognitionModal
-          onClose={() => setShowImageRecognition(false)}
-          onIdentify={(cart) => {
-            setShowImageRecognition(false);
-            setSelectedCartridge(cart);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// Sortable Header Component
-function SortableHeader({
-  field,
-  label,
-  currentField,
-  direction,
-  onSort,
-  sticky,
-  width
-}: {
-  field: SortField;
-  label: string;
-  currentField: SortField;
-  direction: SortDirection;
-  onSort: (field: SortField) => void;
-  sticky?: boolean;
-  width?: string;
-}) {
-  const isActive = currentField === field;
-
-  return (
-    <th
-      onClick={() => onSort(field)}
-      style={{
-        padding: '6px',
-        textAlign: 'left',
-        color: isActive ? theme.caliberRed : theme.textMuted,
-        fontWeight: 600,
-        letterSpacing: '0.5px',
-        fontSize: '8px',
-        cursor: 'pointer',
-        userSelect: 'none',
-        position: sticky ? 'sticky' : 'relative',
-        top: 0,
-        backgroundColor: theme.surfaceAlt,
-        zIndex: sticky ? 1 : 'auto',
-        transition: 'color 0.15s',
-        width: width || 'auto'
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) e.currentTarget.style.color = theme.textPrimary;
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) e.currentTarget.style.color = theme.textMuted;
-      }}
-    >
-      {label} {isActive && (direction === 'asc' ? '▲' : '▼')}
-    </th>
-  );
-}
-
-// Cartridge Table Row Component
-function CartridgeTableRow({
-  cartridge,
-  comparisonMode,
-  longRangeMode,
-  isSelected,
-  isSelectedLongRange,
-  isExpanded,
-  onToggleComparison,
-  onToggleLongRange,
-  onToggleWishlist,
-  onToggleExpand,
-  onViewDetails,
-  getTop3Weights,
-  allCartridges
-}: {
-  cartridge: Cartridge;
-  comparisonMode: boolean;
-  longRangeMode?: boolean;
-  isSelected: boolean;
-  isSelectedLongRange?: boolean;
-  isExpanded: boolean;
-  onToggleComparison: (id: string) => void;
-  onToggleLongRange?: (id: string) => void;
-  onToggleWishlist: (id: string) => void;
-  onToggleExpand: () => void;
-  onViewDetails: () => void;
-  getTop3Weights: (weights: number[]) => string;
-  allCartridges: Cartridge[];
-}) {
-  return (
-    <>
-      <tr
-        style={{
-          borderBottom: `1px solid ${theme.border}`,
-          backgroundColor: isExpanded ? theme.surfaceAlt : 'transparent',
-          cursor: 'pointer',
-          transition: 'background-color 0.15s'
-        }}
-        onMouseEnter={(e) => {
-          if (!isExpanded) e.currentTarget.style.backgroundColor = theme.surface + '80';
-        }}
-        onMouseLeave={(e) => {
-          if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent';
-        }}
-        onClick={onToggleExpand}
-      >
-        {(comparisonMode || longRangeMode) && (
-          <td
-            style={{ padding: '6px', textAlign: 'center' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="checkbox"
-              checked={comparisonMode ? isSelected : (isSelectedLongRange || false)}
-              onChange={() => {
-                if (comparisonMode) {
-                  onToggleComparison(cartridge.id);
-                } else if (longRangeMode && onToggleLongRange) {
-                  onToggleLongRange(cartridge.id);
-                }
-              }}
-              style={{ cursor: 'pointer' }}
-            />
-          </td>
-        )}
-        <td style={{
-          padding: '6px',
-          fontWeight: 600,
-          color: theme.caliberRed,
-          fontSize: '9px',
-          position: 'sticky',
-          left: 0,
-          backgroundColor: isExpanded ? theme.surfaceAlt : theme.surface
-        }}>
-          {isExpanded ? '▼' : '▶'} {cartridge.name}
-        </td>
-        <td style={{ padding: '6px', color: theme.textSecondary, fontSize: '8px' }}>
-          {cartridge.alternateNames && cartridge.alternateNames.length > 0
-            ? cartridge.alternateNames[0]
-            : '-'}
-        </td>
-        <td style={{ padding: '6px' }}>{cartridge.yearIntroduced}</td>
-        <td style={{ padding: '6px', textTransform: 'uppercase', fontSize: '8px' }}>
-          {cartridge.type}
-        </td>
-        <td style={{ padding: '6px' }}>{cartridge.bulletDiameterInch}"</td>
-        <td style={{ padding: '6px', fontSize: '8px' }}>
-          {cartridge.velocityRangeFPS.min}-{cartridge.velocityRangeFPS.max}
-        </td>
-        <td style={{ padding: '6px', color: theme.caliberRed, fontWeight: 600, fontSize: '8px' }}>
-          {cartridge.energyRangeFTLBS.min}-{cartridge.energyRangeFTLBS.max}
-        </td>
-        <td style={{ padding: '6px', fontSize: '8px' }}>
-          {cartridge.maxPressurePSI ? cartridge.maxPressurePSI.toLocaleString() : 'N/A'}
-        </td>
-        <td style={{ padding: '6px', fontSize: '8px' }}>
-          {getTop3Weights(cartridge.commonBulletWeights)}
-        </td>
-        <td style={{ padding: '6px', fontSize: '8px', textTransform: 'uppercase' }}>
-          {cartridge.productionStatus}
-        </td>
-        <td style={{ padding: '6px', fontSize: '8px', textTransform: 'uppercase' }}>
-          {cartridge.availability}
-        </td>
-        <td
-          style={{ padding: '6px', textAlign: 'center' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
-            {cartridge.ownGunForThis && (
-              <span style={{
-                fontSize: '7px',
-                padding: '2px 3px',
-                backgroundColor: theme.green + '30',
-                color: theme.green,
-                borderRadius: '2px'
-              }}>
-                G
-              </span>
-            )}
-            {cartridge.ownAmmoForThis && (
-              <span style={{
-                fontSize: '7px',
-                padding: '2px 3px',
-                backgroundColor: theme.green + '30',
-                color: theme.green,
-                borderRadius: '2px'
-              }}>
-                A
-              </span>
-            )}
-            {cartridge.onWishlist && (
-              <span style={{
-                fontSize: '7px',
-                padding: '2px 3px',
-                backgroundColor: theme.accent + '30',
-                color: theme.accent,
-                borderRadius: '2px'
-              }}>
-                W
-              </span>
-            )}
-          </div>
-        </td>
-      </tr>
-      {isExpanded && (
-        <tr>
-          <td
-            colSpan={(comparisonMode || longRangeMode) ? 13 : 12}
-            style={{
-              padding: '0',
-              backgroundColor: theme.bg,
-              borderBottom: `2px solid ${theme.border}`
-            }}
-          >
-            <ExpandedRowDetails
-              cartridge={cartridge}
-              onViewDetails={onViewDetails}
-              onToggleWishlist={onToggleWishlist}
-              allCartridges={allCartridges}
-            />
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
-// Expanded Row Details Component
-function ExpandedRowDetails({
-  cartridge,
-  onViewDetails,
-  onToggleWishlist,
-  allCartridges
-}: {
-  cartridge: Cartridge;
-  onViewDetails: () => void;
-  onToggleWishlist: (id: string) => void;
-  allCartridges: Cartridge[];
-}) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'history' | 'military' | 'ballistics' | 'family'>('overview');
-
-  return (
-    <div style={{ padding: '10px' }}>
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '3px', marginBottom: '8px', flexWrap: 'wrap' }}>
-        {(['overview', 'specs', 'history', 'military', 'ballistics', 'family'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: activeTab === tab ? theme.caliberRed : theme.surface,
-              border: 'none',
-              borderRadius: '2px',
-              color: activeTab === tab ? theme.bg : theme.textPrimary,
-              fontSize: '7px',
-              fontFamily: 'monospace',
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              fontWeight: 600
-            }}
-          >
-            {tab}
-          </button>
-        ))}
-        <button
-          onClick={() => onToggleWishlist(cartridge.id)}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: cartridge.onWishlist ? theme.accent : theme.surface,
-            border: `1px solid ${cartridge.onWishlist ? theme.accent : theme.border}`,
-            borderRadius: '2px',
-            color: cartridge.onWishlist ? theme.bg : theme.textPrimary,
-            fontSize: '7px',
-            fontFamily: 'monospace',
-            cursor: 'pointer',
-            marginLeft: 'auto'
-          }}
-        >
-          {cartridge.onWishlist ? '★' : '☆'} WISHLIST
-        </button>
-        <button
-          onClick={onViewDetails}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: theme.caliberRed,
-            border: 'none',
-            borderRadius: '2px',
-            color: theme.bg,
-            fontSize: '7px',
-            fontFamily: 'monospace',
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          FULL DETAILS
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{
-        backgroundColor: theme.surface,
-        padding: '8px',
-        borderRadius: '4px',
-        fontSize: '10px'
-      }}>
-        {activeTab === 'overview' && <OverviewTab cartridge={cartridge} />}
-        {activeTab === 'specs' && <SpecsTab cartridge={cartridge} />}
-        {activeTab === 'history' && <HistoryTab cartridge={cartridge} />}
-        {activeTab === 'military' && <MilitaryTab cartridge={cartridge} />}
-        {activeTab === 'ballistics' && <BallisticsTab cartridge={cartridge} />}
-        {activeTab === 'family' && <FamilyTreeTab cartridge={cartridge} allCartridges={allCartridges} />}
-      </div>
     </div>
   );
 }
@@ -1289,24 +690,23 @@ function CartridgeDetailModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: 'rgba(0,0,0,0.7)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'center',
-        zIndex: 1000,
-        padding: '10px'
+        zIndex: 2000,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: theme.bg,
-          borderRadius: '6px',
-          maxWidth: '1000px',
+          borderRadius: '16px 16px 0 0',
           width: '100%',
+          maxWidth: '480px',
           maxHeight: '90vh',
           overflow: 'auto',
-          position: 'relative'
+          position: 'relative',
         }}
       >
         {/* Header */}
@@ -2109,372 +1509,6 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
         color: highlight ? theme.caliberRed : theme.textPrimary
       }}>
         {value}
-      </div>
-    </div>
-  );
-}
-
-// Image Recognition Modal (placeholder)
-function ImageRecognitionModal({ onClose }: { onClose: () => void; onIdentify?: (cart: Cartridge) => void }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1001,
-        padding: '10px'
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: theme.bg,
-          borderRadius: '6px',
-          padding: '16px',
-          maxWidth: '450px',
-          width: '100%',
-          textAlign: 'center'
-        }}
-      >
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: theme.caliberRed }}>
-          Cartridge Identification
-        </h3>
-        <p style={{ fontSize: '10px', color: theme.textSecondary, marginBottom: '16px' }}>
-          AI-powered cartridge recognition coming soon!
-        </p>
-        <div style={{
-          padding: '40px',
-          backgroundColor: theme.surface,
-          borderRadius: '6px',
-          border: `2px dashed ${theme.border}`,
-          marginBottom: '12px'
-        }}>
-          <p style={{ fontSize: '10px', color: theme.textMuted }}>
-            Take a photo of a live round, case, or headstamp
-          </p>
-          <p style={{ fontSize: '9px', color: theme.textSecondary, marginTop: '6px' }}>
-            Feature in development - will use AI vision to identify cartridges
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          CLOSE
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Long Range Analysis Component
-function LongRangeAnalysis({ cartridges, onClose }: { cartridges: Cartridge[]; onClose: () => void }) {
-  const distances = [100, 200, 300, 500, 800, 1000];
-  const [selectedDistance, setSelectedDistance] = useState(1000);
-
-  // Calculate drop at distance (simplified ballistic calculation)
-  const calculateDrop = (cart: Cartridge, distance: number) => {
-    const avgVelocity = (cart.velocityRangeFPS.min + cart.velocityRangeFPS.max) / 2;
-    const avgWeight = cart.commonBulletWeights[Math.floor(cart.commonBulletWeights.length / 2)];
-
-    // Time of flight (rough approximation)
-    const timeOfFlight = (distance * 3) / avgVelocity;
-
-    // Drop in inches (gravity * time^2)
-    const dropInches = 193 * timeOfFlight * timeOfFlight;
-
-    return dropInches;
-  };
-
-  // Calculate energy retention at distance
-  const calculateEnergyAtDistance = (cart: Cartridge, distance: number) => {
-    const avgEnergy = (cart.energyRangeFTLBS.min + cart.energyRangeFTLBS.max) / 2;
-
-    // Simplified energy retention (assumes ~10% loss per 100 yards for typical bullets)
-    const retentionFactor = Math.pow(0.92, distance / 100);
-
-    return Math.round(avgEnergy * retentionFactor);
-  };
-
-  // Get performance data for all cartridges at all distances
-  const performanceData = cartridges.map(cart => ({
-    cartridge: cart,
-    data: distances.map(dist => ({
-      distance: dist,
-      drop: calculateDrop(cart, dist),
-      energy: calculateEnergyAtDistance(cart, dist)
-    }))
-  }));
-
-  // Find best performers at selected distance
-  const performanceAtSelectedDistance = performanceData.map(p => ({
-    cartridge: p.cartridge,
-    drop: p.data.find(d => d.distance === selectedDistance)?.drop || 0,
-    energy: p.data.find(d => d.distance === selectedDistance)?.energy || 0
-  }));
-
-  const sortedByDrop = [...performanceAtSelectedDistance].sort((a, b) => a.drop - b.drop);
-  const sortedByEnergy = [...performanceAtSelectedDistance].sort((a, b) => b.energy - a.energy);
-
-  return (
-    <div style={{
-      backgroundColor: theme.surface,
-      borderRadius: '4px',
-      padding: '12px',
-      marginBottom: '12px',
-      border: `2px solid ${theme.blue}`
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{
-          margin: 0,
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          color: theme.blue,
-          letterSpacing: '0.5px'
-        }}>
-          LONG RANGE ANALYSIS ({cartridges.length} cartridges)
-        </h3>
-        <button
-          onClick={onClose}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: theme.surfaceAlt,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            color: theme.textPrimary,
-            fontSize: '8px',
-            fontFamily: 'monospace',
-            cursor: 'pointer'
-          }}
-        >
-          CLEAR
-        </button>
-      </div>
-
-      {/* Distance Selector */}
-      <div style={{ marginBottom: '12px' }}>
-        <span style={{ fontSize: '9px', color: theme.textMuted, marginRight: '8px' }}>ANALYZE AT:</span>
-        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-          {distances.map(dist => (
-            <button
-              key={dist}
-              onClick={() => setSelectedDistance(dist)}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: selectedDistance === dist ? theme.blue : theme.surfaceAlt,
-                border: `1px solid ${selectedDistance === dist ? theme.blue : theme.border}`,
-                borderRadius: '3px',
-                color: selectedDistance === dist ? theme.bg : theme.textPrimary,
-                fontSize: '8px',
-                fontFamily: 'monospace',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-            >
-              {dist} YD
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Performance Rankings */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-        {/* Best for Flat Shooting (Least Drop) */}
-        <div style={{ backgroundColor: theme.surfaceAlt, padding: '8px', borderRadius: '4px' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '9px', color: theme.green, letterSpacing: '0.5px' }}>
-            FLATTEST SHOOTING @ {selectedDistance}yd
-          </h4>
-          {sortedByDrop.slice(0, 3).map((item, idx) => (
-            <div key={item.cartridge.id} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '4px',
-              backgroundColor: idx === 0 ? theme.green + '20' : 'transparent',
-              borderRadius: '2px',
-              marginBottom: '2px'
-            }}>
-              <span style={{ fontSize: '8px', color: theme.textPrimary, fontWeight: idx === 0 ? 600 : 400 }}>
-                #{idx + 1} {item.cartridge.name}
-              </span>
-              <span style={{ fontSize: '8px', color: theme.green, fontWeight: 600 }}>
-                {item.drop.toFixed(1)}" drop
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Best for Energy Retention */}
-        <div style={{ backgroundColor: theme.surfaceAlt, padding: '8px', borderRadius: '4px' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '9px', color: theme.caliberRed, letterSpacing: '0.5px' }}>
-            MOST ENERGY @ {selectedDistance}yd
-          </h4>
-          {sortedByEnergy.slice(0, 3).map((item, idx) => (
-            <div key={item.cartridge.id} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '4px',
-              backgroundColor: idx === 0 ? theme.caliberRed + '20' : 'transparent',
-              borderRadius: '2px',
-              marginBottom: '2px'
-            }}>
-              <span style={{ fontSize: '8px', color: theme.textPrimary, fontWeight: idx === 0 ? 600 : 400 }}>
-                #{idx + 1} {item.cartridge.name}
-              </span>
-              <span style={{ fontSize: '8px', color: theme.caliberRed, fontWeight: 600 }}>
-                {item.energy} ft-lbs
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Detailed Comparison Table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{
-          width: '100%',
-          fontSize: '8px',
-          fontFamily: 'monospace',
-          borderCollapse: 'collapse'
-        }}>
-          <thead>
-            <tr>
-              <th style={{
-                textAlign: 'left',
-                padding: '6px',
-                backgroundColor: theme.surfaceAlt,
-                color: theme.textMuted,
-                position: 'sticky',
-                left: 0,
-                zIndex: 1,
-                borderRight: `1px solid ${theme.border}`
-              }}>CARTRIDGE</th>
-              {distances.map(dist => (
-                <th key={dist} colSpan={2} style={{
-                  textAlign: 'center',
-                  padding: '6px',
-                  backgroundColor: theme.surfaceAlt,
-                  color: dist === selectedDistance ? theme.blue : theme.textMuted,
-                  borderLeft: `1px solid ${theme.border}`,
-                  fontWeight: dist === selectedDistance ? 600 : 400
-                }}>
-                  {dist} YD
-                </th>
-              ))}
-            </tr>
-            <tr>
-              <th style={{
-                padding: '4px 6px',
-                backgroundColor: theme.surface,
-                color: theme.textMuted,
-                fontSize: '7px',
-                position: 'sticky',
-                left: 0,
-                zIndex: 1,
-                borderRight: `1px solid ${theme.border}`
-              }}></th>
-              {distances.map(dist => (
-                <>
-                  <th key={`${dist}-drop`} style={{
-                    padding: '4px',
-                    backgroundColor: theme.surface,
-                    color: theme.green,
-                    fontSize: '7px',
-                    textAlign: 'center',
-                    borderLeft: `1px solid ${theme.border}`
-                  }}>
-                    DROP"
-                  </th>
-                  <th key={`${dist}-energy`} style={{
-                    padding: '4px',
-                    backgroundColor: theme.surface,
-                    color: theme.caliberRed,
-                    fontSize: '7px',
-                    textAlign: 'center'
-                  }}>
-                    ENERGY
-                  </th>
-                </>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {performanceData.map(p => (
-              <tr key={p.cartridge.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                <td style={{
-                  padding: '6px',
-                  fontWeight: 600,
-                  color: theme.caliberRed,
-                  position: 'sticky',
-                  left: 0,
-                  backgroundColor: theme.surface,
-                  borderRight: `1px solid ${theme.border}`
-                }}>
-                  {p.cartridge.name}
-                </td>
-                {p.data.map(d => (
-                  <>
-                    <td key={`${d.distance}-drop`} style={{
-                      padding: '6px',
-                      textAlign: 'center',
-                      color: theme.green,
-                      backgroundColor: d.distance === selectedDistance ? theme.blue + '10' : 'transparent',
-                      borderLeft: `1px solid ${theme.border}`
-                    }}>
-                      {d.drop.toFixed(1)}
-                    </td>
-                    <td key={`${d.distance}-energy`} style={{
-                      padding: '6px',
-                      textAlign: 'center',
-                      color: theme.caliberRed,
-                      fontWeight: 600,
-                      backgroundColor: d.distance === selectedDistance ? theme.blue + '10' : 'transparent'
-                    }}>
-                      {d.energy}
-                    </td>
-                  </>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Recommendations */}
-      <div style={{
-        marginTop: '12px',
-        padding: '8px',
-        backgroundColor: theme.surfaceAlt,
-        borderRadius: '4px',
-        border: `1px solid ${theme.blue}`
-      }}>
-        <h4 style={{ margin: '0 0 6px 0', fontSize: '9px', color: theme.blue, letterSpacing: '0.5px' }}>
-          RECOMMENDATIONS
-        </h4>
-        <div style={{ fontSize: '8px', color: theme.textSecondary, lineHeight: '1.5' }}>
-          <p style={{ margin: '0 0 4px 0' }}>
-            <strong style={{ color: theme.textPrimary }}>Long-Range Target Shooting:</strong> Choose cartridges with flattest trajectory (least drop) and sufficient energy retention. Top pick: {sortedByDrop[0].cartridge.name}
-          </p>
-          <p style={{ margin: '0' }}>
-            <strong style={{ color: theme.textPrimary }}>Extreme-Range Hunting:</strong> Prioritize energy retention for ethical kills. Minimum 1000 ft-lbs recommended for large game. Top pick: {sortedByEnergy[0].cartridge.name}
-          </p>
-        </div>
       </div>
     </div>
   );

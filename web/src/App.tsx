@@ -1,38 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { theme } from './theme';
-import { getAllGuns, addGun } from './storage';
+import { getAllGuns, addGun, ensureInitialized } from './storage';
 import type { Gun } from './types';
 import { GunVault } from './GunVault';
 import { GunDetail } from './GunDetail';
 import { HomePage } from './HomePage';
-import { Arsenal } from './Arsenal';
-import { CaliberDatabase } from './CaliberDatabase';
-import { BallisticCalculator } from './BallisticCalculator';
-import { TargetAnalysis } from './TargetAnalysis';
-import { TrainingLog } from './TrainingLog';
-import { ReloadingBench } from './ReloadingBench';
-import { GearLocker } from './GearLocker';
-import { Wishlist } from './Wishlist';
 import { MobileNav } from './MobileNav';
 import { AppHeader } from './AppHeader';
-import { SmartSearch } from './SmartSearch';
 import { Toast, useToast } from './Toast';
 import { useUndo } from './useUndo';
-import { StyleDemo } from './StyleDemo';
 import { AddGunForm } from './AddGunForm';
 import { SessionRecaps } from './SessionRecaps';
 import { SessionLogView } from './SessionLogView';
 import { DevToolbar } from './DevToolbar';
-import { SettingsPanel } from './SettingsPanel';
 import { exportInsuranceClaim } from './GunVault';
-import { CSVImportModal } from './CSVImportModal';
-import { MoreMenu } from './MoreMenu';
-import { FieldGuide } from './FieldGuide';
+
+// Secondary views — lazy loaded, not in the initial bundle
+const Arsenal = lazy(() => import('./Arsenal').then(m => ({ default: m.Arsenal })));
+const CaliberDatabase = lazy(() => import('./CaliberDatabase').then(m => ({ default: m.CaliberDatabase })));
+const BallisticCalculator = lazy(() => import('./BallisticCalculator').then(m => ({ default: m.BallisticCalculator })));
+const TargetAnalysis = lazy(() => import('./TargetAnalysis').then(m => ({ default: m.TargetAnalysis })));
+const TrainingLog = lazy(() => import('./TrainingLog').then(m => ({ default: m.TrainingLog })));
+const ReloadingBench = lazy(() => import('./ReloadingBench').then(m => ({ default: m.ReloadingBench })));
+const GearLocker = lazy(() => import('./GearLocker').then(m => ({ default: m.GearLocker })));
+const Wishlist = lazy(() => import('./Wishlist').then(m => ({ default: m.Wishlist })));
+const SmartSearch = lazy(() => import('./SmartSearch').then(m => ({ default: m.SmartSearch })));
+const StyleDemo = lazy(() => import('./StyleDemo').then(m => ({ default: m.StyleDemo })));
+const SettingsPanel = lazy(() => import('./SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const CSVImportModal = lazy(() => import('./CSVImportModal').then(m => ({ default: m.CSVImportModal })));
+const MoreMenu = lazy(() => import('./MoreMenu').then(m => ({ default: m.MoreMenu })));
+const FieldGuide = lazy(() => import('./FieldGuide').then(m => ({ default: m.FieldGuide })));
+const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.OpticsList })));
+const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
+
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'style-demo' | 'more' | 'field-guide';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide';
 
 function App() {
+  const [ready, setReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -41,6 +47,7 @@ function App() {
   const { toasts, dismissToast, success, error } = useToast();
   const { addUndoAction, performUndo, showUndoToast, currentAction } = useUndo();
   const [selectedGun, setSelectedGun] = useState<Gun | null>(null);
+  const [selectedOpticId, setSelectedOpticId] = useState<string | null>(null);
   // Gun pre-selected when launching session log
   const [sessionLogGun, setSessionLogGun] = useState<Gun | null>(null);
   const [devOpen, setDevOpen] = useState(false);
@@ -51,6 +58,28 @@ function App() {
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
 
+  // Initialize seed data before first render
+  useEffect(() => {
+    ensureInitialized().then(() => {
+      setReady(true);
+      loadGuns();
+    });
+  }, []);
+
+  if (!ready) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100dvh', backgroundColor: theme.bg, gap: '16px',
+      }}>
+        <div style={{ fontSize: '32px' }}>🔫</div>
+        <div style={{ color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', letterSpacing: '1px' }}>
+          LOADING VAULT...
+        </div>
+      </div>
+    );
+  }
+
   function handleVersionTap() {
     const next = devTapCount + 1;
     setDevTapCount(next);
@@ -60,7 +89,6 @@ function App() {
     }
   }
 
-  useEffect(() => { loadGuns(); }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -142,8 +170,10 @@ function App() {
     if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'optics')       return <AppHeader title="Optics" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('optics'); }} backLabel="Optics" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
-    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" />;
     return null;
   }
 
@@ -229,15 +259,22 @@ function App() {
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist />;
+    if (currentView === 'optics')      return <OpticsList onSelectOptic={(o) => { setSelectedOpticId(o.id); setCurrentView('optic-detail'); }} />;
+    if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
-    if (currentView === 'field-guide') return <FieldGuide onNavigateToCalibers={() => setCurrentView('caliber')} />;
+    if (currentView === 'field-guide') return <FieldGuide />;
     return null;
   }
 
   const activeNavView = currentView;
 
   return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', backgroundColor: theme.bg }}>
+        <div style={{ color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', letterSpacing: '1px' }}>LOADING...</div>
+      </div>
+    }>
     <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100dvh',
@@ -257,7 +294,7 @@ function App() {
         onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
         onNavigateToSessions={() => setCurrentView('sessions')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-        onNavigateToMore={() => setCurrentView('more')}
+        onNavigateToMore={() => setCurrentView('field-guide')}
       />
       {showSmartSearch && (
         <SmartSearch
@@ -353,6 +390,7 @@ function App() {
         </>
       )}
     </div>
+    </Suspense>
   );
 }
 

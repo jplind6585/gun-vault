@@ -3,8 +3,9 @@ import { theme } from './theme';
 import { FieldGuideOptics } from './FieldGuideOptics';
 import { FieldGuideCompetition } from './FieldGuideCompetition';
 import { FieldGuideMarksmanship } from './FieldGuideMarksmanship';
+import { CaliberDatabase } from './CaliberDatabase';
 
-type GuideSection = 'home' | 'glossary' | 'camos' | 'platforms' | 'ballistics' | 'maintenance' | 'optics' | 'competition' | 'marksmanship';
+type GuideSection = 'home' | 'glossary' | 'camos' | 'platforms' | 'ballistics' | 'maintenance' | 'optics' | 'competition' | 'marksmanship' | 'cartridges';
 
 // ─── GLOSSARY DATA ────────────────────────────────────────────────────────────
 
@@ -610,7 +611,7 @@ const MAINTENANCE_GUIDES: MaintenanceGuide[] = [
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
-export function FieldGuide({ onNavigateToCalibers }: { onNavigateToCalibers: () => void }) {
+export function FieldGuide() {
   const [section, setSection] = useState<GuideSection>('home');
   const [glossarySearch, setGlossarySearch] = useState('');
   const [camoSearch, setCamoSearch] = useState('');
@@ -712,7 +713,7 @@ export function FieldGuide({ onNavigateToCalibers }: { onNavigateToCalibers: () 
         icon: '📖',
         title: 'Cartridges',
         subtitle: 'Specs, history & ballistics',
-        action: () => onNavigateToCalibers(),
+        action: () => setSection('cartridges'),
       },
       {
         icon: '🔫',
@@ -828,6 +829,24 @@ export function FieldGuide({ onNavigateToCalibers }: { onNavigateToCalibers: () 
             </button>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // ── CARTRIDGES ──────────────────────────────────────────────────────────────
+
+  if (section === 'cartridges') {
+    return (
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <button style={backBtnStyle} onClick={() => setSection('home')}>
+            ← Back
+          </button>
+          <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>
+            Cartridges
+          </span>
+        </div>
+        <CaliberDatabase />
       </div>
     );
   }

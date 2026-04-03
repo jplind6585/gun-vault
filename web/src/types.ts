@@ -209,7 +209,7 @@ export interface Cartridge {
   alternateNames?: string[]; // e.g., ["7.62x51mm NATO"] for .308
 
   // Classification
-  type: 'Rifle' | 'Pistol' | 'Shotgun' | 'Revolver';
+  type: 'Rifle' | 'Pistol' | 'Shotgun' | 'Revolver' | 'Rimfire';
   standardization: 'SAAMI' | 'CIP' | 'Military' | 'Wildcat' | 'Proprietary';
   productionStatus: 'Active' | 'Limited' | 'Obsolete' | 'Military Surplus';
   availability: 'Abundant' | 'Common' | 'Moderate' | 'Limited' | 'Scarce' | 'Collector Only';
@@ -281,4 +281,95 @@ export interface Cartridge {
   createdAt?: string;
   updatedAt?: string;
   userNotes?: string;
+}
+
+// ============================================================================
+// OPTICS
+// ============================================================================
+
+export type OpticType = 'Red Dot' | 'Holographic' | 'LPVO' | 'Scope' | 'Prism' | 'Night Vision' | 'Thermal' | 'Magnifier' | 'Rangefinder';
+export type FocalPlane = 'FFP' | 'SFP' | 'N/A';
+export type TurretUnit = 'MOA' | 'MRAD';
+export type ParallaxType = 'Fixed' | 'Side Focus' | 'AO (Objective)' | 'None';
+export type OpticStatus = 'Active' | 'Stored' | 'Loaned Out' | 'Sold';
+
+export interface Optic {
+  id: string;
+  brand: string;
+  model: string;
+  serialNumber?: string;
+  opticType: OpticType;
+  magnificationMin?: number;    // e.g. 1 for 1-6x
+  magnificationMax?: number;    // e.g. 6 for 1-6x
+  objectiveMM?: number;         // objective lens diameter in mm
+  tubeDiameterMM?: 30 | 34 | 35 | 25.4; // 1", 30mm, 34mm, 35mm
+  focalPlane?: FocalPlane;
+  reticleName?: string;
+  illuminated?: boolean;
+  turretUnit?: TurretUnit;
+  clickValueMOA?: number;       // MOA per click (e.g. 0.25)
+  clickValueMRAD?: number;      // MRAD per click (e.g. 0.1)
+  adjustmentRangeElevationMOA?: number;
+  adjustmentRangeWindageMOA?: number;
+  parallaxType?: ParallaxType;
+  batteryType?: string;         // e.g. "CR2032"
+  weightOz?: number;
+  purchasePrice?: number;
+  purchaseDate?: string;
+  purchasedFrom?: string;
+  status: OpticStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MountType = 'Rings' | 'Cantilever' | 'QD Mount' | 'Co-Witness' | 'Offset' | 'Integrated' | 'Other';
+export type RailInterface = 'Picatinny / MIL-STD-1913' | 'MLOK' | 'KeyMod' | 'Weaver' | 'Dovetail' | 'Proprietary';
+
+export interface Mount {
+  id: string;
+  opticId: string;    // owning optic
+  brand: string;
+  model: string;
+  mountType: MountType;
+  heightMM?: number;              // center height from rail in mm
+  ringDiameterMM?: number;        // 30, 34, 35, 25.4, etc.
+  ringTorqueInLbs?: number;
+  baseTorqueInLbs?: number;
+  railInterface?: RailInterface;
+  isQD?: boolean;
+  returnToZeroRated?: boolean;
+  lastTorqueConfirmed?: string;   // ISO date
+  notes?: string;
+  purchasePrice?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OpticAssignment {
+  id: string;
+  opticId: string;
+  gunId: string;
+  mountId?: string;
+  assignedDate: string;         // ISO date
+  removedDate?: string;         // ISO date — null means currently mounted
+  removalReason?: string;
+}
+
+export interface OpticZero {
+  id: string;
+  assignmentId: string;
+  opticId: string;
+  gunId: string;
+  zeroDistanceYards: number;
+  ammoDescription?: string;     // e.g. "Federal 77gr OTM"
+  ammoLotId?: string;
+  date: string;                 // ISO date
+  elevationClicksFromMechanical?: number;  // + = up, - = down
+  windageClicksFromMechanical?: number;    // + = right, - = left
+  tempF?: number;
+  altitudeFt?: number;
+  notes?: string;
+  isActive: boolean;            // only one active per assignment
+  createdAt: string;
 }
