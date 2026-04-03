@@ -771,54 +771,172 @@ interface ServiceWeapon {
   yearStart: number;
   yearEnd: number | null; // null = still in service
   caliber: string;
+  story: string;
 }
 
 const SERVICE_WEAPONS: ServiceWeapon[] = [
   // Service Rifles
-  { id: 'sw-springfield1903', name: 'Springfield M1903', countries: ['USA'], role: 'Service Rifle', yearStart: 1903, yearEnd: 1957, caliber: '.30-06' },
-  { id: 'sw-leeen', name: 'Lee-Enfield SMLE', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'Service Rifle', yearStart: 1895, yearEnd: 1957, caliber: '.303 British' },
-  { id: 'sw-mauser98', name: 'Gewehr 98 / K98k', countries: ['Germany'], role: 'Service Rifle', yearStart: 1898, yearEnd: 1945, caliber: '7.92×57mm' },
-  { id: 'sw-mosin', name: 'Mosin-Nagant M91/30', countries: ['USSR', 'Russia', 'Finland'], role: 'Service Rifle', yearStart: 1891, yearEnd: 1960, caliber: '7.62×54mmR' },
-  { id: 'sw-garand', name: 'M1 Garand', countries: ['USA'], role: 'Service Rifle', yearStart: 1936, yearEnd: 1957, caliber: '.30-06' },
-  { id: 'sw-stg44', name: 'StG 44', countries: ['Germany'], role: 'Service Rifle', yearStart: 1944, yearEnd: 1945, caliber: '7.92×33mm' },
-  { id: 'sw-ak47', name: 'AK-47 / AKM', countries: ['USSR', 'Russia', 'China', 'N. Korea', 'Vietnam'], role: 'Service Rifle', yearStart: 1949, yearEnd: null, caliber: '7.62×39mm' },
-  { id: 'sw-fal', name: 'FN FAL', countries: ['UK', 'Australia', 'Canada', 'Israel', 'Argentina', 'Belgium'], role: 'Service Rifle', yearStart: 1953, yearEnd: 1990, caliber: '7.62×51mm' },
-  { id: 'sw-m14', name: 'M14', countries: ['USA'], role: 'Service Rifle', yearStart: 1957, yearEnd: 1970, caliber: '7.62×51mm' },
-  { id: 'sw-g3', name: 'HK G3', countries: ['Germany', 'Iran', 'Pakistan', 'Turkey', 'Norway'], role: 'Service Rifle', yearStart: 1959, yearEnd: 1997, caliber: '7.62×51mm' },
-  { id: 'sw-m16', name: 'M16 / M4', countries: ['USA', 'Canada', 'Israel', 'Saudi Arabia', 'Australia'], role: 'Service Rifle', yearStart: 1964, yearEnd: null, caliber: '5.56×45mm' },
-  { id: 'sw-ak74', name: 'AK-74 / AK-12', countries: ['USSR', 'Russia'], role: 'Service Rifle', yearStart: 1974, yearEnd: null, caliber: '5.45×39mm' },
-  { id: 'sw-famas', name: 'FAMAS', countries: ['France'], role: 'Service Rifle', yearStart: 1979, yearEnd: 2017, caliber: '5.56×45mm' },
-  { id: 'sw-l85', name: 'L85 / SA80', countries: ['UK'], role: 'Service Rifle', yearStart: 1987, yearEnd: null, caliber: '5.56×45mm' },
-  { id: 'sw-hk416', name: 'HK416', countries: ['Norway', 'France', 'Germany (SOF)'], role: 'Service Rifle', yearStart: 2004, yearEnd: null, caliber: '5.56×45mm' },
-  { id: 'sw-xm7', name: 'XM7 (MCX SPEAR)', countries: ['USA'], role: 'Service Rifle', yearStart: 2023, yearEnd: null, caliber: '6.8×51mm' },
+  {
+    id: 'sw-springfield1903', name: 'Springfield M1903', countries: ['USA'], role: 'Service Rifle', yearStart: 1903, yearEnd: 1957, caliber: '.30-06',
+    story: "The M1903 was adopted after the Spanish-American War exposed how badly the Army's Krag-Jørgensen was outclassed by Spanish Mausers at San Juan Hill — the US essentially reverse-engineered the Mauser action, paid Germany a $200,000 patent fee, and produced arguably the finest bolt-action of WWI. It served in both World Wars, with early production featuring a \"rod bayonet\" so ridiculed by President Roosevelt that he personally ordered a return to blade bayonets. After WWII it lingered as a sniper platform until the 1950s, outlasting its official replacement by nearly a decade.",
+  },
+  {
+    id: 'sw-leeen', name: 'Lee-Enfield SMLE', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'Service Rifle', yearStart: 1895, yearEnd: 1957, caliber: '.303 British',
+    story: "The Short Magazine Lee-Enfield was the product of James Paris Lee's rear-locking bolt — faster to cycle than Mauser's front-locking design, allowing trained soldiers to deliver the famous 'mad minute' of 15 accurate rounds. At Mons in 1914, German forces reportedly believed they were facing machine guns due to the volume of fire from British riflemen. Its 10-round magazine gave a significant capacity advantage in both World Wars, and the No.4 Mk I variant of WWII is widely considered the finest bolt-action service rifle ever fielded. Variations served in Commonwealth militaries into the 1990s.",
+  },
+  {
+    id: 'sw-mauser98', name: 'Gewehr 98 / K98k', countries: ['Germany'], role: 'Service Rifle', yearStart: 1898, yearEnd: 1945, caliber: '7.92×57mm',
+    story: "Peter Paul Mauser's 1898 action set the template for virtually every bolt-action sporting and military rifle for the next century. The front-locking lug design provided a stronger, safer lockup than the Lee system, and the controlled-round-feed extractor became the gold standard for reliability. The shortened Karabiner 98 kurz version armed the Wehrmacht through WWII, and captured K98k rifles were prized by Allied soldiers for their accuracy. The action was so mechanically sound that Mauser 98 derivatives are still produced today as premium hunting rifles.",
+  },
+  {
+    id: 'sw-mosin', name: 'Mosin-Nagant M91/30', countries: ['USSR', 'Russia', 'Finland'], role: 'Service Rifle', yearStart: 1891, yearEnd: 1960, caliber: '7.62×54mmR',
+    story: "Adopted by Imperial Russia in 1891, the Mosin-Nagant was a compromise between designs by Russian Colonel Mosin and Belgian Léon Nagant — each received 20,000 rubles while the other's contributions were incorporated without credit. Over 37 million were produced across its service life, making it one of the most manufactured bolt-actions in history. Soviet sniper Simo Häyhä — the 'White Death' — used an iron-sighted M28 variant to record over 500 kills in Finland's Winter War. The action's quirky interruptor and a cartridge with an archaic rimmed case made magazine feeding awkward, but Soviet industry compensated by producing the rifle in staggering quantities.",
+  },
+  {
+    id: 'sw-garand', name: 'M1 Garand', countries: ['USA'], role: 'Service Rifle', yearStart: 1936, yearEnd: 1957, caliber: '.30-06',
+    story: "John Garand spent 18 years perfecting his design before the Army adopted it in 1936, giving American infantry the world's first standard-issue semi-automatic rifle. General Patton called it 'the greatest battle implement ever devised.' The en-bloc clip ejects with a distinctive metallic ping when empty — legend says this warned enemies the shooter was reloading, but combat veterans universally dismissed this as barracks mythology. Replaced by the M14 in 1957, though the M14 proved so problematic in Vietnam that many argued the Garand's replacement was premature.",
+  },
+  {
+    id: 'sw-stg44', name: 'StG 44', countries: ['Germany'], role: 'Service Rifle', yearStart: 1944, yearEnd: 1945, caliber: '7.92×33mm',
+    story: "The Sturmgewehr 44 is arguably the most influential firearm of the 20th century — it demonstrated that an intermediate cartridge in a select-fire rifle could outperform both submachine guns and full-power rifles across most combat ranges. Hitler initially banned development of the 'assault rifle' concept, forcing engineers to disguise the MP43/MP44 as a submachine gun upgrade before he saw battlefield results and approved it. Mikhail Kalashnikov, who was wounded at the Battle of Bryansk, studied captured StG 44s while recovering, and later acknowledged they influenced his thinking. Only about 425,000 were produced before the war ended — too few and too late.",
+  },
+  {
+    id: 'sw-ak47', name: 'AK-47 / AKM', countries: ['USSR', 'Russia', 'China', 'N. Korea', 'Vietnam'], role: 'Service Rifle', yearStart: 1949, yearEnd: null, caliber: '7.62×39mm',
+    story: "Mikhail Kalashnikov designed the AK-47 in 1947 drawing on the StG 44's intermediate cartridge concept but incorporating the rotating bolt of the M1 Garand and the trigger group layout of the Remington Model 8. The AKM — a stamped-receiver redesign adopted in 1959 — is what most people actually mean by 'AK-47.' Its loose tolerances allow it to function reliably even when fouled with mud and sand, at the cost of accuracy; the design intentionally prioritizes function over precision. With an estimated 100 million produced, it is the most widely distributed weapon in human history and has appeared in nearly every armed conflict since 1950.",
+  },
+  {
+    id: 'sw-fal', name: 'FN FAL', countries: ['UK', 'Australia', 'Canada', 'Israel', 'Argentina', 'Belgium'], role: 'Service Rifle', yearStart: 1953, yearEnd: 1990, caliber: '7.62×51mm',
+    story: "The FN FAL was the standard rifle of the Western alliance during the Cold War, adopted by over 90 nations — earning it the nickname 'The Right Arm of the Free World.' FN originally designed it around an intermediate cartridge similar to the 7.92×33mm, but US pressure forced adoption of the full-power 7.62×51mm NATO round, making automatic fire essentially uncontrollable. The Falklands War created the unique spectacle of Argentine and British forces shooting at each other with the same rifle. Israel replaced it with the Galil in 1973 after Sinai desert conditions exposed maintenance challenges with the gas system.",
+  },
+  {
+    id: 'sw-m14', name: 'M14', countries: ['USA'], role: 'Service Rifle', yearStart: 1957, yearEnd: 1970, caliber: '7.62×51mm',
+    story: "The M14 replaced the Garand in 1957 after a development process so riddled with bureaucratic infighting that multiple congressional investigations were launched. It was designed as a rifle, squad automatic weapon, and sniper rifle simultaneously — and excelled at none of them. In Vietnam's jungle combat, it was heavy, long, and its full-power cartridge made it uncontrollable on automatic. By 1970 it had been largely replaced by the M16, though ironically it was brought back in the 2000s for Iraq and Afghanistan as a designated marksman rifle — exactly the role its automatic function was never suited for.",
+  },
+  {
+    id: 'sw-g3', name: 'HK G3', countries: ['Germany', 'Iran', 'Pakistan', 'Turkey', 'Norway'], role: 'Service Rifle', yearStart: 1959, yearEnd: 1997, caliber: '7.62×51mm',
+    story: "The G3 was developed from the Spanish CETME rifle, itself derived from the wartime German Sturmgewehr 45 using roller-delayed blowback — a system that avoids a gas piston entirely. Heckler & Koch licensed the design and refined it for the Bundeswehr in 1959. Its fluted chamber stamps distinctive extraction marks on brass, making fired cases identifiable — a detail intelligence agencies found useful. It was rugged and mechanically simple, but the powerful 7.62mm cartridge and delayed blowback produced brutal recoil in automatic fire. Germany replaced it with the G36 in 1997.",
+  },
+  {
+    id: 'sw-m16', name: 'M16 / M4', countries: ['USA', 'Canada', 'Israel', 'Saudi Arabia', 'Australia'], role: 'Service Rifle', yearStart: 1964, yearEnd: null, caliber: '5.56×45mm',
+    story: "Eugene Stoner's AR-15 — adopted as the M16 in 1964 — promised lightweight rifles with high-velocity ammunition, but its early Vietnam introduction was catastrophic. The Army had switched to a ball powder that fouled the action faster and eliminated the chrome bore lining to save money; the result was rifles jamming in combat with the etched instruction 'Self-Cleaning' on the barrel. A congressional investigation followed and improvements were mandated. The carbine M4 variant proved itself in Iraq and Afghanistan, and despite being 60 years old the platform continues to evolve — the US Army's adoption of the XM7 in 2023 being the first serious attempt at replacement.",
+  },
+  {
+    id: 'sw-ak74', name: 'AK-74 / AK-12', countries: ['USSR', 'Russia'], role: 'Service Rifle', yearStart: 1974, yearEnd: null, caliber: '5.45×39mm',
+    story: "The AK-74 was the Soviet answer to the M16's 5.56mm intermediate cartridge — a redesigned AKM chambered in 5.45×39mm with a distinctive muzzle brake that dramatically reduced recoil. Soviet troops in Afghanistan found the high-velocity 5.45mm 'Poison Bullet' tumbled aggressively on impact, causing severe wounds at moderate ranges. The AK-12, adopted in 2018, is a heavily modernized derivative with a full Picatinny rail system, improved ergonomics, and a foldable stock — though critics noted early versions had quality control issues and were rushed into service. It remains the standard Russian service rifle today.",
+  },
+  {
+    id: 'sw-famas', name: 'FAMAS', countries: ['France'], role: 'Service Rifle', yearStart: 1979, yearEnd: 2017, caliber: '5.56×45mm',
+    story: "The FAMAS — French acronym for 'fusil d'assaut de la manufacture d'armes de Saint-Étienne' — was one of the first bullpup rifles to enter mass service. Its lever-delayed blowback action was mechanically elegant but sensitive to ammunition; the rifle could only reliably feed French-made cartridges with a specific primer depth, which became a logistical nightmare when operating with NATO partners. France never achieved a domestic supply agreement after FAMAS production ended, and rather than upgrade the design the French Army selected the HK416 as its replacement in 2017 — a remarkably expensive solution to what was fundamentally an ammunition compatibility problem.",
+  },
+  {
+    id: 'sw-l85', name: 'L85 / SA80', countries: ['UK'], role: 'Service Rifle', yearStart: 1987, yearEnd: null, caliber: '5.56×45mm',
+    story: "The SA80 program was a bureaucratic and engineering disaster — the bullpup design was rushed into service in 1987 with known reliability problems, and British soldiers quickly nicknamed it the 'Piece of S***' or 'SA Eighty Stoppages.' The trigger, gas system, and magazine release all generated complaints. After Operation Desert Storm exposed the rifle's unreliability in sandy conditions, the MoD contracted Heckler & Koch to fix it; the resulting L85A2 variant (2002) was essentially rebuilt from the ground up and proved reliable. The latest L85A3 (2016) added Picatinny rails and improved ergonomics, transforming it into a genuinely capable service rifle.",
+  },
+  {
+    id: 'sw-hk416', name: 'HK416', countries: ['Norway', 'France', 'Germany (SOF)'], role: 'Service Rifle', yearStart: 2004, yearEnd: null, caliber: '5.56×45mm',
+    story: "The HK416 was originally developed under a classified US Army contract as an improved upper receiver for M4 rifles, replacing the direct impingement gas system with a short-stroke piston that runs cleaner and cooler. Delta Force adopted it first, and the rifle gained global fame when it was used to kill Osama bin Laden in 2011. Norway adopted it as the standard service rifle, and France selected it as a full FAMAS replacement in 2017 after a competitive evaluation. Despite being significantly more expensive than comparable rifles, its reliability under harsh conditions has made it the premium choice for tier-one units worldwide.",
+  },
+  {
+    id: 'sw-xm7', name: 'XM7 (MCX SPEAR)', countries: ['USA'], role: 'Service Rifle', yearStart: 2023, yearEnd: null, caliber: '6.8×51mm',
+    story: "The XM7 represents the Army's response to advances in body armor — the new 6.8×51mm hybrid case cartridge operates at pressures 20% higher than conventional brass would allow, thanks to a steel head, and reportedly penetrates current Russian and Chinese ceramic plates at combat ranges. The program was accelerated after the Army concluded that 5.56mm would be insufficient against near-peer adversaries wearing modern armor. Critics have raised concerns about the rifle's 9-pound weight — heavier than the M16 it's meant to replace — and whether the benefits justify equipping every infantryman versus just specialized units. Procurement is ongoing as of 2024.",
+  },
   // Service Pistols
-  { id: 'sw-colt1911', name: 'M1911 / 1911A1', countries: ['USA'], role: 'Service Pistol', yearStart: 1911, yearEnd: 1985, caliber: '.45 ACP' },
-  { id: 'sw-hp', name: 'Browning Hi-Power', countries: ['UK', 'Canada', 'Belgium', 'Australia', 'Israel'], role: 'Service Pistol', yearStart: 1935, yearEnd: 2013, caliber: '9mm' },
-  { id: 'sw-beretta92', name: 'Beretta M9 / 92FS', countries: ['USA', 'Italy', 'France', 'Brazil'], role: 'Service Pistol', yearStart: 1985, yearEnd: 2017, caliber: '9mm' },
-  { id: 'sw-glk17', name: 'Glock 17/19', countries: ['Austria', 'Germany', 'UK', 'Australia', 'Norway', 'Netherlands'], role: 'Service Pistol', yearStart: 1982, yearEnd: null, caliber: '9mm' },
-  { id: 'sw-p226', name: 'SIG P226', countries: ['USA (Navy SEAL)', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm' },
-  { id: 'sw-m17', name: 'SIG M17 / M18 (P320)', countries: ['USA'], role: 'Service Pistol', yearStart: 2017, yearEnd: null, caliber: '9mm' },
+  {
+    id: 'sw-colt1911', name: 'M1911 / 1911A1', countries: ['USA'], role: 'Service Pistol', yearStart: 1911, yearEnd: 1985, caliber: '.45 ACP',
+    story: "John Browning designed the M1911 in direct response to the Moro Rebellion in the Philippines, where .38 caliber revolvers repeatedly failed to stop drug-fueled Moro warriors charging at close range. The Army wanted a .45-caliber pistol that could stop a charging man reliably, and Browning delivered one of the most mechanically elegant pistol designs in history. After 74 years of service through two World Wars, Korea, and Vietnam — a record unmatched by any other standard service pistol — it was replaced by the Beretta M9 in a decision that sparked a controversy still alive in gun communities today. Millions of shooters consider it the finest production pistol ever made.",
+  },
+  {
+    id: 'sw-hp', name: 'Browning Hi-Power', countries: ['UK', 'Canada', 'Belgium', 'Australia', 'Israel'], role: 'Service Pistol', yearStart: 1935, yearEnd: 2013, caliber: '9mm',
+    story: "John Browning began designing the Hi-Power in the early 1920s in response to a French military requirement for a 15-round magazine pistol. He died in 1926 before completing it, and FN designer Dieudonné Saive finished the work — producing what became the world's first high-capacity service pistol. In the uniquely paradoxical way of WWII, the Hi-Power was simultaneously the standard sidearm of the British SAS and the German Fallschirmjäger (paratroopers), with both sides using pistols produced at the same Belgian factory under competing occupation arrangements. FN finally discontinued production in 2017, though the platform saw 78 years of continuous military service.",
+  },
+  {
+    id: 'sw-beretta92', name: 'Beretta M9 / 92FS', countries: ['USA', 'Italy', 'France', 'Brazil'], role: 'Service Pistol', yearStart: 1985, yearEnd: 2017, caliber: '9mm',
+    story: "The Beretta 92 won the US Army's XM9 pistol trials in 1985 over fierce competition — and immediately generated political controversy, with Congress questioning why the Army was replacing an American pistol (the 1911) with an Italian one. Early slide fractures in the late 1980s caused several injuries, traced to excessive hot-loaded military ammunition rather than a design flaw, though the episode damaged the M9's reputation. The pistol served 32 years through the Gulf War, Iraq, and Afghanistan before being replaced by the SIG M17. Its open-slide design and double-action/single-action trigger made it widely copied, and the 92FS remains a best-selling commercial pistol.",
+  },
+  {
+    id: 'sw-glk17', name: 'Glock 17/19', countries: ['Austria', 'Germany', 'UK', 'Australia', 'Norway', 'Netherlands'], role: 'Service Pistol', yearStart: 1982, yearEnd: null, caliber: '9mm',
+    story: "Gaston Glock had never designed a firearm when he submitted a polymer-framed pistol to the Austrian Army's 1980 trials — he was a curtain rod manufacturer with expertise in polymer injection molding. The resulting Glock 17 passed trials that required 10,000 rounds without malfunction, and its radical polymer frame cut weight by 30% versus steel competitors. American tabloids falsely claimed the 'plastic pistol' was invisible to metal detectors — a total fabrication that nonetheless drove enormous public interest. The Glock's consistent trigger pull, minimal controls, and legendary reliability made it the dominant law enforcement and military sidearm of the late 20th century, adopted by police in 65 countries.",
+  },
+  {
+    id: 'sw-p226', name: 'SIG P226', countries: ['USA (Navy SEAL)', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm',
+    story: "The P226 narrowly lost the US Army's XM9 contract to Beretta in 1984 — not on performance, but because SIG's per-unit price was slightly higher. The Navy SEALs, unconvinced by Army procurement decisions, evaluated the pistol independently and adopted it as their standard sidearm, where it served for three decades. The P226's double-action/single-action trigger, machined aluminum frame, and meticulous Swiss-German manufacturing gave it a reputation as the most accurate and reliable 9mm service pistol of its era. It was replaced in SEAL service by the Glock 19 in 2015 after a competitive evaluation prioritized weight savings over the SIG's premium build quality.",
+  },
+  {
+    id: 'sw-m17', name: 'SIG M17 / M18 (P320)', countries: ['USA'], role: 'Service Pistol', yearStart: 2017, yearEnd: null, caliber: '9mm',
+    story: "The SIG P320 won the Army's Modular Handgun System competition in 2017 in an evaluation that was controversial from the start — critics questioned whether it offered enough improvement over the M9 to justify the $580 million contract. Shortly after announcement, reports emerged of P320 pistols discharging when dropped without the trigger being pulled, a safety issue SIG addressed with a voluntary upgrade. The Army's M17 variant includes a manual safety absent on most commercial P320s. The modular serialized chassis — allowing the same fire control unit to be installed in different sized frames — represents a genuinely new approach to service pistol architecture.",
+  },
   // Machine Guns
-  { id: 'sw-maxim', name: 'Maxim / Vickers', countries: ['UK', 'Russia', 'Germany'], role: 'Machine Gun', yearStart: 1884, yearEnd: 1968, caliber: '.303 / 7.92mm' },
-  { id: 'sw-mg42', name: 'MG42 / MG3', countries: ['Germany'], role: 'Machine Gun', yearStart: 1942, yearEnd: null, caliber: '7.92mm / 7.62×51mm' },
-  { id: 'sw-m2', name: 'M2 Browning .50 BMG', countries: ['USA', 'UK', 'NATO'], role: 'Machine Gun', yearStart: 1933, yearEnd: null, caliber: '.50 BMG' },
-  { id: 'sw-m60', name: 'M60 GPMG', countries: ['USA', 'Australia'], role: 'Machine Gun', yearStart: 1957, yearEnd: 1995, caliber: '7.62×51mm' },
-  { id: 'sw-m240', name: 'M240 / FN MAG', countries: ['USA', 'UK', 'Belgium', 'Canada', 'Israel'], role: 'Machine Gun', yearStart: 1977, yearEnd: null, caliber: '7.62×51mm' },
+  {
+    id: 'sw-maxim', name: 'Maxim / Vickers', countries: ['UK', 'Russia', 'Germany'], role: 'Machine Gun', yearStart: 1884, yearEnd: 1968, caliber: '.303 / 7.92mm',
+    story: "Hiram Maxim invented the first fully automatic machine gun in 1884 after an American told him the best way to make money was to invent something that would help Europeans kill each other faster. The water-cooled Vickers variant fired 450–500 rpm continuously for hours. At the Somme in 1916, ten Vickers guns fired 1 million rounds over 12 hours without a mechanical failure. Replaced by air-cooled GPMGs after WWII when sustained fire doctrine gave way to mobile warfare.",
+  },
+  {
+    id: 'sw-mg42', name: 'MG42 / MG3', countries: ['Germany'], role: 'Machine Gun', yearStart: 1942, yearEnd: null, caliber: '7.92mm / 7.62×51mm',
+    story: "The MG42 was designed to be manufactured cheaply and quickly using metal stampings — a radical departure from machined steel weapons — and it fired at a then-unprecedented 1,200 rounds per minute, producing a distinctive tearing sound that Allied troops called 'Hitler's Buzzsaw.' Its barrel could be changed in under six seconds, allowing sustained fire that no Allied machine gun could match. American training films specifically instructed soldiers not to mistake the rapid cyclic rate for multiple guns. The post-war MG3, rechambered for 7.62×51mm NATO, remains in service with the Bundeswehr today — over 80 years after the original design.",
+  },
+  {
+    id: 'sw-m2', name: 'M2 Browning .50 BMG', countries: ['USA', 'UK', 'NATO'], role: 'Machine Gun', yearStart: 1933, yearEnd: null, caliber: '.50 BMG',
+    story: "John Browning designed the M2 in 1918 in direct response to a request from General Pershing for a weapon capable of defeating aircraft and light armor. The .50 BMG cartridge was literally scaled up from the .30-06 using a pantograph. The 'Ma Deuce' has been in continuous US service since 1933 — longer than any other weapon in the American arsenal — serving in WWII, Korea, Vietnam, the Gulf War, Iraq, and Afghanistan with only minor modifications. A single M2 operator, Carlos Hathcock, used one with an improvised scope to achieve a 2,500-yard sniper kill in Vietnam that stood as the record for decades.",
+  },
+  {
+    id: 'sw-m60', name: 'M60 GPMG', countries: ['USA', 'Australia'], role: 'Machine Gun', yearStart: 1957, yearEnd: 1995, caliber: '7.62×51mm',
+    story: "The M60 was developed from captured German MG42 and FG42 designs after WWII, combining the MG42's feed system with the FG42's gas operation — but the American engineers, working from incomplete documents, made several errors that produced a weapon that was heavier and less reliable than its German inspirations. Vietnam-era soldiers nicknamed it 'The Pig' for its weight and feeding problems. Barrel changes required an asbestos glove and often resulted in burns. The Army repeatedly attempted to replace it; the M240 finally succeeded in the 1990s, though the M60E4 variant persists in Navy service.",
+  },
+  {
+    id: 'sw-m240', name: 'M240 / FN MAG', countries: ['USA', 'UK', 'Belgium', 'Canada', 'Israel'], role: 'Machine Gun', yearStart: 1977, yearEnd: null, caliber: '7.62×51mm',
+    story: "The FN MAG (Mitrailleuse d'Appui Général) was designed by Ernest Vervier at FN in the early 1950s, drawing heavily on the Browning Automatic Rifle's tilting-bolt mechanism. The US Army evaluated it in the late 1970s as a coaxial tank machine gun (the M240 designation) and its superior reliability over the M60 was immediately apparent, triggering a decade-long process to replace the M60 in the infantry role as well. By the mid-1990s the M240B had largely taken over, and it proved its reliability extensively in Iraq and Afghanistan. The UK fields an identical weapon as the L7A2, and both nations consider it their most reliable GPMG ever fielded.",
+  },
   // SAW / LMG
-  { id: 'sw-bar', name: 'BAR M1918', countries: ['USA'], role: 'LMG / SAW', yearStart: 1918, yearEnd: 1957, caliber: '.30-06' },
-  { id: 'sw-lewis', name: 'Lewis Gun', countries: ['UK', 'USA', 'Canada'], role: 'LMG / SAW', yearStart: 1914, yearEnd: 1946, caliber: '.303 British' },
-  { id: 'sw-bren', name: 'Bren Gun', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'LMG / SAW', yearStart: 1938, yearEnd: 1992, caliber: '.303 / 7.62×51mm' },
-  { id: 'sw-rpk', name: 'RPK / RPK-74', countries: ['USSR', 'Russia'], role: 'LMG / SAW', yearStart: 1961, yearEnd: null, caliber: '7.62×39mm / 5.45×39mm' },
-  { id: 'sw-m249', name: 'M249 SAW (FN Minimi)', countries: ['USA', 'Belgium', 'Australia', 'Canada'], role: 'LMG / SAW', yearStart: 1984, yearEnd: null, caliber: '5.56×45mm' },
+  {
+    id: 'sw-bar', name: 'BAR M1918', countries: ['USA'], role: 'LMG / SAW', yearStart: 1918, yearEnd: 1957, caliber: '.30-06',
+    story: "John Browning designed the BAR in 1917 to fulfill General Pershing's concept of 'walking fire' — infantry advancing while firing from the hip to keep German heads down. It arrived at the front just weeks before the Armistice. By WWII the walking fire concept had been abandoned, but the BAR found a new role as the American squad's only automatic weapon, one per squad in the Pacific and European theaters. Its 20-round magazine was inadequate for sustained fire, and the bipod was often discarded as useless weight. Famous bank robbers Bonnie and Clyde carried stolen military BARs in the early 1930s, which contributed to the National Firearms Act of 1934.",
+  },
+  {
+    id: 'sw-lewis', name: 'Lewis Gun', countries: ['UK', 'USA', 'Canada'], role: 'LMG / SAW', yearStart: 1914, yearEnd: 1946, caliber: '.303 British',
+    story: "Colonel Isaac Lewis invented the gun but was rebuffed by the US Army — reportedly due to a personal feud with the Army's chief of ordnance — so he went to Belgium and sold it to the British. The drum magazine could hold 47 or 97 rounds, and its distinctive aluminum cooling shroud created airflow over the barrel using muzzle blast. It became the standard light machine gun of WWI British forces, appearing on aircraft before dedicated aviation versions were developed. The spade-grip aircraft Lewis gun, with the cooling shroud removed (unnecessary at altitude), was fitted on everything from Sopwith Camels to early bombers.",
+  },
+  {
+    id: 'sw-bren', name: 'Bren Gun', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'LMG / SAW', yearStart: 1938, yearEnd: 1992, caliber: '.303 / 7.62×51mm',
+    story: "The Bren was developed from the Czech ZB vz. 26 — 'Bren' being a portmanteau of Brno (the Czech city of manufacture) and Enfield (the British arsenal that adapted it). Its curved 30-round magazine curved to accommodate the rimmed .303 cartridge; when the UK adopted 7.62×51mm NATO in the 1950s, the Bren was rechambered and redesignated the L4A4 with a straight magazine. British soldiers consistently rated it the most accurate and reliable LMG of WWII, and Argentine forces using L4A4s in the Falklands in 1982 demonstrated that the 44-year-old design was still operationally viable.",
+  },
+  {
+    id: 'sw-rpk', name: 'RPK / RPK-74', countries: ['USSR', 'Russia'], role: 'LMG / SAW', yearStart: 1961, yearEnd: null, caliber: '7.62×39mm / 5.45×39mm',
+    story: "The RPK (Ruchnoy Pulemyot Kalashnikova) was designed alongside the AKM as a squad automatic weapon sharing 80% parts commonality — a Soviet logistics priority learned from WWII supply chaos. Mikhail Kalashnikov simply took his AKM, extended the barrel, added a bipod, and fitted a 75-round drum or 40-round magazine. Parts interchangeability simplified training and field repairs dramatically. The RPK-74 followed the same formula for the 5.45mm cartridge in 1974. Its major limitation is that it uses the same closed-bolt mechanism as the AKM — not designed for sustained fire — but Soviet doctrine emphasized volume of fire over barrel longevity.",
+  },
+  {
+    id: 'sw-m249', name: 'M249 SAW (FN Minimi)', countries: ['USA', 'Belgium', 'Australia', 'Canada'], role: 'LMG / SAW', yearStart: 1984, yearEnd: null, caliber: '5.56×45mm',
+    story: "The FN Minimi was designed by Ernest Vervier in the 1970s to address the gap between submachine guns and full machine guns — a light, magazine-fed weapon that could also accept belt ammunition. The US adopted it as the M249 SAW in 1984 after the M16-armed squad lacked organic automatic fire capability. In the Gulf War, M249s overheated rapidly in sustained fire due to the thin barrel profile, and in Iraq the weapon's open-bolt mechanism ingested more sand than closed-bolt rifles. A succession of product improvement programs addressed these issues. The Army has been attempting to replace the M249 with the XM250 NGSW-AR program, which uses the same 6.8mm ammunition as the XM7 rifle.",
+  },
   // Submachine Guns
-  { id: 'sw-thompson', name: 'Thompson SMG', countries: ['USA', 'UK'], role: 'Submachine Gun', yearStart: 1919, yearEnd: 1971, caliber: '.45 ACP' },
-  { id: 'sw-mp40', name: 'MP40', countries: ['Germany'], role: 'Submachine Gun', yearStart: 1940, yearEnd: 1945, caliber: '9mm' },
-  { id: 'sw-sten', name: 'Sten Gun', countries: ['UK', 'Canada'], role: 'Submachine Gun', yearStart: 1941, yearEnd: 1960, caliber: '9mm' },
-  { id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'USA (LEO)', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm' },
+  {
+    id: 'sw-thompson', name: 'Thompson SMG', countries: ['USA', 'UK'], role: 'Submachine Gun', yearStart: 1919, yearEnd: 1971, caliber: '.45 ACP',
+    story: "General John T. Thompson designed his 'Annihilator' during WWI to clear German trenches, but the war ended before production could begin, leaving Thompson with a warehouse of expensive firearms and a marketing problem. He tried selling to police and the Post Office; gangsters were better customers. The Thompson became synonymous with Prohibition-era organized crime — Al Capone used one in the St. Valentine's Day Massacre — giving it both notoriety and celebrity that sold enormous quantities. The WWII M1A1 variant, simplified for mass production, stripped away the Cutts compensator and drum magazine of the gangster era and served with distinction in every theater.",
+  },
+  {
+    id: 'sw-mp40', name: 'MP40', countries: ['Germany'], role: 'Submachine Gun', yearStart: 1940, yearEnd: 1945, caliber: '9mm',
+    story: "Designed by Heinrich Vollmer, the MP40 was a simplified, mass-production evolution of the MP38. Its folding stock made it ideal for paratroopers and vehicle crews. American soldiers often called any German SMG a 'Schmeisser' — despite Hugo Schmeisser having nothing to do with its design. Its 9mm open-bolt blowback action was reliable but limited to ~400 rpm, actually lower than the Thompson. Replaced by assault rifles post-WWII as the intermediate cartridge made dedicated SMGs obsolete.",
+  },
+  {
+    id: 'sw-sten', name: 'Sten Gun', countries: ['UK', 'Canada'], role: 'Submachine Gun', yearStart: 1941, yearEnd: 1960, caliber: '9mm',
+    story: "The Sten (named for its designers Shepherd and Turpin, and Enfield) was created in 1940 after Dunkirk left the British Army desperately short of infantry weapons and unable to acquire enough Thompsons from America. The Mark II cost just £2 10s to produce and could be manufactured in small workshops — simple enough that resistance fighters in occupied Europe made them from plumbing parts. The horizontal side-mounted magazine, copied from the German MP28, fed poorly and caused most stoppages; experienced soldiers carried the weapon at a 45-degree cant to improve feed. Its simplicity was both its greatest virtue and its greatest flaw: the open-bolt design made accidental discharge a known hazard.",
+  },
+  {
+    id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'USA (LEO)', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm',
+    story: "The MP5 applied the roller-delayed blowback system of the G3 rifle to a 9mm submachine gun — an unusual choice that allowed it to fire from a closed bolt, giving it accuracy competitive with pistols. This precision made it the preferred weapon of hostage rescue and counter-terrorism units worldwide after the GSG 9 used it in the famous 1977 Mogadishu airliner rescue. The Iranian Embassy siege in London (1980), conducted by the SAS in live television, made the MP5 a global icon. By the 2000s the rise of body armor and the need for rifle-caliber penetration began shifting SWAT teams to short-barreled rifles, but the MP5 remains standard in dozens of military and police organizations.",
+  },
   // Sniper Rifles
-  { id: 'sw-m24', name: 'M24 SWS (Rem 700)', countries: ['USA'], role: 'Sniper Rifle', yearStart: 1988, yearEnd: null, caliber: '7.62×51mm' },
-  { id: 'sw-m107', name: 'Barrett M107 (.50 BMG)', countries: ['USA', 'UK', 'Many'], role: 'Anti-Materiel', yearStart: 1990, yearEnd: null, caliber: '.50 BMG' },
-  { id: 'sw-awm', name: 'Accuracy International AWM', countries: ['UK', 'Germany', 'Netherlands'], role: 'Sniper Rifle', yearStart: 1996, yearEnd: null, caliber: '.338 Lapua / .300 Win Mag' },
+  {
+    id: 'sw-m24', name: 'M24 SWS (Rem 700)', countries: ['USA'], role: 'Sniper Rifle', yearStart: 1988, yearEnd: null, caliber: '7.62×51mm',
+    story: "The M24 Sniper Weapon System was adopted in 1988 based on the Remington 700 long action — a somewhat puzzling choice since the 7.62×51mm cartridge only requires a short action, but the Army chose the long action to allow future rechambering to .300 Win Mag. This foresight paid off in Afghanistan, where the 7.62mm's range proved inadequate against Taliban fighters engaging from 800+ meters, prompting a conversion program to .300 Win Mag designated the M24A3. The rifle has produced confirmed kills at ranges exceeding 1,000 meters in the hands of Army snipers, and the basic Remington 700 action it derives from has been the gold standard of precision bolt-actions for over 60 years.",
+  },
+  {
+    id: 'sw-m107', name: 'Barrett M107 (.50 BMG)', countries: ['USA', 'UK', 'Many'], role: 'Anti-Materiel', yearStart: 1990, yearEnd: null, caliber: '.50 BMG',
+    story: "Ronnie Barrett built the first prototype of his .50 BMG rifle in 1982 using hand tools and a rented welder, despite having no formal firearms design training. The military initially showed no interest; Barrett sold to civilians first and built a reputation before Gulf War procurement officers discovered the rifle in gun shops. In Desert Storm, M82 variants were used to detonate ordnance from safe distances and disable parked aircraft — an 'anti-materiel' role that circumvented Geneva Convention restrictions on using anti-personnel sniper fire against individuals. Carlos Hathcock's Vietnam-era .50 BMG kill record stood for 35 years before being broken with a Barrett in Afghanistan at over 2,500 meters.",
+  },
+  {
+    id: 'sw-awm', name: 'Accuracy International AWM', countries: ['UK', 'Germany', 'Netherlands'], role: 'Sniper Rifle', yearStart: 1996, yearEnd: null, caliber: '.338 Lapua / .300 Win Mag',
+    story: "Accuracy International was founded in 1978 by Olympic shooting champion Malcolm Cooper specifically to build rifles good enough to win at the highest competitive levels — the L96, the AWM's predecessor, was designed around competitive target shooting requirements rather than military ones, which accidentally produced exceptional accuracy. The AWM (Arctic Warfare Magnum) was developed in the mid-1990s for the .338 Lapua cartridge, which fills the gap between 7.62mm and .50 BMG. Corporal Craig Harrison used an AWM to achieve the world's longest confirmed sniper kill at 2,475 meters in Afghanistan in 2009, a record that stood until 2017.",
+  },
 ];
 
 // ─── BALLISTICS DATA ──────────────────────────────────────────────────────────
@@ -984,6 +1102,7 @@ export function FieldGuide() {
   const [platformCategory, setPlatformCategory] = useState<string>('All');
   const [deployedCountry, setDeployedCountry] = useState<string>('All');
   const [deployedRole, setDeployedRole] = useState<string>('All');
+  const [selectedWeapon, setSelectedWeapon] = useState<ServiceWeapon | null>(null);
 
   // ── Glossary filtering & grouping ──────────────────────────────────────────
 
@@ -1454,21 +1573,23 @@ export function FieldGuide() {
       : PLATFORMS.filter((p) => p.category === platformCategory);
 
     const allCountries = Array.from(new Set(SERVICE_WEAPONS.flatMap((w) => w.countries))).sort();
-    const allRoles: ServiceRole[] = ['Service Rifle', 'Service Pistol', 'LMG / SAW', 'Machine Gun', 'Submachine Gun', 'Sniper Rifle', 'Anti-Materiel'];
+    const ALL_ROLES: ServiceRole[] = ['Service Rifle', 'Service Pistol', 'LMG / SAW', 'Machine Gun', 'Submachine Gun', 'Sniper Rifle', 'Anti-Materiel'];
+    const allRoles = ALL_ROLES;
 
     const filteredServiceWeapons = SERVICE_WEAPONS.filter((w) => {
-      const matchCountry = deployedCountry === 'All' || w.countries.includes(deployedCountry);
-      const matchRole = deployedRole === 'All' || w.role === deployedRole;
+      const matchCountry = deployedCountry === '' || deployedCountry === 'All' || w.countries.some((c) => c.toLowerCase().includes(deployedCountry.toLowerCase()));
+      const matchRole = deployedRole === '' || deployedRole === 'All' || w.role.toLowerCase().includes(deployedRole.toLowerCase());
       return matchCountry && matchRole;
     }).sort((a, b) => a.yearStart - b.yearStart);
 
-    const GANTT_START = 1880;
-    const GANTT_END = 2025;
+    const CHART_YEAR_START = 1860;
+    const CHART_YEAR_END = 2025;
     const PX_PER_YEAR = 3;
-    const CHART_WIDTH = (GANTT_END - GANTT_START) * PX_PER_YEAR; // 435px
-    const NAME_COL = 130;
+    const TOTAL_WIDTH = (CHART_YEAR_END - CHART_YEAR_START) * PX_PER_YEAR; // 495px
+    const NAME_COL_WIDTH = 130;
+    const ROW_HEIGHT = 28;
     const decades = [];
-    for (let y = GANTT_START; y <= GANTT_END; y += 10) decades.push(y);
+    for (let y = CHART_YEAR_START; y <= CHART_YEAR_END; y += 10) decades.push(y);
 
     const roleColor: Record<ServiceRole, string> = {
       'Service Rifle': '#ff6b6b',
@@ -1638,47 +1759,53 @@ export function FieldGuide() {
         {/* ── DEPLOYED TAB ── */}
         {platformTab === 'deployed' && (
           <div>
-            {/* Country filter */}
-            <div style={{ display: 'flex', gap: '6px', padding: '10px 16px 4px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              {['All', ...allCountries].map((c) => (
-                <button
-                  key={c}
-                  style={chipBtn(deployedCountry === c)}
-                  onClick={() => setDeployedCountry(c)}
-                >
-                  {c}
-                </button>
-              ))}
+            {/* Searchable dropdowns */}
+            <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 12px', marginBottom: '0' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>COUNTRY</div>
+                <input
+                  type="text"
+                  list="country-list"
+                  value={deployedCountry}
+                  onChange={e => setDeployedCountry(e.target.value)}
+                  placeholder="All countries..."
+                  style={{ width: '100%', padding: '7px 10px', backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <datalist id="country-list">
+                  <option value="All" />
+                  {allCountries.map(c => <option key={c} value={c} />)}
+                </datalist>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>GUN TYPE</div>
+                <input
+                  type="text"
+                  list="role-list"
+                  value={deployedRole}
+                  onChange={e => setDeployedRole(e.target.value)}
+                  placeholder="All types..."
+                  style={{ width: '100%', padding: '7px 10px', backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <datalist id="role-list">
+                  <option value="All" />
+                  {ALL_ROLES.map(r => <option key={r} value={r} />)}
+                </datalist>
+              </div>
             </div>
 
-            {/* Role filter */}
-            <div style={{ display: 'flex', gap: '6px', padding: '6px 16px 10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              {(['All', ...allRoles] as string[]).map((r) => (
-                <button
-                  key={r}
-                  style={chipBtn(deployedRole === r, r !== 'All' ? roleColor[r as ServiceRole] : undefined)}
-                  onClick={() => setDeployedRole(r)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
-            {/* Gantt chart */}
+            {/* Gantt chart — single unified scroll container */}
             <div style={{ paddingBottom: '40px' }}>
-              {/* Year ruler row */}
-              <div style={{ display: 'flex', borderBottom: '0.5px solid ' + theme.border }}>
-                {/* Name column spacer */}
-                <div style={{ width: NAME_COL, minWidth: NAME_COL, flexShrink: 0, borderRight: '0.5px solid ' + theme.border }} />
-                {/* Scrollable ruler */}
-                <div style={{ overflowX: 'auto', flex: 1 }}>
-                  <div style={{ width: CHART_WIDTH, position: 'relative', height: '24px', flexShrink: 0 }}>
+              <div style={{ overflowX: 'auto' }}>
+                {/* Year ruler row */}
+                <div style={{ display: 'flex', minWidth: TOTAL_WIDTH + NAME_COL_WIDTH, borderBottom: '0.5px solid ' + theme.border }}>
+                  <div style={{ width: NAME_COL_WIDTH, flexShrink: 0 }} />
+                  <div style={{ position: 'relative', width: TOTAL_WIDTH, height: '24px', flexShrink: 0 }}>
                     {decades.map((yr) => (
                       <div
                         key={yr}
                         style={{
                           position: 'absolute',
-                          left: (yr - GANTT_START) * PX_PER_YEAR,
+                          left: (yr - CHART_YEAR_START) * PX_PER_YEAR,
                           top: 0,
                           height: '100%',
                           display: 'flex',
@@ -1694,43 +1821,46 @@ export function FieldGuide() {
                     ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Weapon rows */}
-              {filteredServiceWeapons.map((w) => {
-                const barLeft = (w.yearStart - GANTT_START) * PX_PER_YEAR;
-                const barEnd = (w.yearEnd ?? GANTT_END) - GANTT_START;
-                const barWidth = Math.max(barEnd * PX_PER_YEAR - barLeft, 4);
-                const color = roleColor[w.role];
-                return (
-                  <div
-                    key={w.id}
-                    style={{ display: 'flex', borderBottom: '0.5px solid ' + theme.border + '44', minHeight: '28px' }}
-                  >
-                    {/* Name column */}
-                    <div style={{
-                      width: NAME_COL,
-                      minWidth: NAME_COL,
-                      flexShrink: 0,
-                      padding: '0 8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderRight: '0.5px solid ' + theme.border,
-                    }}>
-                      <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textSecondary, lineHeight: 1.3, letterSpacing: '0.2px' }}>
-                        {w.name}
-                      </span>
-                    </div>
-                    {/* Bar area — scrollable */}
-                    <div style={{ overflowX: 'auto', flex: 1 }}>
-                      <div style={{ width: CHART_WIDTH, position: 'relative', height: '28px', flexShrink: 0 }}>
+                {/* Weapon rows */}
+                {filteredServiceWeapons.map((w) => {
+                  const barLeft = (w.yearStart - CHART_YEAR_START) * PX_PER_YEAR;
+                  const barEnd = (w.yearEnd ?? CHART_YEAR_END) - CHART_YEAR_START;
+                  const barWidth = Math.max(barEnd * PX_PER_YEAR - barLeft, 4);
+                  const color = roleColor[w.role];
+                  return (
+                    <div
+                      key={w.id}
+                      onClick={() => setSelectedWeapon(w)}
+                      style={{ display: 'flex', alignItems: 'center', minWidth: TOTAL_WIDTH + NAME_COL_WIDTH, borderBottom: '0.5px solid ' + theme.border + '44', minHeight: ROW_HEIGHT + 'px', cursor: 'pointer' }}
+                    >
+                      {/* Sticky name column */}
+                      <div style={{
+                        width: NAME_COL_WIDTH,
+                        flexShrink: 0,
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: theme.bg,
+                        zIndex: 1,
+                        padding: '0 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRight: '0.5px solid ' + theme.border,
+                        height: ROW_HEIGHT + 'px',
+                      }}>
+                        <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textSecondary, lineHeight: 1.3, letterSpacing: '0.2px' }}>
+                          {w.name}
+                        </span>
+                      </div>
+                      {/* Bar area */}
+                      <div style={{ position: 'relative', width: TOTAL_WIDTH, height: ROW_HEIGHT + 'px', flexShrink: 0 }}>
                         {/* Decade grid lines */}
                         {decades.map((yr) => (
                           <div
                             key={yr}
                             style={{
                               position: 'absolute',
-                              left: (yr - GANTT_START) * PX_PER_YEAR,
+                              left: (yr - CHART_YEAR_START) * PX_PER_YEAR,
                               top: 0,
                               width: '1px',
                               height: '100%',
@@ -1754,15 +1884,15 @@ export function FieldGuide() {
                         />
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {filteredServiceWeapons.length === 0 && (
-                <div style={{ padding: '32px 16px', textAlign: 'center', color: theme.textMuted, fontSize: '12px', fontFamily: 'monospace' }}>
-                  No weapons match the selected filters.
-                </div>
-              )}
+                {filteredServiceWeapons.length === 0 && (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: theme.textMuted, fontSize: '12px', fontFamily: 'monospace' }}>
+                    No weapons match the selected filters.
+                  </div>
+                )}
+              </div>
 
               {/* Role color legend */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', padding: '14px 16px', borderTop: '0.5px solid ' + theme.border, marginTop: '8px' }}>
@@ -1772,6 +1902,33 @@ export function FieldGuide() {
                     <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textMuted, letterSpacing: '0.3px' }}>{r}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── WEAPON DETAIL BOTTOM SHEET ── */}
+        {selectedWeapon && (
+          <div
+            onClick={() => setSelectedWeapon(null)}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: '480px', margin: '0 auto', backgroundColor: theme.surface, borderRadius: '12px 12px 0 0', padding: '20px 16px 32px', border: `0.5px solid ${theme.border}` }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{selectedWeapon.name}</div>
+                <button onClick={() => setSelectedWeapon(null)} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: '0 0 0 12px' }}>×</button>
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px', marginBottom: '4px' }}>
+                {selectedWeapon.role.toUpperCase()} · {selectedWeapon.caliber}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '12px' }}>
+                {selectedWeapon.countries.join(', ')} · {selectedWeapon.yearStart}–{selectedWeapon.yearEnd ?? 'present'}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, lineHeight: 1.7 }}>
+                {selectedWeapon.story}
               </div>
             </div>
           </div>
