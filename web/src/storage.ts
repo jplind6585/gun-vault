@@ -1,5 +1,12 @@
-// LocalStorage-based data persistence (will switch to SQLite when we go mobile)
+// LocalStorage-based data persistence + Supabase background sync
 import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero } from './types';
+import {
+  syncGun, deleteGunFromSupabase,
+  syncSession, deleteSessionFromSupabase,
+  syncAmmo, deleteAmmoFromSupabase,
+  syncAnalysis, deleteAnalysisFromSupabase,
+  syncOptic, syncMount, syncAssignment, syncZero,
+} from './lib/sync';
 // Seed imports are now dynamic — loaded only on first launch, never after.
 
 const GUNS_KEY = 'gunvault_guns';
@@ -200,6 +207,7 @@ export function addGun(gun: Omit<Gun, 'id' | 'createdAt' | 'updatedAt'>): string
 
   guns.push(newGun);
   localStorage.setItem(GUNS_KEY, JSON.stringify(guns));
+  syncGun(newGun);
 
   return id;
 }
@@ -217,6 +225,7 @@ export function updateGun(id: string, updates: Partial<Gun>): void {
   };
 
   localStorage.setItem(GUNS_KEY, JSON.stringify(guns));
+  syncGun(guns[index]);
 }
 
 export function decommissionGun(id: string): void {
@@ -250,6 +259,7 @@ export function logSession(session: Omit<Session, 'id' | 'createdAt'>): string {
 
   sessions.push(newSession);
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  syncSession(newSession);
 
   return id;
 }
@@ -260,11 +270,13 @@ export function updateSession(id: string, updates: Partial<Session>): void {
   if (index === -1) return;
   sessions[index] = { ...sessions[index], ...updates };
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  syncSession(sessions[index]);
 }
 
 export function deleteSession(id: string): void {
   const sessions = getAllSessions().filter(s => s.id !== id);
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  deleteSessionFromSupabase(id);
 }
 
 export function getRecentLocations(): string[] {
@@ -314,6 +326,7 @@ export function addAmmo(ammo: Omit<AmmoLot, 'id' | 'createdAt' | 'updatedAt'>): 
 
   allAmmo.push(newAmmo);
   localStorage.setItem(AMMO_KEY, JSON.stringify(allAmmo));
+  syncAmmo(newAmmo);
 
   return id;
 }
@@ -331,12 +344,14 @@ export function updateAmmo(id: string, updates: Partial<AmmoLot>): void {
   };
 
   localStorage.setItem(AMMO_KEY, JSON.stringify(allAmmo));
+  syncAmmo(allAmmo[index]);
 }
 
 export function deleteAmmo(id: string): void {
   const allAmmo = getAllAmmo();
   const filtered = allAmmo.filter(a => a.id !== id);
   localStorage.setItem(AMMO_KEY, JSON.stringify(filtered));
+  deleteAmmoFromSupabase(id);
 }
 
 export function getAmmoSummaryByCaliber(): Map<string, { totalRounds: number; lots: number }> {
@@ -448,11 +463,13 @@ export function saveTargetAnalysis(record: Omit<TargetAnalysisRecord, 'id' | 'cr
   const newRecord: TargetAnalysisRecord = { ...record, id, createdAt: new Date().toISOString() };
   analyses.unshift(newRecord);
   localStorage.setItem(ANALYSES_KEY, JSON.stringify(analyses));
+  syncAnalysis(newRecord);
   return id;
 }
 
 export function deleteTargetAnalysis(id: string): void {
   localStorage.setItem(ANALYSES_KEY, JSON.stringify(getTargetAnalyses().filter(a => a.id !== id)));
+  deleteAnalysisFromSupabase(id);
 }
 
 export function getAnalysesForGun(gunId: string): TargetAnalysisRecord[] {
@@ -546,8 +563,10 @@ export function addOptic(o: Omit<Optic, 'id' | 'createdAt' | 'updatedAt'>): stri
   const optics = getAllOptics();
   const id = generateId();
   const now = new Date().toISOString();
-  optics.push({ ...o, id, createdAt: now, updatedAt: now });
+  const newOptic = { ...o, id, createdAt: now, updatedAt: now };
+  optics.push(newOptic);
   localStorage.setItem(OPTICS_KEY, JSON.stringify(optics));
+  syncOptic(newOptic);
   return id;
 }
 export function updateOptic(id: string, updates: Partial<Optic>): void {
@@ -556,6 +575,7 @@ export function updateOptic(id: string, updates: Partial<Optic>): void {
   if (i === -1) return;
   optics[i] = { ...optics[i], ...updates, updatedAt: new Date().toISOString() };
   localStorage.setItem(OPTICS_KEY, JSON.stringify(optics));
+  syncOptic(optics[i]);
 }
 export function deleteOptic(id: string): void {
   localStorage.setItem(OPTICS_KEY, JSON.stringify(getAllOptics().filter(o => o.id !== id)));
@@ -576,8 +596,10 @@ export function addMount(m: Omit<Mount, 'id' | 'createdAt' | 'updatedAt'>): stri
   const all: Mount[] = d ? JSON.parse(d) : [];
   const id = generateId();
   const now = new Date().toISOString();
-  all.push({ ...m, id, createdAt: now, updatedAt: now });
+  const newMount = { ...m, id, createdAt: now, updatedAt: now };
+  all.push(newMount);
   localStorage.setItem(MOUNTS_KEY, JSON.stringify(all));
+  syncMount(newMount);
   return id;
 }
 export function updateMount(id: string, updates: Partial<Mount>): void {
@@ -587,6 +609,7 @@ export function updateMount(id: string, updates: Partial<Mount>): void {
   if (i === -1) return;
   all[i] = { ...all[i], ...updates, updatedAt: new Date().toISOString() };
   localStorage.setItem(MOUNTS_KEY, JSON.stringify(all));
+  syncMount(all[i]);
 }
 export function deleteMount(id: string): void {
   const d = localStorage.getItem(MOUNTS_KEY);
@@ -610,8 +633,10 @@ export function getActiveAssignmentForGun(gunId: string): OpticAssignment | null
 export function addAssignment(a: Omit<OpticAssignment, 'id'>): string {
   const all = getAllAssignments();
   const id = generateId();
-  all.push({ ...a, id });
+  const newAssignment = { ...a, id };
+  all.push(newAssignment);
   localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(all));
+  syncAssignment(newAssignment);
   return id;
 }
 export function updateAssignment(id: string, updates: Partial<OpticAssignment>): void {
@@ -620,6 +645,7 @@ export function updateAssignment(id: string, updates: Partial<OpticAssignment>):
   if (i === -1) return;
   all[i] = { ...all[i], ...updates };
   localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(all));
+  syncAssignment(all[i]);
 }
 
 /** Remove an optic from a gun. Marks prior zeros unverified by flagging isActive=false. */
@@ -666,8 +692,10 @@ export function addZero(z: Omit<OpticZero, 'id' | 'createdAt'>): string {
   const updated = all.map(x =>
     x.assignmentId === z.assignmentId && x.isActive ? { ...x, isActive: false } : x
   );
-  updated.push({ ...z, id, createdAt: now });
+  const newZero = { ...z, id, createdAt: now };
+  updated.push(newZero);
   localStorage.setItem(ZEROS_KEY, JSON.stringify(updated));
+  syncZero(newZero);
   return id;
 }
 export function updateZero(id: string, updates: Partial<OpticZero>): void {

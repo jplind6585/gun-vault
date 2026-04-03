@@ -1,52 +1,41 @@
-// Claude API — direct browser integration (personal app)
-// User's API key stored in localStorage; calls include required dangerous-direct-browser header
+// Claude API — routed through Supabase Edge Function (production-safe)
+// Your Anthropic key lives in Supabase secrets, never in the browser.
 import type { Session, Gun, AmmoLot, TargetPhotoAnalysis } from './types';
+import { supabase, SUPABASE_URL } from './lib/supabase';
 
+const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/claude`;
+
+// Keep these for DevToolbar display only — key is no longer used for API calls
 const KEY_STORAGE = 'gunvault_claude_key';
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-opus-4-6';
+export function getClaudeApiKey(): string { return localStorage.getItem(KEY_STORAGE) || ''; }
+export function setClaudeApiKey(key: string): void { localStorage.setItem(KEY_STORAGE, key.trim()); }
+export function hasClaudeApiKey(): boolean { return true; } // always true — key is in Edge Function
 
-export function getClaudeApiKey(): string {
-  return localStorage.getItem(KEY_STORAGE) || '';
-}
+async function callClaude(
+  messages: object[],
+  systemPrompt?: string,
+  feature = 'unknown',
+  maxTokens = 1024,
+): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Sign in to use AI features.');
 
-export function setClaudeApiKey(key: string): void {
-  localStorage.setItem(KEY_STORAGE, key.trim());
-}
-
-export function hasClaudeApiKey(): boolean {
-  return !!getClaudeApiKey();
-}
-
-async function callClaude(messages: object[], systemPrompt?: string): Promise<string> {
-  const key = getClaudeApiKey();
-  if (!key) throw new Error('No Claude API key set. Add it in Settings.');
-
-  const body: Record<string, unknown> = {
-    model: MODEL,
-    max_tokens: 1024,
-    messages,
-  };
-  if (systemPrompt) body.system = systemPrompt;
-
-  const res = await fetch(API_URL, {
+  const res = await fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'Authorization': `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ messages, systemPrompt, feature, maxTokens }),
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Claude API error ${res.status}: ${err}`);
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `AI error ${res.status}`);
   }
 
   const data = await res.json();
-  return data.content?.[0]?.text ?? '';
+  return data.text ?? '';
 }
 
 // ── Session narrative ─────────────────────────────────────────────────────────
@@ -79,7 +68,7 @@ ${session.notes ? 'Notes: ' + session.notes : ''}
 
 Return only the sentence, no quotes.`;
 
-  return callClaude([{ role: 'user', content: prompt }]);
+  return callClaude([{ role: 'user', content: prompt }], undefined, 'narrative', 256);
 }
 
 // ── Target photo analysis ────────────────────────────────────────────────────
@@ -139,7 +128,9 @@ Only return valid JSON, no other text.`;
         ],
       },
     ],
-    systemPrompt
+    systemPrompt,
+    'target_photo',
+    1024,
   );
 
   try {
@@ -197,7 +188,9 @@ Use null for any field you cannot read clearly. Return only the JSON object.`;
         ],
       },
     ],
-    systemPrompt
+    systemPrompt,
+    'ammo_scan',
+    512,
   );
 
   try {
@@ -324,7 +317,7 @@ Format: zero correction first, then group diagnosis, then one next step.`;
       : m.content,
   }));
 
-  return callClaude(anthropicMessages, systemPrompt);
+  return callClaude(anthropicMessages, systemPrompt, 'target_coach', 512);
 }
 
 // ── Training gap ─────────────────────────────────────────────────────────────

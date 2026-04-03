@@ -1,6 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { theme } from './theme';
 import { getAllGuns, addGun, ensureInitialized } from './storage';
+import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { LoginScreen } from './auth/LoginScreen';
 import type { Gun } from './types';
 import { GunVault } from './GunVault';
 import { GunDetail } from './GunDetail';
@@ -37,7 +39,24 @@ import './App.css';
 
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide';
 
+function AppInner() {
+  const { user, loading: authLoading } = useAuth();
+
+  if (authLoading) return null;
+  if (!user) return <LoginScreen />;
+
+  return <AppCore />;
+}
+
 function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
+
+function AppCore() {
   const [ready, setReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
