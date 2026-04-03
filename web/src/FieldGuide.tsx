@@ -408,10 +408,99 @@ interface Platform {
   era: string;
   category: string;
   categoryColor: string;
+  tagline: string;
   body: string;
 }
 
 const PLATFORMS: Platform[] = [
+  {
+    id: 'flintlock-musket',
+    name: 'Flintlock Musket',
+    origin: 'Europe',
+    year: 1630,
+    era: '1630–1840s',
+    category: 'Musket',
+    categoryColor: '#868e96',
+    tagline: "Dominant infantry arm for 200 years; won America's independence.",
+    body: "The flintlock ignition system — a flint striking a steel frizzen to produce a spark — replaced the matchlock and dominated infantry warfare from the 1630s through the Napoleonic Wars. Smoothbore, with effective range under 100 yards, armies compensated with massed volley fire. The Brown Bess (British) and Charleville (French) variants armed opposing sides in nearly every major 18th-century conflict including the American Revolution.",
+  },
+  {
+    id: 'percussion-cap',
+    name: 'Percussion Cap Rifle',
+    origin: 'Europe / USA',
+    year: 1820,
+    era: '1820–1870s',
+    category: 'Musket',
+    categoryColor: '#868e96',
+    tagline: 'Chemical ignition replaced flint; first major reliability leap in infantry arms.',
+    body: "The percussion cap — a small copper cup containing fulminate of mercury — replaced the flintlock's unreliable flint-and-pan system. Misfires dropped dramatically. Combined with the Minié ball (1848), percussion rifles became accurate to 400+ yards, fundamentally changing Civil War tactics: smoothbore-era tactics met rifled-bore lethality, producing catastrophic frontal assault casualties at Fredericksburg, Cold Harbor, and elsewhere.",
+  },
+  {
+    id: 'springfield-1861',
+    name: 'Springfield Model 1861',
+    origin: 'USA',
+    year: 1861,
+    era: '1861–1865',
+    category: 'Musket',
+    categoryColor: '#868e96',
+    tagline: 'The primary Union infantry rifle of the Civil War — over 1 million produced.',
+    body: "The Springfield M1861 was the most widely used rifle musket of the American Civil War. Chambered in .58 caliber with a Minié ball, it was accurate to 500 yards in trained hands. Its production in government and private arsenals exceeded 1 million units. The rifle's range and accuracy made Napoleonic massed infantry assaults suicidal — a lesson that took commanders years of bloody battles to learn.",
+  },
+  {
+    id: 'colt-saa',
+    name: 'Colt Single Action Army',
+    origin: 'USA',
+    year: 1873,
+    era: '1873–present',
+    category: 'Revolver',
+    categoryColor: '#94d82d',
+    tagline: 'The gun that won the West — standard US Army sidearm for 20 years.',
+    body: 'Chambered in .45 Colt, the SAA was adopted by the US Army in 1873 and became the defining firearm of the American West. Its robust single-action mechanism and flat trajectory made it effective to 75 yards. Used by both sides in the Lincoln County War, carried by lawmen and outlaws alike. The Peacemaker, as it was called, remains in production today — one of the longest-running firearm designs in history.',
+  },
+  {
+    id: 'winchester-1873',
+    name: 'Winchester Model 1873',
+    origin: 'USA',
+    year: 1873,
+    era: '1873–present',
+    category: 'Lever Action',
+    categoryColor: '#adb5bd',
+    tagline: '"The gun that won the West" — same caliber as the Colt SAA for convenience.',
+    body: 'Produced in pistol calibers (.44-40, .38-40, .32-20) to allow cowboys to carry a single cartridge type for both rifle and revolver, the Model 1873 was the most popular lever-action repeater of its era. Over 720,000 produced before 1919. The interchangeability with Colt revolvers was a deliberate commercial and practical decision. Still produced by Winchester and Uberti today as a tribute to its cultural significance.',
+  },
+  {
+    id: 'maxim-gun',
+    name: 'Maxim Gun / Vickers',
+    origin: 'UK',
+    year: 1884,
+    era: '1884–1960s',
+    category: 'Machine Gun',
+    categoryColor: '#f783ac',
+    tagline: 'First fully automatic firearm — redefined warfare and colonialism.',
+    body: 'Hiram Maxim\'s recoil-operated machine gun fired 500 rounds per minute and changed the nature of warfare irreversibly. Water-cooled and belt-fed, it could hold off hundreds of infantry with a crew of two. At the Battle of Omdurman (1898), a handful of Maxim guns killed 10,000 Sudanese in under 5 hours. The Vickers variant served both World Wars and remained in British service until 1968. "Whatever happens, we have got / The Maxim gun, and they have not." — Hilaire Belloc',
+  },
+  {
+    id: 'lee-enfield',
+    name: 'Lee-Enfield SMLE',
+    origin: 'UK',
+    year: 1895,
+    era: '1895–1957 (primary)',
+    category: 'Bolt Rifle',
+    categoryColor: '#74c0fc',
+    tagline: 'Fastest bolt action ever issued — trained British soldiers fired 15 rounds per minute.',
+    body: 'The Short Magazine Lee-Enfield combined a 10-round magazine (double that of the Mauser) with a smooth cock-on-close bolt that allowed the legendary "mad minute" — 15 aimed rounds per minute demonstrated by trained British regulars. Over 17 million produced across its service life. The SMLE\'s rear-locking bolt is mechanically weaker than Mauser\'s front-locking design, but the speed advantage in combat was decisive. Still found in service in parts of South Asia today.',
+  },
+  {
+    id: 'mauser-98',
+    name: 'Mauser Gewehr 98 / K98k',
+    origin: 'Germany',
+    year: 1898,
+    era: '1898–1945 (primary)',
+    category: 'Bolt Rifle',
+    categoryColor: '#74c0fc',
+    tagline: 'The standard against which all bolt actions are measured — still copied today.',
+    body: "Paul Mauser's 1898 action set the template for virtually every sporting and military bolt action that followed. The dual-opposed-locking lug system, controlled-round feeding, and Mauser claw extractor are still considered the gold standard. The K98k (kurz, shortened) variant served as Germany's standard WWII rifle. Captured examples were prized by Allied soldiers. The action is directly licensed or copied in the Winchester Model 70, Remington 700, and dozens of other designs.",
+  },
   {
     id: 'mosin-nagant',
     name: 'Mosin-Nagant M91/30',
@@ -420,7 +509,96 @@ const PLATFORMS: Platform[] = [
     era: '1891–1960s',
     category: 'Bolt Rifle',
     categoryColor: '#74c0fc',
+    tagline: '37 million produced — the most manufactured military rifle in history.',
     body: 'Designed jointly by Sergei Mosin and Leon Nagant, the 7.62x54mmR Mosin-Nagant was the standard Soviet infantry rifle through both World Wars and the Winter War. Over 37 million produced — one of the most manufactured rifles in history. The M91/30 PU sniper variant was used with devastating effect at Stalingrad and throughout the Eastern Front.',
+  },
+  {
+    id: 'lewis-gun',
+    name: 'Lewis Gun',
+    origin: 'USA/UK',
+    year: 1914,
+    era: '1914–1950s',
+    category: 'Machine Gun',
+    categoryColor: '#f783ac',
+    tagline: "WWI's squad automatic weapon — air-cooled and portable where the Maxim was not.",
+    body: "The Lewis Gun's pan magazine and air-cooled barrel made it the first truly portable automatic weapon at squad level. A single soldier could carry and operate it. Used extensively by British and Commonwealth forces in WWI, mounted on aircraft as one of the first air-to-air weapons, and carried into WWII and beyond. Its clock-spring pan magazine was an engineering compromise — slow to reload but it made the gun man-portable without a tripod crew.",
+  },
+  {
+    id: 'thompson',
+    name: 'Thompson Submachine Gun',
+    origin: 'USA',
+    year: 1919,
+    era: '1919–1971',
+    category: 'Submachine Gun',
+    categoryColor: '#ffa94d',
+    tagline: 'The "Tommy Gun" — gangsters and GIs carried the same weapon.',
+    body: 'John T. Thompson designed the "trench broom" to end WWI trench warfare — it arrived too late. Instead it became the weapon of choice for Prohibition-era gangsters, then US Marines in Nicaragua, then GIs storming Normandy. The .45 ACP cartridge hits hard at close range; the drum magazine is iconic. At 10+ lbs loaded, it was heavy, but the 1928 and M1 variants simplified it for mass wartime production. Over 1.7 million made during WWII.',
+  },
+  {
+    id: 'bar',
+    name: 'Browning Automatic Rifle (BAR)',
+    origin: 'USA',
+    year: 1918,
+    era: '1918–1970s',
+    category: 'Machine Gun',
+    categoryColor: '#f783ac',
+    tagline: "Every WWII US squad's base of fire — John Browning's portable automatic.",
+    body: 'The BAR M1918 gave US infantry squads automatic fire capability in a rifle-weight package. At 15.5 lbs, it was lighter than a machine gun but heavier than a rifle — a deliberate tradeoff. The 20-round .30-06 magazine limited sustained fire, but in the squad assault it provided the critical suppressive base. The BAR gunner was typically the first casualty enemy fire sought out. Clyde Barrow reportedly stole BARs from National Guard armories and preferred them over everything else he used.',
+  },
+  {
+    id: 'm2-browning',
+    name: 'M2 Browning .50 BMG',
+    origin: 'USA',
+    year: 1933,
+    era: '1933–present',
+    category: 'Machine Gun',
+    categoryColor: '#f783ac',
+    tagline: 'Designed in 1918, still the standard heavy machine gun of NATO — 90+ years in service.',
+    body: 'John Browning designed the M2 in response to General Pershing\'s request for a heavy machine gun after WWI. The .50 BMG (12.7×99mm) cartridge was developed alongside it. Originally designed to counter aircraft and light armor, the M2 has been mounted on aircraft, ships, tanks, helicopters, and ground vehicles. Its effective range against point targets exceeds 1,800 meters. The M2 has seen continuous production and service since 1933 — no replacement is in sight. Called "Ma Deuce" by generations of American soldiers.',
+  },
+  {
+    id: 'm1-garand',
+    name: 'M1 Garand',
+    origin: 'USA',
+    year: 1936,
+    era: '1936–1957 (primary)',
+    category: 'Semi-Auto Rifle',
+    categoryColor: '#ff8787',
+    tagline: 'First semi-automatic rifle adopted as a standard infantry weapon — General Patton called it the greatest battle implement ever devised.',
+    body: 'John Garand\'s en-bloc clip-fed .30-06 semi-automatic rifle gave US infantry a firepower advantage over bolt-action-equipped enemies throughout WWII. Eight rounds, semi-automatic, clip ejects automatically when empty with a distinctive "ping." The ping became legend — supposedly alerting enemies — but in actual combat the noise of battle rendered it irrelevant. Over 5.4 million produced. The M1 also sparked the caliber debate: if a semi-auto rifle required so much ammunition, was .30-06 the right cartridge, or was something smaller and lighter better?',
+  },
+  {
+    id: 'wwii-caliber-debate',
+    name: 'The WWII Caliber Debate',
+    origin: 'USA / UK / Germany',
+    year: 1940,
+    era: '1940–1955',
+    category: 'Historical Context',
+    categoryColor: '#e8d44d',
+    tagline: 'Full-power vs. intermediate cartridge — the argument that shaped every service rifle after 1945.',
+    body: 'By 1940, infantry combat data showed most engagements occurred under 300 meters — well within the capability of a lighter cartridge than .30-06 or 7.92 Mauser. Germany\'s answer was the 7.92×33mm Kurz and the StG-44. The British experimented with .280 (7×43mm). The US Army, conservatively committed to long-range marksmanship doctrine, insisted on full-power cartridges. After WWII, NATO standardized on 7.62×51mm — a shortened but barely lighter .30-06 equivalent — over British objections. The Soviets chose the 7.62×39mm intermediate for the AK-47. The US eventually adopted 5.56×45mm in 1963. The intermediate cartridge won, but it took 20 years of institutional resistance.',
+  },
+  {
+    id: 'stg44',
+    name: 'StG 44 (Sturmgewehr)',
+    origin: 'Germany',
+    year: 1944,
+    era: '1944–1945',
+    category: 'Assault Rifle',
+    categoryColor: '#ff6b6b',
+    tagline: 'The first assault rifle — its concept outlived the regime that built it.',
+    body: 'The Sturmgewehr 44 combined a 30-round detachable magazine, selective fire (semi and full auto), and an intermediate 7.92×33mm Kurz cartridge into the first weapon we would recognize as an assault rifle. Hitler reportedly named it himself (overruling the "MP43" designation to hide its development from him). Late-war Wehrmacht units equipped with it outperformed those with bolt actions. Its concept — intermediate cartridge, high-capacity magazine, selective fire — directly influenced Kalashnikov\'s AK-47 design.',
+  },
+  {
+    id: 'ak47',
+    name: 'AK-47 / AKM / AK-74 Family',
+    origin: 'USSR / Russia',
+    year: 1947,
+    era: '1947–present',
+    category: 'Assault Rifle',
+    categoryColor: '#ff6b6b',
+    tagline: '75–100 million produced — the most manufactured firearm in human history.',
+    body: "Mikhail Kalashnikov's gas-operated rifle emerged from WWII combat experience. The long-stroke piston system and loose tolerances give it legendary reliability in adverse conditions. An estimated 75–100 million AK-pattern rifles have been produced — the most manufactured firearm in history.",
   },
   {
     id: '1911',
@@ -430,17 +608,19 @@ const PLATFORMS: Platform[] = [
     era: '1911–present',
     category: 'Pistol',
     categoryColor: '#51cf66',
-    body: 'John Browning\'s .45 ACP semi-automatic pistol served as the US military\'s standard sidearm from 1911 to 1985 — 74 years of continuous service. The single-action locked-breech design became the template for modern semi-automatic pistols. Still in production by dozens of manufacturers and competitive in practical and bullseye shooting today.',
+    tagline: '74 years of continuous US military service — the longest-serving standard sidearm.',
+    body: "John Browning's .45 ACP semi-automatic pistol served as the US military's standard sidearm from 1911 to 1985 — 74 years of continuous service. The single-action locked-breech design became the template for modern semi-automatic pistols. Still in production by dozens of manufacturers and competitive in practical and bullseye shooting today.",
   },
   {
-    id: 'ak47',
-    name: 'AK-47 / AKM / AK-74 Family',
-    origin: 'USSR / Russia',
-    year: 1947,
-    era: '1947–present',
-    category: 'Rifle',
+    id: 'fn-fal',
+    name: 'FN FAL',
+    origin: 'Belgium',
+    year: 1953,
+    era: '1953–present',
+    category: 'Assault Rifle',
     categoryColor: '#ff6b6b',
-    body: 'Mikhail Kalashnikov\'s gas-operated rifle emerged from WWII combat experience. The long-stroke piston system and loose tolerances give it legendary reliability in adverse conditions. An estimated 75–100 million AK-pattern rifles have been produced — the most manufactured firearm in history.',
+    tagline: '"The right arm of the free world" — adopted by over 90 countries during the Cold War.',
+    body: "FN Herstal's Fusil Automatique Léger in 7.62×51mm NATO was adopted by more Western nations during the Cold War than any other rifle. Its tilting-bolt gas-operated action is reliable across climates. The UK's L1A1 SLR version (semi-auto only) served through the Falklands War. Argentina and the UK both used FALs against each other in 1982 — the only time the same weapon has faced itself in a major conflict. Israel, Australia, Canada, and dozens of African and South American militaries issued it.",
   },
   {
     id: 'ar15',
@@ -448,8 +628,9 @@ const PLATFORMS: Platform[] = [
     origin: 'USA',
     year: 1959,
     era: '1959–present',
-    category: 'Rifle',
+    category: 'Assault Rifle',
     categoryColor: '#ff6b6b',
+    tagline: 'The most-produced rifle in American history — in service every year since 1959.',
     body: 'Designed by Eugene Stoner for ArmaLite, the AR-15 is the most-produced rifle platform in American history. The direct-impingement gas system and modular lower/upper split have spawned an entire ecosystem of parts, calibers, and configurations. The M16 and M4 variants have served in every US conflict since Vietnam.',
   },
   {
@@ -460,7 +641,8 @@ const PLATFORMS: Platform[] = [
     era: '1962–present',
     category: 'Bolt Rifle',
     categoryColor: '#74c0fc',
-    body: 'The most successful bolt-action rifle in American history. The Model 700\'s push-feed action and aftermarket ecosystem made it the foundation for US military and law enforcement sniper programs (M24, M40). Chambered in over 40 calibers over its production run.',
+    tagline: 'Foundation of the US military sniper program — M24 and M40 are both 700 variants.',
+    body: "The most successful bolt-action rifle in American history. The Model 700's push-feed action and aftermarket ecosystem made it the foundation for US military and law enforcement sniper programs (M24, M40). Chambered in over 40 calibers over its production run.",
   },
   {
     id: 'mp5',
@@ -470,7 +652,8 @@ const PLATFORMS: Platform[] = [
     era: '1966–present',
     category: 'Submachine Gun',
     categoryColor: '#ffa94d',
-    body: 'Heckler & Koch\'s roller-delayed blowback SMG became the definitive hostage rescue weapon after its use by GSG-9 at Mogadishu in 1977. Over 30 variants produced. Renowned for accuracy relative to other SMGs. Still preferred in many law enforcement roles despite being replaced by SBRs in military use.',
+    tagline: 'Defined hostage rescue for 50 years — still preferred over SBRs in many police roles.',
+    body: "Heckler & Koch's roller-delayed blowback SMG became the definitive hostage rescue weapon after its use by GSG-9 at Mogadishu in 1977. Over 30 variants produced. Renowned for accuracy relative to other SMGs. Still preferred in many law enforcement roles despite being replaced by SBRs in military use.",
   },
   {
     id: 'sig-p226',
@@ -480,6 +663,7 @@ const PLATFORMS: Platform[] = [
     era: '1980–present',
     category: 'Pistol',
     categoryColor: '#51cf66',
+    tagline: 'Lost the Army trials on price, not performance — the SEALs adopted it anyway.',
     body: 'The P226 narrowly lost the 1984 US Army trials to the Beretta 92 on cost — not performance. The Navy SEALs, unwilling to accept that verdict, adopted it anyway where it served for decades. The DA/SA trigger and all-metal construction give it a reputation for smoothness and durability that spawned the P229, P228, and modern P320.',
   },
   {
@@ -490,7 +674,8 @@ const PLATFORMS: Platform[] = [
     era: '1982–present',
     category: 'Anti-Materiel',
     categoryColor: '#cc5de8',
-    body: 'Ronnie Barrett\'s semi-automatic .50 BMG rifle entered military service in Desert Storm, used to defeat light armor and explosive ordnance at extreme ranges. The recoil-operated action and muzzle brake make the massive cartridge manageable. Maximum effective range against point targets exceeds 1,800 meters.',
+    tagline: 'Semi-automatic .50 BMG — engages targets at ranges that redefined "sniper."',
+    body: "Ronnie Barrett's semi-automatic .50 BMG rifle entered military service in Desert Storm, used to defeat light armor and explosive ordnance at extreme ranges. The recoil-operated action and muzzle brake make the massive cartridge manageable. Maximum effective range against point targets exceeds 1,800 meters.",
   },
   {
     id: 'glock17',
@@ -500,7 +685,19 @@ const PLATFORMS: Platform[] = [
     era: '1982–present',
     category: 'Pistol',
     categoryColor: '#51cf66',
-    body: 'Gaston Glock\'s polymer-frame, striker-fired pistol revolutionized the handgun industry when the Austrian Army adopted it in 1982. The safe-action trigger, high-capacity magazines, and simple field-strip set the template for virtually every modern polymer pistol. Carried by over 65% of US law enforcement agencies.',
+    tagline: 'Carried by 65% of US law enforcement — the polymer pistol template every competitor copies.',
+    body: "Gaston Glock's polymer-frame, striker-fired pistol revolutionized the handgun industry when the Austrian Army adopted it in 1982. The safe-action trigger, high-capacity magazines, and simple field-strip set the template for virtually every modern polymer pistol. Carried by over 65% of US law enforcement agencies.",
+  },
+  {
+    id: 'beretta-m9',
+    name: 'Beretta M9 / 92FS',
+    origin: 'Italy',
+    year: 1985,
+    era: '1985–2017 (US military)',
+    category: 'Pistol',
+    categoryColor: '#51cf66',
+    tagline: 'Beat the SIG P226 on price — served 32 years before the P320 replaced it.',
+    body: "In 1985, the US military conducted trials to replace the M1911. The Beretta 92FS beat the SIG P226 by meeting all requirements at lower cost. The 9mm switch from .45 ACP was controversial — some argued for stopping power, others for magazine capacity and NATO standardization. The Beretta served through Desert Storm, Iraq, and Afghanistan. A notable issue: the locking block could fracture on high-pressure ammunition, causing the slide to detach. Modified versions addressed this. Replaced by the SIG P320 (M17/M18) in 2017.",
   },
   {
     id: 'fn-scar',
@@ -508,13 +705,121 @@ const PLATFORMS: Platform[] = [
     origin: 'Belgium',
     year: 2004,
     era: '2004–present',
-    category: 'Rifle',
+    category: 'Assault Rifle',
     categoryColor: '#ff6b6b',
-    body: 'FN Herstal\'s Special Operations Forces Combat Assault Rifle won the SOCOM SCAR competition in 2004. Available in 5.56mm (Mk 16) and 7.62mm (Mk 17) variants. The SCAR-H has become the preferred precision/designated marksman platform for many SOF units worldwide.',
+    tagline: "SOF's precision rifle — the SCAR-H is the preferred DMR for many special operations units.",
+    body: "FN Herstal's Special Operations Forces Combat Assault Rifle won the SOCOM SCAR competition in 2004. Available in 5.56mm (Mk 16) and 7.62mm (Mk 17) variants. The SCAR-H has become the preferred precision/designated marksman platform for many SOF units worldwide.",
+  },
+  {
+    id: 'hk416',
+    name: 'HK416',
+    origin: 'Germany',
+    year: 2004,
+    era: '2004–present',
+    category: 'Assault Rifle',
+    categoryColor: '#ff6b6b',
+    tagline: 'The AR-15 redesigned with a piston system — used by Delta Force, SEAL Team 6, and French Army.',
+    body: "Designed at the request of Delta Force to address M4 reliability issues in sandy environments, the HK416 replaces the AR-15's direct-impingement gas system with a short-stroke piston — keeping propellant gases out of the receiver. The action runs cooler and cleaner. It was the weapon used in the bin Laden raid. Norway adopted it as the HK416N; France replaced the FAMAS with it as the primary French military rifle. The 10.4\" variant in .300 Blackout is widely used by special operations forces.",
+  },
+  {
+    id: 'sig-m17',
+    name: 'SIG M17 / M18 (P320)',
+    origin: 'USA/Germany',
+    year: 2017,
+    era: '2017–present',
+    category: 'Pistol',
+    categoryColor: '#51cf66',
+    tagline: 'Won the MHS competition — then faced allegations of dropping when dropped.',
+    body: "The SIG Sauer P320 won the US Army's Modular Handgun System competition in 2017, replacing the Beretta M9 after 32 years. The M17 (full-size) and M18 (compact) share a serialized fire control unit that can be swapped between frame sizes — a genuinely novel approach. Shortly after adoption, reports emerged of the P320 firing when dropped at specific angles without the trigger being pulled. SIG contested the characterizations but issued a voluntary upgrade. The military versions include a manual safety and modified trigger geometry. It remains the current US military sidearm.",
+  },
+  {
+    id: 'sig-mcx-spear',
+    name: 'SIG MCX SPEAR / XM7',
+    origin: 'USA',
+    year: 2022,
+    era: '2022–present',
+    category: 'Assault Rifle',
+    categoryColor: '#ff6b6b',
+    tagline: 'Next Generation Squad Weapon — designed to defeat modern body armor that 5.56 cannot.',
+    body: "The US Army's Next Generation Squad Weapon program concluded that 5.56×45mm is insufficient against current and projected enemy body armor at combat distances. The XM7 (rifle) and XM250 (automatic rifle) fire 6.8×51mm Common Cartridge — a hybrid case with a steel head capable of 80,000 PSI chamber pressure. The SIG MCX SPEAR action was redesigned to handle these pressures. Critics note the ammunition is heavy (reducing soldier load capacity), the weapon is heavier than the M4, and the logistics tail is enormous. Proponents argue it defeats any currently fielded body armor at 600 meters. Full-rate production is underway as of 2024.",
+  },
+  // Legacy entries kept for historical completeness
+  {
+    id: 'm14',
+    name: 'M14 Rifle',
+    origin: 'USA',
+    year: 1957,
+    era: '1957–1970 (primary)',
+    category: 'Semi-Auto Rifle',
+    categoryColor: '#ff8787',
+    tagline: "NATO's answer to the AK-47 — too heavy, too long, almost immediately replaced.",
+    body: "The M14 was the US Army's post-WWII modernization: a select-fire, detachable-magazine 7.62×51mm NATO rifle intended to replace the M1 Garand, BAR, M1 Carbine, and M3 submachine gun in one design. It failed at all of them. In full-auto the recoil was uncontrollable; the wooden stock warped in jungle humidity; the length was awkward in close quarters. Adopted in 1957, it was being phased out before 1970. Modernized as the M21 and M14 EBR, it serves in a sniper/designated marksman role where its 7.62 range matters more than its weight.",
   },
 ]
   .slice()
   .sort((a, b) => a.year - b.year); // chronological order
+
+// ─── SERVICE WEAPONS DATA ─────────────────────────────────────────────────────
+
+type ServiceRole = 'Service Rifle' | 'Service Pistol' | 'LMG / SAW' | 'Machine Gun' | 'Submachine Gun' | 'Sniper Rifle' | 'Anti-Materiel';
+
+interface ServiceWeapon {
+  id: string;
+  name: string;
+  countries: string[];
+  role: ServiceRole;
+  yearStart: number;
+  yearEnd: number | null; // null = still in service
+  caliber: string;
+}
+
+const SERVICE_WEAPONS: ServiceWeapon[] = [
+  // Service Rifles
+  { id: 'sw-springfield1903', name: 'Springfield M1903', countries: ['USA'], role: 'Service Rifle', yearStart: 1903, yearEnd: 1957, caliber: '.30-06' },
+  { id: 'sw-leeen', name: 'Lee-Enfield SMLE', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'Service Rifle', yearStart: 1895, yearEnd: 1957, caliber: '.303 British' },
+  { id: 'sw-mauser98', name: 'Gewehr 98 / K98k', countries: ['Germany'], role: 'Service Rifle', yearStart: 1898, yearEnd: 1945, caliber: '7.92×57mm' },
+  { id: 'sw-mosin', name: 'Mosin-Nagant M91/30', countries: ['USSR', 'Russia', 'Finland'], role: 'Service Rifle', yearStart: 1891, yearEnd: 1960, caliber: '7.62×54mmR' },
+  { id: 'sw-garand', name: 'M1 Garand', countries: ['USA'], role: 'Service Rifle', yearStart: 1936, yearEnd: 1957, caliber: '.30-06' },
+  { id: 'sw-stg44', name: 'StG 44', countries: ['Germany'], role: 'Service Rifle', yearStart: 1944, yearEnd: 1945, caliber: '7.92×33mm' },
+  { id: 'sw-ak47', name: 'AK-47 / AKM', countries: ['USSR', 'Russia', 'China', 'N. Korea', 'Vietnam'], role: 'Service Rifle', yearStart: 1949, yearEnd: null, caliber: '7.62×39mm' },
+  { id: 'sw-fal', name: 'FN FAL', countries: ['UK', 'Australia', 'Canada', 'Israel', 'Argentina', 'Belgium'], role: 'Service Rifle', yearStart: 1953, yearEnd: 1990, caliber: '7.62×51mm' },
+  { id: 'sw-m14', name: 'M14', countries: ['USA'], role: 'Service Rifle', yearStart: 1957, yearEnd: 1970, caliber: '7.62×51mm' },
+  { id: 'sw-g3', name: 'HK G3', countries: ['Germany', 'Iran', 'Pakistan', 'Turkey', 'Norway'], role: 'Service Rifle', yearStart: 1959, yearEnd: 1997, caliber: '7.62×51mm' },
+  { id: 'sw-m16', name: 'M16 / M4', countries: ['USA', 'Canada', 'Israel', 'Saudi Arabia', 'Australia'], role: 'Service Rifle', yearStart: 1964, yearEnd: null, caliber: '5.56×45mm' },
+  { id: 'sw-ak74', name: 'AK-74 / AK-12', countries: ['USSR', 'Russia'], role: 'Service Rifle', yearStart: 1974, yearEnd: null, caliber: '5.45×39mm' },
+  { id: 'sw-famas', name: 'FAMAS', countries: ['France'], role: 'Service Rifle', yearStart: 1979, yearEnd: 2017, caliber: '5.56×45mm' },
+  { id: 'sw-l85', name: 'L85 / SA80', countries: ['UK'], role: 'Service Rifle', yearStart: 1987, yearEnd: null, caliber: '5.56×45mm' },
+  { id: 'sw-hk416', name: 'HK416', countries: ['Norway', 'France', 'Germany (SOF)'], role: 'Service Rifle', yearStart: 2004, yearEnd: null, caliber: '5.56×45mm' },
+  { id: 'sw-xm7', name: 'XM7 (MCX SPEAR)', countries: ['USA'], role: 'Service Rifle', yearStart: 2023, yearEnd: null, caliber: '6.8×51mm' },
+  // Service Pistols
+  { id: 'sw-colt1911', name: 'M1911 / 1911A1', countries: ['USA'], role: 'Service Pistol', yearStart: 1911, yearEnd: 1985, caliber: '.45 ACP' },
+  { id: 'sw-hp', name: 'Browning Hi-Power', countries: ['UK', 'Canada', 'Belgium', 'Australia', 'Israel'], role: 'Service Pistol', yearStart: 1935, yearEnd: 2013, caliber: '9mm' },
+  { id: 'sw-beretta92', name: 'Beretta M9 / 92FS', countries: ['USA', 'Italy', 'France', 'Brazil'], role: 'Service Pistol', yearStart: 1985, yearEnd: 2017, caliber: '9mm' },
+  { id: 'sw-glk17', name: 'Glock 17/19', countries: ['Austria', 'Germany', 'UK', 'Australia', 'Norway', 'Netherlands'], role: 'Service Pistol', yearStart: 1982, yearEnd: null, caliber: '9mm' },
+  { id: 'sw-p226', name: 'SIG P226', countries: ['USA (Navy SEAL)', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm' },
+  { id: 'sw-m17', name: 'SIG M17 / M18 (P320)', countries: ['USA'], role: 'Service Pistol', yearStart: 2017, yearEnd: null, caliber: '9mm' },
+  // Machine Guns
+  { id: 'sw-maxim', name: 'Maxim / Vickers', countries: ['UK', 'Russia', 'Germany'], role: 'Machine Gun', yearStart: 1884, yearEnd: 1968, caliber: '.303 / 7.92mm' },
+  { id: 'sw-mg42', name: 'MG42 / MG3', countries: ['Germany'], role: 'Machine Gun', yearStart: 1942, yearEnd: null, caliber: '7.92mm / 7.62×51mm' },
+  { id: 'sw-m2', name: 'M2 Browning .50 BMG', countries: ['USA', 'UK', 'NATO'], role: 'Machine Gun', yearStart: 1933, yearEnd: null, caliber: '.50 BMG' },
+  { id: 'sw-m60', name: 'M60 GPMG', countries: ['USA', 'Australia'], role: 'Machine Gun', yearStart: 1957, yearEnd: 1995, caliber: '7.62×51mm' },
+  { id: 'sw-m240', name: 'M240 / FN MAG', countries: ['USA', 'UK', 'Belgium', 'Canada', 'Israel'], role: 'Machine Gun', yearStart: 1977, yearEnd: null, caliber: '7.62×51mm' },
+  // SAW / LMG
+  { id: 'sw-bar', name: 'BAR M1918', countries: ['USA'], role: 'LMG / SAW', yearStart: 1918, yearEnd: 1957, caliber: '.30-06' },
+  { id: 'sw-lewis', name: 'Lewis Gun', countries: ['UK', 'USA', 'Canada'], role: 'LMG / SAW', yearStart: 1914, yearEnd: 1946, caliber: '.303 British' },
+  { id: 'sw-bren', name: 'Bren Gun', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'LMG / SAW', yearStart: 1938, yearEnd: 1992, caliber: '.303 / 7.62×51mm' },
+  { id: 'sw-rpk', name: 'RPK / RPK-74', countries: ['USSR', 'Russia'], role: 'LMG / SAW', yearStart: 1961, yearEnd: null, caliber: '7.62×39mm / 5.45×39mm' },
+  { id: 'sw-m249', name: 'M249 SAW (FN Minimi)', countries: ['USA', 'Belgium', 'Australia', 'Canada'], role: 'LMG / SAW', yearStart: 1984, yearEnd: null, caliber: '5.56×45mm' },
+  // Submachine Guns
+  { id: 'sw-thompson', name: 'Thompson SMG', countries: ['USA', 'UK'], role: 'Submachine Gun', yearStart: 1919, yearEnd: 1971, caliber: '.45 ACP' },
+  { id: 'sw-mp40', name: 'MP40', countries: ['Germany'], role: 'Submachine Gun', yearStart: 1940, yearEnd: 1945, caliber: '9mm' },
+  { id: 'sw-sten', name: 'Sten Gun', countries: ['UK', 'Canada'], role: 'Submachine Gun', yearStart: 1941, yearEnd: 1960, caliber: '9mm' },
+  { id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'USA (LEO)', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm' },
+  // Sniper Rifles
+  { id: 'sw-m24', name: 'M24 SWS (Rem 700)', countries: ['USA'], role: 'Sniper Rifle', yearStart: 1988, yearEnd: null, caliber: '7.62×51mm' },
+  { id: 'sw-m107', name: 'Barrett M107 (.50 BMG)', countries: ['USA', 'UK', 'Many'], role: 'Anti-Materiel', yearStart: 1990, yearEnd: null, caliber: '.50 BMG' },
+  { id: 'sw-awm', name: 'Accuracy International AWM', countries: ['UK', 'Germany', 'Netherlands'], role: 'Sniper Rifle', yearStart: 1996, yearEnd: null, caliber: '.338 Lapua / .300 Win Mag' },
+];
 
 // ─── BALLISTICS DATA ──────────────────────────────────────────────────────────
 
@@ -674,6 +979,11 @@ export function FieldGuide() {
   const [glossarySearch, setGlossarySearch] = useState('');
   const [camoSearch, setCamoSearch] = useState('');
   const [camoRegion, setCamoRegion] = useState<string>('All');
+  const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
+  const [platformTab, setPlatformTab] = useState<'timeline' | 'deployed'>('timeline');
+  const [platformCategory, setPlatformCategory] = useState<string>('All');
+  const [deployedCountry, setDeployedCountry] = useState<string>('All');
+  const [deployedRole, setDeployedRole] = useState<string>('All');
 
   // ── Glossary filtering & grouping ──────────────────────────────────────────
 
@@ -1137,107 +1447,335 @@ export function FieldGuide() {
   // ── PLATFORMS ───────────────────────────────────────────────────────────────
 
   if (section === 'platforms') {
+    // ── Derived data ──
+    const uniqueCategories = ['All', ...Array.from(new Set(PLATFORMS.map((p) => p.category)))];
+    const filteredPlatforms = platformCategory === 'All'
+      ? PLATFORMS
+      : PLATFORMS.filter((p) => p.category === platformCategory);
+
+    const allCountries = Array.from(new Set(SERVICE_WEAPONS.flatMap((w) => w.countries))).sort();
+    const allRoles: ServiceRole[] = ['Service Rifle', 'Service Pistol', 'LMG / SAW', 'Machine Gun', 'Submachine Gun', 'Sniper Rifle', 'Anti-Materiel'];
+
+    const filteredServiceWeapons = SERVICE_WEAPONS.filter((w) => {
+      const matchCountry = deployedCountry === 'All' || w.countries.includes(deployedCountry);
+      const matchRole = deployedRole === 'All' || w.role === deployedRole;
+      return matchCountry && matchRole;
+    }).sort((a, b) => a.yearStart - b.yearStart);
+
+    const GANTT_START = 1880;
+    const GANTT_END = 2025;
+    const PX_PER_YEAR = 3;
+    const CHART_WIDTH = (GANTT_END - GANTT_START) * PX_PER_YEAR; // 435px
+    const NAME_COL = 130;
+    const decades = [];
+    for (let y = GANTT_START; y <= GANTT_END; y += 10) decades.push(y);
+
+    const roleColor: Record<ServiceRole, string> = {
+      'Service Rifle': '#ff6b6b',
+      'Service Pistol': '#51cf66',
+      'Machine Gun': '#f783ac',
+      'LMG / SAW': '#ffa94d',
+      'Submachine Gun': '#ffd43b',
+      'Sniper Rifle': '#74c0fc',
+      'Anti-Materiel': '#cc5de8',
+    };
+
+    // ── Shared tab button style ──
+    const tabBtn = (active: boolean): React.CSSProperties => ({
+      flex: 1,
+      padding: '7px 0',
+      border: 'none',
+      borderBottom: active ? '2px solid ' + theme.accent : '2px solid transparent',
+      backgroundColor: 'transparent',
+      color: active ? theme.accent : theme.textMuted,
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      fontWeight: active ? 700 : 400,
+      letterSpacing: '1.5px',
+      cursor: 'pointer',
+    });
+
+    const chipBtn = (active: boolean, color?: string): React.CSSProperties => ({
+      flexShrink: 0,
+      padding: '4px 10px',
+      borderRadius: '20px',
+      border: '0.5px solid ' + (active ? (color || theme.accent) : theme.border),
+      backgroundColor: active ? (color ? color + '22' : 'rgba(255,212,59,0.12)') : theme.surface,
+      color: active ? (color || theme.accent) : theme.textSecondary,
+      fontFamily: 'monospace',
+      fontSize: '10px',
+      fontWeight: active ? 700 : 400,
+      letterSpacing: '0.4px',
+      cursor: 'pointer',
+    });
+
     return (
       <div style={containerStyle}>
+        {/* Header */}
         <div style={headerStyle}>
           <button style={backBtnStyle} onClick={() => setSection('home')}>← Back</button>
           <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>Platforms</span>
         </div>
 
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '10px 16px 0', borderBottom: '0.5px solid ' + theme.border, paddingBottom: '10px' }}>
-          {[
-            { label: 'Pistol', color: '#51cf66' },
-            { label: 'Rifle', color: '#ff6b6b' },
-            { label: 'Bolt Rifle', color: '#74c0fc' },
-            { label: 'Submachine Gun', color: '#ffa94d' },
-            { label: 'Anti-Materiel', color: '#cc5de8' },
-          ].map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }}/>
-              <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textMuted, letterSpacing: '0.5px' }}>{item.label}</span>
-            </div>
-          ))}
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '0.5px solid ' + theme.border }}>
+          <button style={tabBtn(platformTab === 'timeline')} onClick={() => setPlatformTab('timeline')}>
+            TIMELINE
+          </button>
+          <button style={tabBtn(platformTab === 'deployed')} onClick={() => setPlatformTab('deployed')}>
+            DEPLOYED
+          </button>
         </div>
 
-        {/* Timeline */}
-        <div style={{ position: 'relative', padding: '20px 16px 60px 44px' }}>
-          {/* Vertical line */}
-          <div style={{
-            position: 'absolute',
-            left: '28px',
-            top: '20px',
-            bottom: '60px',
-            width: '1px',
-            background: `linear-gradient(to bottom, transparent, ${theme.border} 60px, ${theme.border} calc(100% - 40px), transparent)`,
-          }}/>
+        {/* ── TIMELINE TAB ── */}
+        {platformTab === 'timeline' && (
+          <div>
+            {/* Category filter chips */}
+            <div style={{ display: 'flex', gap: '6px', padding: '10px 16px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              {uniqueCategories.map((cat) => (
+                <button
+                  key={cat}
+                  style={chipBtn(platformCategory === cat)}
+                  onClick={() => setPlatformCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
-          {PLATFORMS.map((p, i) => (
-            <div key={p.id} style={{ position: 'relative', marginBottom: i < PLATFORMS.length - 1 ? '28px' : 0 }}>
-              {/* Timeline dot */}
+            {/* Timeline list */}
+            <div style={{ position: 'relative', padding: '12px 16px 60px 44px' }}>
+              {/* Vertical line */}
               <div style={{
                 position: 'absolute',
-                left: '-22px',
-                top: '14px',
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: p.categoryColor,
-                border: '2px solid ' + theme.bg,
-                boxShadow: '0 0 0 1px ' + p.categoryColor + '60',
-                zIndex: 1,
+                left: '28px',
+                top: '12px',
+                bottom: '60px',
+                width: '1px',
+                background: `linear-gradient(to bottom, transparent, ${theme.border} 40px, ${theme.border} calc(100% - 30px), transparent)`,
               }}/>
 
-              {/* Year label on line */}
-              <div style={{
-                position: 'absolute',
-                left: '-42px',
-                top: '11px',
-                fontSize: '8px',
-                fontFamily: 'monospace',
-                color: theme.textMuted,
-                letterSpacing: '0.3px',
-                whiteSpace: 'nowrap',
-                textAlign: 'right',
-                width: '16px',
-              }}>
-                {p.year}
+              {filteredPlatforms.map((p, i) => {
+                const isExpanded = expandedPlatform === p.id;
+                return (
+                  <div key={p.id} style={{ position: 'relative', marginBottom: i < filteredPlatforms.length - 1 ? '20px' : 0 }}>
+                    {/* Timeline dot */}
+                    <div style={{
+                      position: 'absolute',
+                      left: '-22px',
+                      top: '13px',
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      backgroundColor: p.categoryColor,
+                      border: '2px solid ' + theme.bg,
+                      boxShadow: '0 0 0 1px ' + p.categoryColor + '60',
+                      zIndex: 1,
+                    }}/>
+
+                    {/* Year label */}
+                    <div style={{
+                      position: 'absolute',
+                      left: '-42px',
+                      top: '10px',
+                      fontSize: '8px',
+                      fontFamily: 'monospace',
+                      color: theme.textMuted,
+                      letterSpacing: '0.3px',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'right',
+                      width: '16px',
+                    }}>
+                      {p.year}
+                    </div>
+
+                    {/* Card — click to expand/collapse */}
+                    <div
+                      onClick={() => setExpandedPlatform(isExpanded ? null : p.id)}
+                      style={{
+                        backgroundColor: theme.surface,
+                        border: '0.5px solid ' + (isExpanded ? p.categoryColor + '80' : theme.border),
+                        borderLeft: '2px solid ' + p.categoryColor,
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.3px', lineHeight: 1.3 }}>
+                          {p.name}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <span style={{ fontSize: '9px', fontFamily: 'monospace', color: p.categoryColor, fontWeight: 700, letterSpacing: '0.5px' }}>
+                            {p.category.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '10px', color: theme.textMuted }}>
+                            {isExpanded ? '▲' : '▼'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', marginTop: '2px', marginBottom: isExpanded ? '8px' : '4px' }}>
+                        {p.origin} · {p.era}
+                      </div>
+                      {!isExpanded && (
+                        <div style={{ fontSize: '11px', color: theme.textSecondary, fontFamily: 'monospace', lineHeight: 1.5, fontStyle: 'italic' }}>
+                          {p.tagline}
+                        </div>
+                      )}
+                      {isExpanded && (
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, lineHeight: 1.65, fontFamily: 'monospace' }}>
+                          {p.body}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── DEPLOYED TAB ── */}
+        {platformTab === 'deployed' && (
+          <div>
+            {/* Country filter */}
+            <div style={{ display: 'flex', gap: '6px', padding: '10px 16px 4px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              {['All', ...allCountries].map((c) => (
+                <button
+                  key={c}
+                  style={chipBtn(deployedCountry === c)}
+                  onClick={() => setDeployedCountry(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            {/* Role filter */}
+            <div style={{ display: 'flex', gap: '6px', padding: '6px 16px 10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              {(['All', ...allRoles] as string[]).map((r) => (
+                <button
+                  key={r}
+                  style={chipBtn(deployedRole === r, r !== 'All' ? roleColor[r as ServiceRole] : undefined)}
+                  onClick={() => setDeployedRole(r)}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+
+            {/* Gantt chart */}
+            <div style={{ paddingBottom: '40px' }}>
+              {/* Year ruler row */}
+              <div style={{ display: 'flex', borderBottom: '0.5px solid ' + theme.border }}>
+                {/* Name column spacer */}
+                <div style={{ width: NAME_COL, minWidth: NAME_COL, flexShrink: 0, borderRight: '0.5px solid ' + theme.border }} />
+                {/* Scrollable ruler */}
+                <div style={{ overflowX: 'auto', flex: 1 }}>
+                  <div style={{ width: CHART_WIDTH, position: 'relative', height: '24px', flexShrink: 0 }}>
+                    {decades.map((yr) => (
+                      <div
+                        key={yr}
+                        style={{
+                          position: 'absolute',
+                          left: (yr - GANTT_START) * PX_PER_YEAR,
+                          top: 0,
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div style={{ width: '1px', height: '6px', backgroundColor: theme.border }} />
+                        <span style={{ fontSize: '8px', fontFamily: 'monospace', color: theme.textMuted, letterSpacing: '0.2px', paddingLeft: '2px', whiteSpace: 'nowrap' }}>
+                          {yr}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Card */}
-              <div style={{
-                backgroundColor: theme.surface,
-                border: '0.5px solid ' + theme.border,
-                borderLeft: '2px solid ' + p.categoryColor,
-                borderRadius: '6px',
-                padding: '10px 12px',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2px', gap: '8px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.3px', lineHeight: 1.3 }}>
-                    {p.name}
+              {/* Weapon rows */}
+              {filteredServiceWeapons.map((w) => {
+                const barLeft = (w.yearStart - GANTT_START) * PX_PER_YEAR;
+                const barEnd = (w.yearEnd ?? GANTT_END) - GANTT_START;
+                const barWidth = Math.max(barEnd * PX_PER_YEAR - barLeft, 4);
+                const color = roleColor[w.role];
+                return (
+                  <div
+                    key={w.id}
+                    style={{ display: 'flex', borderBottom: '0.5px solid ' + theme.border + '44', minHeight: '28px' }}
+                  >
+                    {/* Name column */}
+                    <div style={{
+                      width: NAME_COL,
+                      minWidth: NAME_COL,
+                      flexShrink: 0,
+                      padding: '0 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRight: '0.5px solid ' + theme.border,
+                    }}>
+                      <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textSecondary, lineHeight: 1.3, letterSpacing: '0.2px' }}>
+                        {w.name}
+                      </span>
+                    </div>
+                    {/* Bar area — scrollable */}
+                    <div style={{ overflowX: 'auto', flex: 1 }}>
+                      <div style={{ width: CHART_WIDTH, position: 'relative', height: '28px', flexShrink: 0 }}>
+                        {/* Decade grid lines */}
+                        {decades.map((yr) => (
+                          <div
+                            key={yr}
+                            style={{
+                              position: 'absolute',
+                              left: (yr - GANTT_START) * PX_PER_YEAR,
+                              top: 0,
+                              width: '1px',
+                              height: '100%',
+                              backgroundColor: theme.border + '44',
+                            }}
+                          />
+                        ))}
+                        {/* Bar */}
+                        <div
+                          title={`${w.name} (${w.yearStart}–${w.yearEnd ?? 'present'}) · ${w.caliber}`}
+                          style={{
+                            position: 'absolute',
+                            left: barLeft,
+                            top: '7px',
+                            width: barWidth,
+                            height: '14px',
+                            backgroundColor: color,
+                            borderRadius: '2px',
+                            opacity: 0.85,
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <span style={{
-                    fontSize: '9px',
-                    fontFamily: 'monospace',
-                    color: p.categoryColor,
-                    fontWeight: 700,
-                    letterSpacing: '0.5px',
-                    flexShrink: 0,
-                    paddingTop: '2px',
-                  }}>
-                    {p.category.toUpperCase()}
-                  </span>
+                );
+              })}
+
+              {filteredServiceWeapons.length === 0 && (
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: theme.textMuted, fontSize: '12px', fontFamily: 'monospace' }}>
+                  No weapons match the selected filters.
                 </div>
-                <div style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', marginBottom: '6px' }}>
-                  {p.origin} · {p.era}
-                </div>
-                <div style={{ fontSize: '12px', color: theme.textSecondary, lineHeight: 1.65, fontFamily: 'monospace' }}>
-                  {p.body}
-                </div>
+              )}
+
+              {/* Role color legend */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', padding: '14px 16px', borderTop: '0.5px solid ' + theme.border, marginTop: '8px' }}>
+                {allRoles.map((r) => (
+                  <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '10px', height: '6px', borderRadius: '1px', backgroundColor: roleColor[r], flexShrink: 0 }} />
+                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textMuted, letterSpacing: '0.3px' }}>{r}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
