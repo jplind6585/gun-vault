@@ -150,14 +150,6 @@ export function MoreMenu({ onNavigate }: MoreMenuProps) {
       onPress: () => onNavigate('field-guide'),
     },
     {
-      id: 'caliber',
-      Icon: IconCalibers,
-      label: 'Calibers',
-      sub: 'Cartridge database',
-      available: true,
-      onPress: () => onNavigate('caliber'),
-    },
-    {
       id: 'ballistics',
       Icon: IconBallistics,
       label: 'Ballistics',

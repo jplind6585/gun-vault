@@ -1196,14 +1196,14 @@ export function FieldGuide() {
 
   if (section === 'home') {
     const IcnCartridges = () => (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 21 L10 10 Q10 3 12 3 Q14 3 14 10 L14 21 Z"/>
         <line x1="10" y1="11.5" x2="14" y2="11.5"/>
         <line x1="10" y1="17" x2="14" y2="17"/>
       </svg>
     );
     const IcnPlatforms = () => (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <line x1="13" y1="10" x2="22" y2="10"/>
         <line x1="20" y1="10" x2="20" y2="8.5"/>
         <rect x="7" y="9" width="6" height="4.5" rx="0.5"/>
@@ -1212,15 +1212,15 @@ export function FieldGuide() {
       </svg>
     );
     const IcnBallistics = () => (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round">
         <path d="M2 20 Q5 5 12 4 Q19 5 22 20"/>
         <line x1="12" y1="4" x2="12" y2="12" strokeDasharray="2 2"/>
         <line x1="1" y1="21.5" x2="23" y2="21.5"/>
-        <circle cx="22" cy="20" r="1.5" fill={theme.accent}/>
+        <circle cx="22" cy="20" r="1.5" fill="white" stroke="none"/>
       </svg>
     );
     const IcnGlossary = () => (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="4" y="3" width="16" height="18" rx="2"/>
         <line x1="8" y1="8" x2="16" y2="8"/>
         <line x1="8" y1="12" x2="16" y2="12"/>
@@ -1228,22 +1228,22 @@ export function FieldGuide() {
       </svg>
     );
     const IcnOptics = () => (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round">
         <circle cx="12" cy="12" r="8"/>
         <line x1="12" y1="4" x2="12" y2="8.5"/>
         <line x1="12" y1="15.5" x2="12" y2="20"/>
         <line x1="4" y1="12" x2="8.5" y2="12"/>
         <line x1="15.5" y1="12" x2="20" y2="12"/>
-        <circle cx="12" cy="12" r="1.5" fill={theme.accent} stroke="none"/>
+        <circle cx="12" cy="12" r="1.5" fill="white" stroke="none"/>
       </svg>
     );
 
     const homeCards = [
-      { icon: <IcnCartridges/>, title: 'Cartridges', subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
-      { icon: <IcnPlatforms/>,  title: 'Platforms',  subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
-      { icon: <IcnBallistics/>, title: 'Ballistics', subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
-      { icon: <IcnGlossary/>,   title: 'Glossary',   subtitle: 'Acronyms & terms decoded',     action: () => setSection('glossary') },
-      { icon: <IcnOptics/>,     title: 'Optics',     subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
+      { icon: <IcnCartridges/>, title: 'Cartridges',      subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
+      { icon: <IcnPlatforms/>,  title: 'Gun History',     subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
+      { icon: <IcnBallistics/>, title: 'Ballistics',      subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
+      { icon: <IcnGlossary/>,   title: 'Glossary',        subtitle: 'Acronyms & terms decoded',     action: () => setSection('glossary') },
+      { icon: <IcnOptics/>,     title: 'Optics Overview', subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
     ];
 
     return (
@@ -1635,7 +1635,7 @@ export function FieldGuide() {
         {/* Header */}
         <div style={headerStyle}>
           <button style={backBtnStyle} onClick={() => setSection('home')}>← Back</button>
-          <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>Platforms</span>
+          <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>Gun History</span>
         </div>
 
         {/* Tabs */}
