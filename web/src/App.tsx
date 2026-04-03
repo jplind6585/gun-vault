@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { theme } from './theme';
 import { getAllGuns, addGun, ensureInitialized } from './storage';
 import { AuthProvider } from './auth/AuthProvider';
+import { PasscodeGate, isUnlocked } from './auth/PasscodeGate';
 import type { Gun } from './types';
 import { GunVault } from './GunVault';
 import { GunDetail } from './GunDetail';
@@ -39,6 +40,10 @@ import './App.css';
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide';
 
 function App() {
+  const [unlocked, setUnlocked] = useState(isUnlocked);
+
+  if (!unlocked) return <PasscodeGate onUnlock={() => setUnlocked(true)} />;
+
   return (
     <AuthProvider>
       <AppCore />
