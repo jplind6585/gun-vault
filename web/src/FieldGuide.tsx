@@ -1584,8 +1584,8 @@ export function FieldGuide() {
 
     const CHART_YEAR_START = 1860;
     const CHART_YEAR_END = 2025;
-    const PX_PER_YEAR = 3;
-    const TOTAL_WIDTH = (CHART_YEAR_END - CHART_YEAR_START) * PX_PER_YEAR; // 495px
+    const PX_PER_YEAR = 5;
+    const TOTAL_WIDTH = (CHART_YEAR_END - CHART_YEAR_START) * PX_PER_YEAR; // 825px
     const NAME_COL_WIDTH = 130;
     const ROW_HEIGHT = 28;
     const decades = [];
@@ -1796,9 +1796,9 @@ export function FieldGuide() {
             {/* Gantt chart — single unified scroll container */}
             <div style={{ paddingBottom: '40px' }}>
               <div style={{ overflowX: 'auto' }}>
-                {/* Year ruler row */}
-                <div style={{ display: 'flex', minWidth: TOTAL_WIDTH + NAME_COL_WIDTH, borderBottom: '0.5px solid ' + theme.border }}>
-                  <div style={{ width: NAME_COL_WIDTH, flexShrink: 0 }} />
+                {/* Year ruler row — sticky vertically so dates stay visible when scrolling down */}
+                <div style={{ display: 'flex', minWidth: TOTAL_WIDTH + NAME_COL_WIDTH, borderBottom: '0.5px solid ' + theme.border, position: 'sticky', top: 0, zIndex: 10, backgroundColor: theme.bg }}>
+                  <div style={{ width: NAME_COL_WIDTH, flexShrink: 0, position: 'sticky', left: 0, backgroundColor: theme.bg, zIndex: 11 }} />
                   <div style={{ position: 'relative', width: TOTAL_WIDTH, height: '24px', flexShrink: 0 }}>
                     {decades.map((yr) => (
                       <div
