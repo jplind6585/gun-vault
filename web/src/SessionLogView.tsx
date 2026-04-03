@@ -4,7 +4,7 @@ import { theme } from './theme';
 import type { Gun, SessionPurpose, IssueType, TargetPhoto, SessionString } from './types';
 import {
   logSession, updateSession, getAllGuns, getAllSessions,
-  getAmmoByCaliber, updateAmmo, getRecentLocations,
+  getAmmoByCaliber, updateAmmo, getRecentLocations, getAllLocations,
 } from './storage';
 import { generateSessionNarrative, hasClaudeApiKey, analyzeTargetPhoto } from './claudeApi';
 import { haptic } from './haptic';
@@ -517,6 +517,7 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   const recentLocations = getRecentLocations();
+  const allLocations = getAllLocations();
   const _allSessions = getAllSessions().sort((a, b) => b.date.localeCompare(a.date));
   const recentGunIds = [...new Set(_allSessions.map(s => s.gunId))];
   const allGuns = getAllGuns()
@@ -793,8 +794,9 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
         </div>
 
         {/* Location */}
-        <div>
+        <div style={{ position: 'relative' }}>
           <span style={labelStyle}>Location</span>
+          {/* Recent chips — tap to fill input */}
           {recentLocations.length > 0 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
               {recentLocations.map(loc => (
@@ -818,17 +820,21 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               ))}
             </div>
           )}
-          {/* Only show text field when no chip is selected (for new locations) */}
-          {(!recentLocations.includes(location) || location === '') && (
-            <input
-              type="text"
-              inputMode="text"
-              placeholder="New location (e.g., SRGC, Backyard)"
-              value={recentLocations.includes(location) ? '' : location}
-              onChange={e => setLocation(e.target.value)}
-              style={inputStyle}
-            />
-          )}
+          {/* Always-visible input with autocomplete */}
+          <input
+            type="text"
+            inputMode="text"
+            placeholder="Type or select a location..."
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+            style={inputStyle}
+            list="location-suggestions"
+          />
+          <datalist id="location-suggestions">
+            {allLocations.map(loc => (
+              <option key={loc} value={loc} />
+            ))}
+          </datalist>
         </div>
 
         {/* Indoor / Outdoor */}

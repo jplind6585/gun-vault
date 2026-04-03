@@ -294,6 +294,15 @@ export function getRecentLocations(): string[] {
   return result;
 }
 
+export function getAllLocations(): string[] {
+  const sessions = getAllSessions();
+  const seen = new Set<string>();
+  for (const s of sessions) {
+    if (s.location) seen.add(s.location);
+  }
+  return Array.from(seen).sort();
+}
+
 // ============================================================================
 // AMMO OPERATIONS
 // ============================================================================
