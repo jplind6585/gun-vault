@@ -4,7 +4,6 @@ import { haptic } from './haptic';
 import { getAllSessions, getAllGuns, getAllAmmo, deleteSession, updateSession } from './storage';
 import {
   getMaintenanceAlerts, getAmmoCorrelation, getTrainingGapDays,
-  hasClaudeApiKey, getClaudeApiKey, setClaudeApiKey,
 } from './claudeApi';
 import { ActivityHeatmap } from './ActivityHeatmap';
 import type { Session, Gun, AmmoLot, SessionPurpose, IssueType } from './types';
@@ -32,9 +31,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'insights'>('list');
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(getClaudeApiKey());
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [heatmapExpanded, setHeatmapExpanded] = useState(false);
   const [gunSearch, setGunSearch] = useState('');
@@ -284,35 +281,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
           {displayed.length} sessions · {displayed.reduce((s, x) => s + x.roundsExpended, 0).toLocaleString()} rds
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* AI button — invite when off, subtle dot when on */}
-          {hasClaudeApiKey() ? (
-            <div
-              onClick={() => setShowApiKeyModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-            >
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: theme.accent, flexShrink: 0 }} />
-              <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AI</span>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowApiKeyModal(true)}
-              style={{
-                padding: '6px 10px',
-                backgroundColor: theme.surface,
-                border: `0.5px solid ${theme.border}`,
-                borderRadius: '4px',
-                color: theme.textMuted,
-                fontFamily: 'monospace',
-                fontSize: '9px',
-                cursor: 'pointer',
-                letterSpacing: '0.5px',
-              }}
-            >
-              ✦ AI INSIGHTS
-            </button>
-          )}
-        </div>
+        <div />
       </div>
 
       {/* Gun search + filter row */}
@@ -538,61 +507,6 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           >
             UNDO
           </button>
-        </div>
-      )}
-
-      {/* API Key Modal */}
-      {showApiKeyModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '24px' }}
-          onClick={() => setShowApiKeyModal(false)}
-        >
-          <div
-            style={{ backgroundColor: theme.surface, borderRadius: '8px', padding: '24px', width: '100%', maxWidth: '420px' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textPrimary, marginBottom: '6px' }}>
-              Claude AI Settings
-            </div>
-            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '16px', lineHeight: 1.5 }}>
-              Enter your Anthropic API key to enable AI session narratives, target analysis, and smart insights.
-              Key is stored locally on your device only.
-            </div>
-            <input
-              type="password"
-              placeholder="sk-ant-api03-..."
-              value={apiKeyInput}
-              onChange={e => setApiKeyInput(e.target.value)}
-              style={{
-                width: '100%', padding: '10px', backgroundColor: theme.bg,
-                border: `0.5px solid ${theme.border}`, borderRadius: '4px',
-                color: theme.textPrimary, fontFamily: 'monospace', fontSize: '12px',
-                boxSizing: 'border-box', outline: 'none',
-              }}
-            />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-              <button
-                onClick={() => setShowApiKeyModal(false)}
-                style={{ flex: 1, padding: '10px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer' }}
-              >
-                CANCEL
-              </button>
-              {hasClaudeApiKey() && (
-                <button
-                  onClick={() => { setClaudeApiKey(''); setApiKeyInput(''); setShowApiKeyModal(false); reload(); }}
-                  style={{ flex: 1, padding: '10px', backgroundColor: 'transparent', border: `0.5px solid #ff6b6b`, borderRadius: '4px', color: '#ff6b6b', fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer' }}
-                >
-                  REMOVE
-                </button>
-              )}
-              <button
-                onClick={() => { setClaudeApiKey(apiKeyInput); setShowApiKeyModal(false); }}
-                style={{ flex: 1, padding: '10px', backgroundColor: theme.accent, border: 'none', borderRadius: '4px', color: theme.bg, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
-              >
-                SAVE
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
