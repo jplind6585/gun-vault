@@ -138,6 +138,7 @@ export function HomePage({
   }
 
   // 2. Ammo low — only calibers with a gun shot in last 90 days
+  //    Use fuzzy caliber matching to handle "9mm" vs "9mm Luger" vs "9x19" etc.
   const ninetyDaysAgo = new Date(now); ninetyDaysAgo.setDate(now.getDate() - 90);
   const recentlyUsedCalibers = new Set(
     sessions
@@ -145,26 +146,20 @@ export function HomePage({
       .map(s => guns.find(g => g.id === s.gunId)?.caliber)
       .filter(Boolean) as string[]
   );
-  const roundsByCaliber: Record<string, number> = {};
-  ammo.forEach(lot => { roundsByCaliber[lot.caliber] = (roundsByCaliber[lot.caliber] || 0) + lot.quantity; });
+  function normCal(c: string) { return c.toLowerCase().replace(/[^a-z0-9]/g, ''); }
   for (const cal of recentlyUsedCalibers) {
-    const qty = roundsByCaliber[cal] || 0;
+    const calN = normCal(cal);
+    const qty = ammo.reduce((sum, lot) => {
+      const lotN = normCal(lot.caliber);
+      return (lotN.includes(calN) || calN.includes(lotN)) ? sum + lot.quantity : sum;
+    }, 0);
     if (qty < cfg.ammoLowThreshold) {
-      armoryAlerts.push({ label: `${cal} — only ${qty} rds remaining` });
+      armoryAlerts.push({ label: `${cal} — ${qty} rds on hand` });
     }
   }
 
-  // 3. Idle gun — 3+ sessions on record, none in N days
-  for (const g of activeGuns) {
-    const gunSessions = sessions.filter(s => s.gunId === g.id);
-    if (gunSessions.length < 3) continue;
-    const lastGunSession = gunSessions.sort((a, b) => b.date.localeCompare(a.date))[0];
-    const idleDays = Math.floor((now.getTime() - new Date(lastGunSession.date).getTime()) / 86400000);
-    if (idleDays >= cfg.idleGunDays) {
-      const name = g.displayName || `${g.make} ${g.model}`;
-      armoryAlerts.push({ label: `${name} hasn't been shot in ${idleDays}d` });
-    }
-  }
+  // Note: idle gun alert removed from ARMORY — with large vaults this is too noisy.
+  // Idle/neglected gun detection lives in RANGE INSIGHTS only.
 
   const topArmoryAlerts = armoryAlerts.slice(0, 3);
 
@@ -190,16 +185,22 @@ export function HomePage({
     }
   }
 
-  // 2. Neglected gun — 2+ guns with history, one hasn't been shot in 45d
-  const gunsWithHistory = activeGuns.filter(g => sessions.filter(s => s.gunId === g.id).length >= 3);
-  if (gunsWithHistory.length >= 2) {
-    const neglected = gunsWithHistory
+  // 2. Neglected gun — only guns you were actively using in the last 90 days
+  //    that have since gone quiet. Excludes guns already mentioned in ARMORY.
+  const armoryGunIds = new Set(armoryAlerts.map(a => a.gunId).filter(Boolean) as string[]);
+  const activelyUsedGuns = activeGuns.filter(g => {
+    const hasSessions = sessions.filter(s => s.gunId === g.id).length >= 2;
+    const shotRecently = sessions.some(s => s.gunId === g.id && new Date(s.date) >= ninetyDaysAgo);
+    return hasSessions && shotRecently && !armoryGunIds.has(g.id);
+  });
+  if (activelyUsedGuns.length >= 2) {
+    const neglected = activelyUsedGuns
       .map(g => {
         const last = sessions.filter(s => s.gunId === g.id).sort((a, b) => b.date.localeCompare(a.date))[0];
         const days = Math.floor((now.getTime() - new Date(last.date).getTime()) / 86400000);
         return { g, days };
       })
-      .filter(x => x.days >= 45)
+      .filter(x => x.days >= 21)
       .sort((a, b) => b.days - a.days)[0];
     if (neglected) {
       const name = neglected.g.displayName || `${neglected.g.make} ${neglected.g.model}`;
