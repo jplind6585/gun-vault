@@ -1784,19 +1784,69 @@ export function FieldGuide() {
       cursor: 'pointer',
     });
 
-    const chipBtn = (active: boolean, color?: string): React.CSSProperties => ({
-      flexShrink: 0,
-      padding: '4px 10px',
-      borderRadius: '20px',
-      border: '0.5px solid ' + (active ? (color || theme.accent) : theme.border),
-      backgroundColor: active ? (color ? color + '22' : 'rgba(255,212,59,0.12)') : theme.surface,
-      color: active ? (color || theme.accent) : theme.textSecondary,
-      fontFamily: 'monospace',
-      fontSize: '10px',
-      fontWeight: active ? 700 : 400,
-      letterSpacing: '0.4px',
-      cursor: 'pointer',
-    });
+    function GanttSelect({ label, value, options, onChange }: {
+      label: string;
+      value: string;
+      options: string[];
+      onChange: (v: string) => void;
+    }) {
+      const [open, setOpen] = useState(false);
+      const ref = useRef<HTMLDivElement>(null);
+      useEffect(() => {
+        function handleClick(e: MouseEvent) {
+          if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        }
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+      }, []);
+      return (
+        <div ref={ref} style={{ position: 'relative', flex: 1 }}>
+          <button
+            onClick={() => setOpen(o => !o)}
+            style={{
+              width: '100%', padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: theme.bg, border: '0.5px solid ' + theme.border, borderRadius: '6px',
+              color: value ? theme.textPrimary : theme.textMuted, fontFamily: 'monospace', fontSize: '11px',
+              letterSpacing: '0.5px', cursor: 'pointer', outline: 'none',
+            }}
+          >
+            <span>{value || label}</span>
+            <span style={{ opacity: 0.5, fontSize: '8px' }}>{open ? '▲' : '▼'}</span>
+          </button>
+          {open && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100,
+              backgroundColor: theme.surface, border: '0.5px solid ' + theme.border,
+              borderRadius: '6px', overflow: 'hidden', maxHeight: '220px', overflowY: 'auto',
+            }}>
+              <div
+                onClick={() => { onChange(''); setOpen(false); }}
+                style={{
+                  padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                  color: value === '' ? theme.accent : theme.textMuted, cursor: 'pointer',
+                  backgroundColor: value === '' ? 'rgba(255,212,59,0.08)' : 'transparent',
+                }}
+              >
+                All
+              </div>
+              {options.map(opt => (
+                <div
+                  key={opt}
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                  style={{
+                    padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                    color: value === opt ? theme.accent : theme.textSecondary, cursor: 'pointer',
+                    backgroundColor: value === opt ? 'rgba(255,212,59,0.08)' : 'transparent',
+                  }}
+                >
+                  {opt}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div style={containerStyle}>
@@ -1819,17 +1869,14 @@ export function FieldGuide() {
         {/* ── TIMELINE TAB ── */}
         {platformTab === 'timeline' && (
           <div>
-            {/* Category filter chips */}
-            <div style={{ display: 'flex', gap: '6px', padding: '10px 16px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              {uniqueCategories.map((cat) => (
-                <button
-                  key={cat}
-                  style={chipBtn(platformCategory === cat)}
-                  onClick={() => setPlatformCategory(cat)}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category filter dropdown */}
+            <div style={{ padding: '10px 16px 6px' }}>
+              <GanttSelect
+                label="Gun Type"
+                value={platformCategory === 'All' ? '' : platformCategory}
+                options={Array.from(new Set(PLATFORMS.map((p) => p.category))).sort()}
+                onChange={(v) => setPlatformCategory(v === '' ? 'All' : v)}
+              />
             </div>
 
             {/* Timeline list */}
@@ -1928,83 +1975,10 @@ export function FieldGuide() {
         {platformTab === 'deployed' && (
           <div>
             {/* Filters */}
-            {(() => {
-              function GanttSelect({ label, value, options, onChange }: {
-                label: string;
-                value: string;
-                options: string[];
-                onChange: (v: string) => void;
-              }) {
-                const [open, setOpen] = useState(false);
-                const ref = useRef<HTMLDivElement>(null);
-                useEffect(() => {
-                  function handleClick(e: MouseEvent) {
-                    if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-                  }
-                  document.addEventListener('mousedown', handleClick);
-                  return () => document.removeEventListener('mousedown', handleClick);
-                }, []);
-                return (
-                  <div ref={ref} style={{ flex: 1, position: 'relative' }}>
-                    <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>{label}</div>
-                    <button
-                      onClick={() => setOpen(o => !o)}
-                      style={{
-                        width: '100%', padding: '7px 10px', textAlign: 'left',
-                        backgroundColor: theme.surface, border: `0.5px solid ${open ? theme.accent : theme.border}`,
-                        borderRadius: '6px', color: value ? theme.textPrimary : theme.textMuted,
-                        fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        outline: 'none',
-                      }}
-                    >
-                      <span>{value || 'All'}</span>
-                      <span style={{ opacity: 0.5, fontSize: '9px', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
-                    </button>
-                    {open && (
-                      <div style={{
-                        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-                        backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
-                        borderRadius: '6px', zIndex: 100, maxHeight: '200px', overflowY: 'auto',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                      }}>
-                        <div
-                          onClick={() => { onChange(''); setOpen(false); }}
-                          style={{
-                            padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
-                            color: !value ? theme.accent : theme.textMuted,
-                            cursor: 'pointer', borderBottom: `0.5px solid ${theme.border}`,
-                            backgroundColor: !value ? 'rgba(255,255,255,0.04)' : 'transparent',
-                          }}
-                        >
-                          All
-                        </div>
-                        {options.map(opt => (
-                          <div
-                            key={opt}
-                            onClick={() => { onChange(opt); setOpen(false); }}
-                            style={{
-                              padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
-                              color: value === opt ? theme.accent : theme.textSecondary,
-                              cursor: 'pointer',
-                              backgroundColor: value === opt ? 'rgba(255,255,255,0.04)' : 'transparent',
-                            }}
-                          >
-                            {opt}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return (
-                <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 12px' }}>
-                  <GanttSelect label="COUNTRY" value={deployedCountry} options={allCountries} onChange={setDeployedCountry} />
-                  <GanttSelect label="GUN TYPE" value={deployedRole} options={ALL_ROLES} onChange={setDeployedRole} />
-                </div>
-              );
-            })()}
+            <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 12px' }}>
+              <GanttSelect label="COUNTRY" value={deployedCountry} options={allCountries} onChange={setDeployedCountry} />
+              <GanttSelect label="GUN TYPE" value={deployedRole} options={ALL_ROLES} onChange={setDeployedRole} />
+            </div>
 
             {/* Gantt chart — single unified scroll container */}
             <div style={{ paddingBottom: '40px' }}>
