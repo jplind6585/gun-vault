@@ -165,12 +165,13 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
         {/* Row 2: Type chips */}
         <div>
           <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '5px' }}>Type</div>
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', paddingRight: '16px', scrollbarWidth: 'none' }}>
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
             {TYPE_CHIPS.map(chip => (
               <button key={chip.value} onClick={() => setFilterType(chip.value)} style={chipStyle(filterType === chip.value)}>
                 {chip.label}
               </button>
             ))}
+            <div style={{ minWidth: '1px', flexShrink: 0 }} />
           </div>
         </div>
 
