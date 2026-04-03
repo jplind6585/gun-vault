@@ -580,15 +580,6 @@ export function TargetAnalysis() {
       ctx.moveTo(pt.x, pt.y - arm); ctx.lineTo(pt.x, pt.y + arm);
       ctx.stroke();
 
-      // A/B label above the dot
-      ctx.fillStyle = 'white';
-      ctx.font = `bold ${Math.max(11, calibR * 0.65)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.shadowColor = 'rgba(0,0,0,0.7)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(i === 0 ? 'A' : 'B', pt.x, pt.y - calibR - 3);
-      ctx.shadowBlur = 0;
     });
 
     if (calibPts.length === 2) {
@@ -617,13 +608,13 @@ export function TargetAnalysis() {
       ctx.beginPath();
       ctx.arc(poa.x, poa.y, Math.max(4, r * 0.12), 0, Math.PI * 2);
       ctx.fillStyle = 'white'; ctx.fill();
-      // Outer tick marks
-      const tick = r * 0.45;
+      // Inner tick marks (stay within circle)
+      const tick = r * 0.4;
       ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = Math.max(2, displayRatio * 1.5);
       [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => {
         ctx.beginPath();
         ctx.moveTo(poa.x + dx * r, poa.y + dy * r);
-        ctx.lineTo(poa.x + dx * (r + tick), poa.y + dy * (r + tick));
+        ctx.lineTo(poa.x + dx * (r - tick), poa.y + dy * (r - tick));
         ctx.stroke();
       });
     }
@@ -816,9 +807,9 @@ export function TargetAnalysis() {
       return;
     }
     if (isLongPressLoupeRef.current) {
-      // Drop the mark at the current loupe position
+      // Drop the mark at the current loupe position (offset upward so finger doesn't cover pin)
       const touch = e.changedTouches[0];
-      const pt = toCanvas(touch.clientX, touch.clientY);
+      const pt = toCanvas(touch.clientX, touch.clientY - 28);
       handleCanvasTap(pt.x, pt.y);
       isLongPressLoupeRef.current = false;
       clearLoupe();
@@ -828,7 +819,8 @@ export function TargetAnalysis() {
     }
     if (e.changedTouches.length === 1 && touchStartRef.current?.touches.length === 1 && !touchMovedRef.current) {
       const touch = e.changedTouches[0];
-      const pt = toCanvas(touch.clientX, touch.clientY);
+      // Offset upward so fingertip doesn't cover the placed pin
+      const pt = toCanvas(touch.clientX, touch.clientY - 28);
       handleCanvasTap(pt.x, pt.y);
     }
     touchStartRef.current = null;
