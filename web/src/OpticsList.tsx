@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
 import type { Optic, OpticAssignment } from './types';
 import {
@@ -31,6 +31,211 @@ const OPTIC_TYPES = [
 const FOCAL_PLANES = ['FFP', 'SFP', 'N/A'] as const;
 const TURRET_UNITS = ['MOA', 'MRAD'] as const;
 const OPTIC_STATUSES = ['Active', 'Stored', 'Loaned Out', 'Sold'] as const;
+
+// ── Known optic specs database ────────────────────────────────────────────────
+interface KnownSpec {
+  opticType: typeof OPTIC_TYPES[number];
+  magnificationMin?: number;
+  magnificationMax?: number;
+  objectiveMM?: number;
+  focalPlane?: typeof FOCAL_PLANES[number];
+  reticleName?: string;
+  illuminated?: boolean;
+  turretUnit?: typeof TURRET_UNITS[number];
+  clickValueMOA?: number;
+  clickValueMRAD?: number;
+  batteryType?: string;
+  weightOz?: number;
+  msrp?: number;
+}
+
+const KNOWN_OPTICS: Record<string, Record<string, KnownSpec>> = {
+  Trijicon: {
+    'ACOG 4x32':           { opticType: 'Prism',   magnificationMin: 4, magnificationMax: 4,   objectiveMM: 32, focalPlane: 'FFP', reticleName: 'BDC', illuminated: true,  turretUnit: 'MOA', weightOz: 9.9,  msrp: 1199 },
+    'ACOG 3.5x35':         { opticType: 'Prism',   magnificationMin: 3.5, magnificationMax: 3.5, objectiveMM: 35, focalPlane: 'FFP', reticleName: 'BDC', illuminated: true,  turretUnit: 'MOA', weightOz: 10.3, msrp: 1199 },
+    'MRO':                 { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 4.1, msrp: 479 },
+    'MRO HD':              { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 5.0, msrp: 629 },
+    'RMR Type 2':          { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 1.2, msrp: 699 },
+    'RMR CC':              { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 1.0, msrp: 699 },
+    'SRO':                 { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 1.3, msrp: 849 },
+    'VCOG 1-6x24':         { opticType: 'LPVO',    magnificationMin: 1, magnificationMax: 6,   objectiveMM: 24, focalPlane: 'FFP', reticleName: 'MRAD Segmented Circle', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 19.0, msrp: 2999 },
+    'Credo HX 1-6x24':     { opticType: 'LPVO',    magnificationMin: 1, magnificationMax: 6,   objectiveMM: 24, focalPlane: 'SFP', reticleName: 'MOA Duplex', illuminated: false, turretUnit: 'MOA',  clickValueMOA: 0.25, weightOz: 16.8, msrp: 999 },
+    'AccuPower 1-4x24':    { opticType: 'LPVO',    magnificationMin: 1, magnificationMax: 4,   objectiveMM: 24, focalPlane: 'SFP', illuminated: true,  turretUnit: 'MOA',  clickValueMOA: 0.25, weightOz: 13.4, msrp: 799 },
+    'AccuPower 4-16x50':   { opticType: 'Scope',   magnificationMin: 4, magnificationMax: 16,  objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MOA',  clickValueMOA: 0.25, weightOz: 24.0, msrp: 1199 },
+  },
+  Aimpoint: {
+    'PRO':      { opticType: 'Red Dot', illuminated: true, batteryType: 'DL1/3N', weightOz: 7.8, msrp: 459 },
+    'CompM5':   { opticType: 'Red Dot', illuminated: true, batteryType: 'AA',     weightOz: 5.4, msrp: 945 },
+    'CompM5s':  { opticType: 'Red Dot', illuminated: true, batteryType: 'AA',     weightOz: 5.1, msrp: 875 },
+    'T2':       { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 3.0, msrp: 799 },
+    'Micro T-2':{ opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 3.0, msrp: 799 },
+    'ACRO P-2': { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 2.0, msrp: 599 },
+  },
+  EOTech: {
+    'XPS2':              { opticType: 'Holographic', illuminated: true, batteryType: 'CR123', weightOz: 9.0, msrp: 549 },
+    'XPS3':              { opticType: 'Holographic', illuminated: true, batteryType: 'CR123', weightOz: 9.0, msrp: 699 },
+    'EXPS3':             { opticType: 'Holographic', illuminated: true, batteryType: 'AA',    weightOz: 11.2, msrp: 749 },
+    'VUDU 1-6x24 FFP':   { opticType: 'LPVO',       magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 17.0, msrp: 1299 },
+    'VUDU 5-25x50 FFP':  { opticType: 'Scope',      magnificationMin: 5, magnificationMax: 25, objectiveMM: 50, focalPlane: 'FFP', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 31.9, msrp: 1999 },
+  },
+  Vortex: {
+    'Spitfire 3x Prism':        { opticType: 'Prism',  magnificationMin: 3, magnificationMax: 3,  objectiveMM: 25, focalPlane: 'FFP', reticleName: 'EBR-556B', illuminated: true,  turretUnit: 'MOA', weightOz: 9.9,  msrp: 349 },
+    'Spitfire HD Gen II 5x':    { opticType: 'Prism',  magnificationMin: 5, magnificationMax: 5,  objectiveMM: 25, focalPlane: 'FFP', reticleName: 'EBR-556B', illuminated: true,  turretUnit: 'MOA', weightOz: 14.1, msrp: 399 },
+    'Strike Eagle 1-6x24':      { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'SFP', reticleName: 'EBR-8', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 16.8, msrp: 299 },
+    'Strike Eagle 1-8x24':      { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 8,  objectiveMM: 24, focalPlane: 'SFP', reticleName: 'EBR-8', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 17.5, msrp: 399 },
+    'Razor HD Gen II-E 1-6x24': { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'FFP', reticleName: 'JM-1 BDC', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 21.5, msrp: 1399 },
+    'Razor HD Gen III 1-10x24': { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 10, objectiveMM: 24, focalPlane: 'FFP', reticleName: 'EBR-9', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 24.2, msrp: 2299 },
+    'Viper PST Gen II 1-6x24':  { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'FFP', reticleName: 'EBR-2C', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 22.6, msrp: 699 },
+    'Viper PST Gen II 5-25x50': { opticType: 'Scope',  magnificationMin: 5, magnificationMax: 25, objectiveMM: 50, focalPlane: 'FFP', reticleName: 'EBR-7C', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 35.6, msrp: 999 },
+    'Crossfire Red Dot':        { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.6, msrp: 139 },
+    'AMG UH-1 Gen II':          { opticType: 'Holographic', illuminated: true, batteryType: 'CR123', weightOz: 9.0, msrp: 399 },
+    'SPARC AR':                 { opticType: 'Red Dot', illuminated: true, batteryType: 'AA', weightOz: 5.3, msrp: 199 },
+    'Diamondback Tactical 6-24x50': { opticType: 'Scope', magnificationMin: 6, magnificationMax: 24, objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MOA', clickValueMOA: 0.1, weightOz: 28.9, msrp: 349 },
+  },
+  Leupold: {
+    'Mark 4HD 1-4.5x24':  { opticType: 'LPVO',  magnificationMin: 1,   magnificationMax: 4.5, objectiveMM: 24, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 16.9, msrp: 999 },
+    'Mark 5HD 3.6-18x44': { opticType: 'Scope', magnificationMin: 3.6, magnificationMax: 18,  objectiveMM: 44, focalPlane: 'FFP', illuminated: false, turretUnit: 'MOA', clickValueMOA: 0.1, weightOz: 26.9, msrp: 1999 },
+    'Mark 5HD 5-25x56':   { opticType: 'Scope', magnificationMin: 5,   magnificationMax: 25,  objectiveMM: 56, focalPlane: 'FFP', illuminated: false, turretUnit: 'MOA', clickValueMOA: 0.1, weightOz: 33.6, msrp: 2499 },
+    'VX-6HD 1-6x24':      { opticType: 'LPVO',  magnificationMin: 1,   magnificationMax: 6,   objectiveMM: 24, focalPlane: 'SFP', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 19.5, msrp: 1349 },
+    'Mark 6 1-6x20':      { opticType: 'LPVO',  magnificationMin: 1,   magnificationMax: 6,   objectiveMM: 20, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.1, weightOz: 23.6, msrp: 2199 },
+    'Deltapoint Pro':      { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.95, msrp: 429 },
+  },
+  Nightforce: {
+    'ATACR 1-8x24':   { opticType: 'LPVO',  magnificationMin: 1, magnificationMax: 8,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 30.0, msrp: 3299 },
+    'ATACR 4-16x42':  { opticType: 'Scope', magnificationMin: 4, magnificationMax: 16, objectiveMM: 42, focalPlane: 'FFP', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 30.5, msrp: 2699 },
+    'ATACR 5-25x56':  { opticType: 'Scope', magnificationMin: 5, magnificationMax: 25, objectiveMM: 56, focalPlane: 'FFP', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 44.0, msrp: 3599 },
+    'NX8 1-8x24':     { opticType: 'LPVO',  magnificationMin: 1, magnificationMax: 8,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 19.2, msrp: 1799 },
+    'SHV 3-10x42':    { opticType: 'Scope', magnificationMin: 3, magnificationMax: 10, objectiveMM: 42, focalPlane: 'SFP', illuminated: false, turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 20.0, msrp: 999 },
+    'BEAST 5-25x56':  { opticType: 'Scope', magnificationMin: 5, magnificationMax: 25, objectiveMM: 56, focalPlane: 'FFP', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 69.8, msrp: 5499 },
+  },
+  'Primary Arms': {
+    'GLx 2x Prism':       { opticType: 'Prism',  magnificationMin: 2, magnificationMax: 2,  objectiveMM: 28, focalPlane: 'FFP', reticleName: 'ACSS Cyclops', illuminated: true,  turretUnit: 'MOA', weightOz: 10.2, msrp: 259 },
+    'GLx 4x Prism':       { opticType: 'Prism',  magnificationMin: 4, magnificationMax: 4,  objectiveMM: 32, focalPlane: 'FFP', reticleName: 'ACSS',         illuminated: true,  turretUnit: 'MOA', weightOz: 15.5, msrp: 329 },
+    'SLx 3x MicroPrism':  { opticType: 'Prism',  magnificationMin: 3, magnificationMax: 3,  objectiveMM: 28, focalPlane: 'FFP', reticleName: 'ACSS Cyclops', illuminated: true,  turretUnit: 'MOA', weightOz: 9.0,  msrp: 199 },
+    'GLx 6x Prism':       { opticType: 'Prism',  magnificationMin: 6, magnificationMax: 6,  objectiveMM: 32, focalPlane: 'FFP', reticleName: 'ACSS',         illuminated: true,  turretUnit: 'MOA', weightOz: 17.6, msrp: 399 },
+    'SLx 1-6x24 FFP':     { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'FFP', reticleName: 'ACSS Raptor', illuminated: true,  turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 18.2, msrp: 449 },
+  },
+  'SIG Sauer': {
+    'Romeo5':             { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 5.1, msrp: 149 },
+    'Romeo7':             { opticType: 'Red Dot', illuminated: true, batteryType: 'AA',     weightOz: 7.2, msrp: 249 },
+    'Romeo Zero':         { opticType: 'Red Dot', illuminated: true, batteryType: 'CR1632', weightOz: 0.8, msrp: 199 },
+    'Tango6T 1-6x24':     { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true,  turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 23.5, msrp: 1499 },
+    'Tango4 4-16x44':     { opticType: 'Scope',  magnificationMin: 4, magnificationMax: 16, objectiveMM: 44, focalPlane: 'FFP', illuminated: false, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 26.5, msrp: 999 },
+    'Whiskey5 3-15x56':   { opticType: 'Scope',  magnificationMin: 3, magnificationMax: 15, objectiveMM: 56, focalPlane: 'SFP', illuminated: false, turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 31.4, msrp: 799 },
+    'KILO2400ABS':        { opticType: 'Rangefinder', weightOz: 26.0, msrp: 2599 },
+  },
+  Holosun: {
+    '510C':           { opticType: 'Red Dot', illuminated: true, batteryType: 'AA',     weightOz: 3.8, msrp: 299 },
+    '507C':           { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.6, msrp: 249 },
+    '507C X2':        { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.6, msrp: 279 },
+    '507K':           { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.1, msrp: 249 },
+    '407C':           { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 1.4, msrp: 199 },
+    'AEMS':           { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 3.5, msrp: 399 },
+    'SCS-MOS':        { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 0.7, msrp: 329 },
+    'HE510C-GR Elite':{ opticType: 'Red Dot', illuminated: true, batteryType: 'AA',     weightOz: 3.8, msrp: 399 },
+  },
+  Burris: {
+    'FastFire 3':         { opticType: 'Red Dot',  illuminated: true, batteryType: 'CR2032', weightOz: 1.5, msrp: 209 },
+    'XTR III 3.3-18x50':  { opticType: 'Scope',   magnificationMin: 3.3, magnificationMax: 18, objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 31.0, msrp: 1299 },
+    'Veracity 4-20x50':   { opticType: 'Scope',   magnificationMin: 4,   magnificationMax: 20, objectiveMM: 50, focalPlane: 'SFP', turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 28.0, msrp: 799 },
+    'RT-6 1-6x24':        { opticType: 'LPVO',    magnificationMin: 1,   magnificationMax: 6,  objectiveMM: 24, focalPlane: 'SFP', illuminated: true, turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 19.0, msrp: 399 },
+  },
+  Bushnell: {
+    'Elite Tactical DMR3 3.5-21x50': { opticType: 'Scope', magnificationMin: 3.5, magnificationMax: 21, objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MOA', clickValueMOA: 0.1, weightOz: 36.8, msrp: 1599 },
+    'First Strike 2.0':              { opticType: 'Red Dot', illuminated: true, batteryType: 'CR2032', weightOz: 3.0, msrp: 179 },
+    'AR Optics 1-4x24':              { opticType: 'LPVO',   magnificationMin: 1, magnificationMax: 4, objectiveMM: 24, focalPlane: 'SFP', illuminated: true, turretUnit: 'MOA', clickValueMOA: 0.5, weightOz: 14.5, msrp: 229 },
+    'LMSS2 10x42':                   { opticType: 'Rangefinder', weightOz: 25.6, msrp: 599 },
+  },
+  Zeiss: {
+    'LRP S5 3.6-18x50': { opticType: 'Scope', magnificationMin: 3.6, magnificationMax: 18, objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 31.7, msrp: 3299 },
+    'Conquest V4 3-12x56': { opticType: 'Scope', magnificationMin: 3, magnificationMax: 12, objectiveMM: 56, focalPlane: 'SFP', turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 28.9, msrp: 1399 },
+    'Victory V8 1.1-8x30': { opticType: 'LPVO', magnificationMin: 1.1, magnificationMax: 8, objectiveMM: 30, focalPlane: 'FFP', illuminated: true, turretUnit: 'MOA', weightOz: 23.3, msrp: 3999 },
+  },
+  'Schmidt & Bender': {
+    'PM II 3-12x50':  { opticType: 'Scope', magnificationMin: 3,  magnificationMax: 12, objectiveMM: 50, focalPlane: 'FFP', turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 30.7, msrp: 3799 },
+    'PM II 5-25x56':  { opticType: 'Scope', magnificationMin: 5,  magnificationMax: 25, objectiveMM: 56, focalPlane: 'FFP', turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 44.0, msrp: 4499 },
+    'Short Dot 1-4x24': { opticType: 'LPVO', magnificationMin: 1, magnificationMax: 4,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true, turretUnit: 'MRAD', clickValueMRAD: 0.1, weightOz: 23.0, msrp: 2799 },
+  },
+  Swarovski: {
+    'Z8i 1-8x24':  { opticType: 'LPVO',  magnificationMin: 1, magnificationMax: 8,  objectiveMM: 24, focalPlane: 'FFP', illuminated: true, turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 22.4, msrp: 3699 },
+    'Z6i 1-6x24':  { opticType: 'LPVO',  magnificationMin: 1, magnificationMax: 6,  objectiveMM: 24, focalPlane: 'SFP', illuminated: true, turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 20.5, msrp: 2799 },
+    'Z5 3.5-18x44':{ opticType: 'Scope', magnificationMin: 3.5, magnificationMax: 18, objectiveMM: 44, focalPlane: 'SFP', illuminated: false, turretUnit: 'MOA', clickValueMOA: 0.25, weightOz: 20.1, msrp: 1999 },
+  },
+};
+
+const KNOWN_BRANDS = Object.keys(KNOWN_OPTICS).sort();
+
+// ── Known retailers ───────────────────────────────────────────────────────────
+const KNOWN_RETAILERS = [
+  // Online specialists
+  'Brownells', 'MidwayUSA', 'Optics Planet', 'Euro Optic', 'SWFA Outdoors',
+  'Rainier Arms', 'Palmetto State Armory', 'Primary Arms', 'Guns.com',
+  "Bud's Gun Shop", 'GrabAGun', 'Silencer Shop', 'KyGunCo',
+  // Big box / sporting
+  "Cabela's", 'Bass Pro Shops', "Sportsman's Warehouse", 'Academy Sports',
+  "Dick's Sporting Goods", 'Rural King', 'Scheels', 'Walmart',
+  // Manufacturer direct
+  'Manufacturer Direct',
+  // Other
+  'Gun Show', 'Private Sale', 'Pawn Shop', 'Local Gun Shop',
+];
+
+// ── Autocomplete input ────────────────────────────────────────────────────────
+function AutocompleteInput({
+  value, onChange, placeholder, options, onSelect, style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  options: string[];
+  onSelect?: (v: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  const filtered = value
+    ? options.filter(o => o.toLowerCase().includes(value.toLowerCase())).slice(0, 8)
+    : options.slice(0, 8);
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        style={style}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 200,
+          backgroundColor: '#1a1a1a', border: '0.5px solid ' + theme.border,
+          borderRadius: '6px', overflow: 'hidden', maxHeight: '180px', overflowY: 'auto',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+        }}>
+          {filtered.map(opt => (
+            <div
+              key={opt}
+              onMouseDown={e => { e.preventDefault(); onChange(opt); (onSelect || onChange)(opt); setOpen(false); }}
+              style={{
+                padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                color: opt.toLowerCase() === value.toLowerCase() ? theme.accent : theme.textSecondary,
+                cursor: 'pointer', borderBottom: '0.5px solid rgba(255,255,255,0.04)',
+                backgroundColor: opt.toLowerCase() === value.toLowerCase() ? 'rgba(255,212,59,0.08)' : 'transparent',
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function OpticsList({ onSelectOptic }: OpticsListProps) {
   const [optics, setOptics]       = useState<Optic[]>([]);
@@ -294,6 +499,34 @@ function AddOpticForm({
   const [purchaseDate, setPurchaseDate] = useState(initial?.purchaseDate || '');
   const [purchasedFrom, setPurchasedFrom] = useState(initial?.purchasedFrom || '');
   const [notes, setNotes]             = useState(initial?.notes || '');
+  const [prefillBanner, setPrefillBanner] = useState('');
+
+  // When a known brand+model is selected, pre-fill all known specs
+  function applyKnownSpec(b: string, m: string) {
+    const spec = KNOWN_OPTICS[b]?.[m];
+    if (!spec) return;
+    setOpticType(spec.opticType);
+    setMagMin(spec.magnificationMin?.toString() || '');
+    setMagMax(spec.magnificationMax?.toString() || '');
+    setObjective(spec.objectiveMM?.toString() || '');
+    setFocalPlane(spec.focalPlane || 'N/A');
+    setReticle(spec.reticleName || '');
+    setIlluminated(spec.illuminated ?? false);
+    setTurretUnit(spec.turretUnit || 'MOA');
+    if (spec.turretUnit === 'MRAD') setClickVal(spec.clickValueMRAD?.toString() || '');
+    else setClickVal(spec.clickValueMOA?.toString() || '');
+    setBatteryType(spec.batteryType || '');
+    setWeightOz(spec.weightOz?.toString() || '');
+    if (spec.msrp && !price) setPrice(spec.msrp.toString());
+    setPrefillBanner(`Specs pre-filled from ${b} ${m}`);
+    setTimeout(() => setPrefillBanner(''), 3000);
+  }
+
+  // Models available for the currently typed brand
+  const knownModelsForBrand = (() => {
+    const exact = Object.keys(KNOWN_OPTICS).find(b => b.toLowerCase() === brand.toLowerCase());
+    return exact ? Object.keys(KNOWN_OPTICS[exact]) : [];
+  })();
 
   const hasMag = ['LPVO', 'Scope', 'Prism', 'Magnifier'].includes(opticType);
 
@@ -380,14 +613,37 @@ function AddOpticForm({
           </div>
 
           {/* Brand + Model */}
+          {prefillBanner && (
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.green, letterSpacing: '0.5px', padding: '6px 10px', backgroundColor: 'rgba(81,207,102,0.08)', borderRadius: '4px', border: '0.5px solid rgba(81,207,102,0.2)' }}>
+              ✓ {prefillBanner}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <div style={labelStyle}>Brand *</div>
-              <input style={inputStyle} value={brand} onChange={e => setBrand(e.target.value)} placeholder="Trijicon" />
+              <AutocompleteInput
+                value={brand}
+                onChange={v => { setBrand(v); setModel(''); setPrefillBanner(''); }}
+                onSelect={v => { setBrand(v); setModel(''); setPrefillBanner(''); }}
+                placeholder="Trijicon, Vortex…"
+                options={KNOWN_BRANDS}
+                style={inputStyle}
+              />
             </div>
             <div>
               <div style={labelStyle}>Model *</div>
-              <input style={inputStyle} value={model} onChange={e => setModel(e.target.value)} placeholder="MRO" />
+              <AutocompleteInput
+                value={model}
+                onChange={v => setModel(v)}
+                onSelect={v => {
+                  setModel(v);
+                  const exactBrand = Object.keys(KNOWN_OPTICS).find(b => b.toLowerCase() === brand.toLowerCase());
+                  if (exactBrand) applyKnownSpec(exactBrand, v);
+                }}
+                placeholder={knownModelsForBrand.length ? 'Select or type…' : 'MRO, Strike Eagle…'}
+                options={knownModelsForBrand}
+                style={inputStyle}
+              />
             </div>
           </div>
 
@@ -518,7 +774,13 @@ function AddOpticForm({
           </div>
           <div>
             <div style={labelStyle}>Purchased From</div>
-            <input style={inputStyle} value={purchasedFrom} onChange={e => setPurchasedFrom(e.target.value)} placeholder="Brownells, Local shop..." />
+            <AutocompleteInput
+              value={purchasedFrom}
+              onChange={setPurchasedFrom}
+              placeholder="Brownells, Optics Planet…"
+              options={KNOWN_RETAILERS}
+              style={inputStyle}
+            />
           </div>
 
           {/* Notes */}
