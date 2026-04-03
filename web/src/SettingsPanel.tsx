@@ -207,7 +207,7 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
           {restoreMsg && (
             <div style={{
               fontFamily: 'monospace', fontSize: '10px', marginTop: '6px',
-              color: restoreMsg.ok ? theme.green : '#ff6b6b',
+              color: restoreMsg.ok ? theme.green : theme.red,
             }}>
               {restoreMsg.text}
             </div>
@@ -245,7 +245,7 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
                   ...btnBase,
                   width: '100%',
                   flex: undefined,
-                  color: '#ff6b6b',
+                  color: theme.red,
                   borderColor: 'rgba(255,107,107,0.3)',
                 }}
               >
@@ -259,7 +259,7 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
               borderRadius: '8px',
               padding: '16px',
             }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff6b6b', fontWeight: 700, marginBottom: '8px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, fontWeight: 700, marginBottom: '8px' }}>
                 DELETE ALL VAULT DATA?
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '14px', lineHeight: 1.6 }}>
@@ -278,7 +278,7 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
                   style={{
                     ...btnBase,
                     flex: 1,
-                    backgroundColor: deleteCountdown === 0 ? '#ff6b6b' : 'transparent',
+                    backgroundColor: deleteCountdown === 0 ? theme.red : 'transparent',
                     color: deleteCountdown === 0 ? '#fff' : 'rgba(255,107,107,0.5)',
                     borderColor: 'rgba(255,107,107,0.4)',
                     cursor: deleteCountdown === 0 ? 'pointer' : 'default',

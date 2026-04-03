@@ -449,37 +449,36 @@ export function BallisticCalculator() {
       minHeight: '100vh',
       backgroundColor: theme.bg,
       color: theme.textPrimary,
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto'
+      padding: '16px',
+      paddingBottom: '80px',
+      boxSizing: 'border-box',
     }}>
       {/* Header */}
       <div style={{
         borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
+        paddingBottom: '12px',
+        marginBottom: '16px'
       }}>
-        <h1 style={{
+        <div style={{
           fontFamily: 'monospace',
-          fontSize: '24px',
+          fontSize: '13px',
           fontWeight: 700,
           letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
+          color: theme.textPrimary,
+          marginBottom: '2px',
         }}>
           BALLISTIC CALCULATOR
-        </h1>
-        <p style={{
+        </div>
+        <div style={{
           fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
+          fontSize: '10px',
+          color: theme.textMuted,
         }}>
-          External ballistics trajectory calculator
-        </p>
+          External ballistics · trajectory table · DOPE card export
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
         {/* Left Column - Inputs */}
         <div>
           {/* Gun Specifications */}

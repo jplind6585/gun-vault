@@ -52,31 +52,31 @@ export function GunDetailModal({ gun, onClose }: GunDetailModalProps) {
     // Check for recent issues
     if (issuesInLast3) {
       const issueSession = sessions.find(s => s.issues);
-      notes.push(`⚠️ Issue reported in recent session${issueSession?.issueDescription ? ': ' + issueSession.issueDescription : ''}`);
+      notes.push(`ISSUE: Recent session reported a problem${issueSession?.issueDescription ? ' — ' + issueSession.issueDescription : ''}`);
     }
 
     // Check zero status
     if (lastZeroDate) {
       const daysSinceZero = Math.floor((new Date().getTime() - new Date(lastZeroDate).getTime()) / (1000 * 60 * 60 * 24));
       if (daysSinceZero > 90) {
-        notes.push(`🎯 Last zeroed ${daysSinceZero} days ago - consider verifying zero`);
+        notes.push(`ZERO: Last verified ${daysSinceZero} days ago — consider re-confirming`);
       } else {
-        notes.push(`✓ Zeroed ${new Date(lastZeroDate).toLocaleDateString()}`);
+        notes.push(`ZERO: Confirmed ${new Date(lastZeroDate).toLocaleDateString()}`);
       }
     } else {
-      notes.push('🎯 No zero data logged - consider zeroing and logging session');
+      notes.push('ZERO: No zero session logged');
     }
 
     // Round count milestone
     if (gun.roundCount && gun.roundCount >= 1000) {
-      notes.push(`🔥 ${gun.roundCount.toLocaleString()} rounds through this firearm`);
+      notes.push(`ROUNDS: ${gun.roundCount.toLocaleString()} fired through this firearm`);
     }
 
     // Recent activity
     if (lastShotDate) {
       const daysSinceShot = Math.floor((new Date().getTime() - new Date(lastShotDate).getTime()) / (1000 * 60 * 60 * 24));
       if (daysSinceShot > 180) {
-        notes.push(`💤 Last shot ${daysSinceShot} days ago - might be time for range day`);
+        notes.push(`IDLE: Last shot ${daysSinceShot} days ago`);
       }
     }
 
@@ -425,12 +425,23 @@ export function GunDetailModal({ gun, onClose }: GunDetailModalProps) {
               <div style={{ ...labelStyle, color: theme.accent, marginBottom: '6px' }}>
                 System Notes
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {systemNotes.map((note, i) => (
-                  <div key={i} style={{ fontSize: '11px', color: theme.textSecondary, lineHeight: '1.4' }}>
-                    {note}
-                  </div>
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {systemNotes.map((note, i) => {
+                  const colonIdx = note.indexOf(':');
+                  const prefix = colonIdx > 0 ? note.slice(0, colonIdx) : null;
+                  const body = colonIdx > 0 ? note.slice(colonIdx + 1).trim() : note;
+                  const isWarning = prefix === 'ISSUE' || prefix === 'IDLE';
+                  return (
+                    <div key={i} style={{ fontSize: '11px', color: theme.textSecondary, lineHeight: '1.5', fontFamily: 'monospace' }}>
+                      {prefix && (
+                        <span style={{ color: isWarning ? theme.orange : theme.accent, fontWeight: 700, marginRight: '6px' }}>
+                          {prefix}
+                        </span>
+                      )}
+                      {body}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

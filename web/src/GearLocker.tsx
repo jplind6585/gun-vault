@@ -133,14 +133,14 @@ export function GearLocker() {
     fontWeight: 600
   };
 
-  const categoryIcons: Record<GearCategory, string> = {
-    optic: '🔭',
-    holster: '🔫',
-    magazine: '📦',
-    suppressor: '🔇',
-    cleaning: '🧹',
-    accessory: '🔧',
-    nfa: '⚠️'
+  const categoryAbbr: Record<GearCategory, string> = {
+    optic: 'OPT',
+    holster: 'HLS',
+    magazine: 'MAG',
+    suppressor: 'SUP',
+    cleaning: 'CLN',
+    accessory: 'ACC',
+    nfa: 'NFA',
   };
 
   const categoryLabels: Record<GearCategory, string> = {
@@ -162,100 +162,44 @@ export function GearLocker() {
       paddingBottom: isMobile ? '80px' : '24px'
     }}>
       {/* Header */}
-      <div style={{
-        borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
-      }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: isMobile ? '20px' : '24px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
-        }}>
+      <div style={{ borderBottom: `0.5px solid ${theme.border}`, paddingBottom: '12px', marginBottom: '16px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1.5px', color: theme.textPrimary, marginBottom: '2px' }}>
           GEAR LOCKER
-        </h1>
-        <p style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
-        }}>
-          Track optics, accessories, suppressors, and gear
-        </p>
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+          Optics · holsters · magazines · accessories
+        </div>
       </div>
 
       {/* Stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-        gap: isMobile ? '12px' : '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            TOTAL ITEMS
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+        {[
+          { label: 'TOTAL ITEMS', value: gearItems.length, color: theme.accent },
+          { label: 'TOTAL VALUE', value: `$${totalValue.toLocaleString()}`, color: theme.green },
+          { label: 'MAINT. DUE', value: maintenanceDue, color: maintenanceDue > 0 ? theme.orange : theme.textPrimary },
+          { label: 'NFA ITEMS', value: nfaItems, color: theme.blue },
+        ].map(stat => (
+          <div key={stat.label} style={cardStyle}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, marginBottom: '6px' }}>{stat.label}</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '24px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>{stat.value}</div>
           </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.accent }}>
-            {gearItems.length}
-          </div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            TOTAL VALUE
-          </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.green }}>
-            ${totalValue.toLocaleString()}
-          </div>
-        </div>
-        {!isMobile && (
-          <>
-            <div style={cardStyle}>
-              <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                MAINT. DUE
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: maintenanceDue > 0 ? theme.orange : theme.textPrimary }}>
-                {maintenanceDue}
-              </div>
-            </div>
-            <div style={cardStyle}>
-              <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                NFA ITEMS
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: theme.blue }}>
-                {nfaItems}
-              </div>
-            </div>
-          </>
-        )}
+        ))}
       </div>
 
       {/* Maintenance Alerts */}
       {maintenanceDue > 0 && (
         <div style={{
-          ...cardStyle,
-          backgroundColor: theme.orange,
-          borderColor: theme.orange,
-          marginBottom: '24px',
-          padding: '14px'
+          marginBottom: '14px',
+          padding: '10px 14px',
+          backgroundColor: 'rgba(255,169,77,0.08)',
+          border: `0.5px solid ${theme.orange}`,
+          borderLeft: `3px solid ${theme.orange}`,
+          borderRadius: '6px',
         }}>
-          <div style={{
-            fontSize: '12px',
-            fontWeight: 700,
-            marginBottom: '6px',
-            color: '#fff'
-          }}>
-            ⚠️ MAINTENANCE REQUIRED
-          </div>
-          <div style={{
-            fontSize: '10px',
-            lineHeight: '1.5',
-            color: '#fff'
-          }}>
-            {maintenanceDue} item{maintenanceDue !== 1 ? 's' : ''} need{maintenanceDue === 1 ? 's' : ''} cleaning or maintenance.
-          </div>
+          <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.orange, marginRight: '8px' }}>MAINT</span>
+          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>
+            {maintenanceDue} item{maintenanceDue !== 1 ? 's' : ''} due for cleaning or service.
+          </span>
         </div>
       )}
 
@@ -416,7 +360,14 @@ export function GearLocker() {
                   marginBottom: '10px'
                 }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '20px' }}>{categoryIcons[item.category]}</span>
+                    <span style={{
+                      fontFamily: 'monospace', fontSize: '9px', fontWeight: 700,
+                      letterSpacing: '0.5px', color: theme.accent,
+                      backgroundColor: 'rgba(255,212,59,0.1)',
+                      border: '0.5px solid rgba(255,212,59,0.25)',
+                      borderRadius: '3px', padding: '3px 5px',
+                      flexShrink: 0,
+                    }}>{categoryAbbr[item.category]}</span>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600 }}>
                         {item.name}
@@ -484,8 +435,8 @@ export function GearLocker() {
                     </div>
                   )}
                   {item.rating && (
-                    <div style={{ fontSize: '12px' }}>
-                      {'⭐'.repeat(item.rating)}
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.accent, letterSpacing: '1px' }}>
+                      {'●'.repeat(item.rating)}{'○'.repeat(5 - item.rating)}
                     </div>
                   )}
                 </div>

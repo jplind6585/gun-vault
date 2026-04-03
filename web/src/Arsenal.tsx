@@ -659,20 +659,20 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
             key={cat}
             onClick={() => setCategoryFilter(cat)}
             style={{
-              padding: '4px 8px',
+              padding: '6px 11px',
               backgroundColor: categoryFilter === cat ? theme.accent : 'transparent',
-              color: categoryFilter === cat ? theme.bg : theme.textSecondary,
+              color: categoryFilter === cat ? theme.bg : theme.textMuted,
               border: `0.5px solid ${categoryFilter === cat ? theme.accent : theme.border}`,
-              borderRadius: '3px',
+              borderRadius: '20px',
               fontFamily: 'monospace',
-              fontSize: '8px',
+              fontSize: '10px',
               letterSpacing: '0.5px',
               cursor: 'pointer',
-              textTransform: 'uppercase',
-              fontWeight: 600
+              fontWeight: categoryFilter === cat ? 700 : 400,
+              whiteSpace: 'nowrap',
             }}
           >
-            {cat === 'all' ? 'ALL' : cat.toUpperCase()}
+            {cat === 'all' ? 'ALL' : cat}
           </button>
         ))}
       </div>

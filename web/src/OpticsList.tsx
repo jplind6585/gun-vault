@@ -12,14 +12,14 @@ interface OpticsListProps {
 }
 
 const OPTIC_TYPE_COLORS: Record<string, string> = {
-  'Red Dot': '#f03e3e',
-  'Holographic': '#e67700',
-  'LPVO': theme.accent,
-  'Scope': '#74c0fc',
-  'Prism': '#69db7c',
-  'Night Vision': '#9775fa',
-  'Thermal': '#ff8787',
-  'Magnifier': '#a9e34b',
+  'Red Dot':    theme.red,
+  'Holographic': theme.orange,
+  'LPVO':       theme.accent,
+  'Scope':      theme.blue,
+  'Prism':      theme.green,
+  'Night Vision': '#b197fc',
+  'Thermal':    '#ff8787',
+  'Magnifier':  theme.textSecondary,
   'Rangefinder': '#63e6be',
 };
 
@@ -106,7 +106,15 @@ export function OpticsList({ onSelectOptic }: OpticsListProps) {
             backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
             borderRadius: '8px',
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>🔭</div>
+            <div style={{ marginBottom: '12px', opacity: 0.3, display: 'flex', justifyContent: 'center' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="9" width="16" height="7" rx="3.5" stroke={theme.textSecondary} strokeWidth="1.5"/>
+                <ellipse cx="18" cy="12.5" rx="2" ry="4" stroke={theme.textSecondary} strokeWidth="1.2"/>
+                <circle cx="22" cy="12.5" r="1.5" stroke={theme.textSecondary} strokeWidth="1"/>
+                <line x1="6" y1="12.5" x2="14" y2="12.5" stroke={theme.textSecondary} strokeWidth="1" strokeDasharray="2 2" opacity="0.5"/>
+                <circle cx="10" cy="12.5" r="2" stroke={theme.textSecondary} strokeWidth="1.2"/>
+              </svg>
+            </div>
             <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px' }}>
               {optics.length === 0 ? 'NO OPTICS YET' : 'NO RESULTS'}
             </div>

@@ -412,70 +412,39 @@ export function TrainingLog() {
       {/* Header */}
       <div style={{
         borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
+        paddingBottom: '12px',
+        marginBottom: '16px'
       }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: isMobile ? '20px' : '24px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
-        }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1.5px', color: theme.textPrimary, marginBottom: '2px' }}>
           TRAINING LOG
-        </h1>
-        <p style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
-        }}>
-          Track drills, earn badges, and measure progress
-        </p>
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+          Drills · performance tracking · badges
+        </div>
       </div>
 
       {/* Stats Overview */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-        gap: isMobile ? '12px' : '16px',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '10px',
         marginBottom: '24px'
       }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            DRILLS COMPLETED
-          </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.accent }}>
-            {totalDrills}
-          </div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            ROUNDS FIRED
-          </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.textPrimary }}>
-            {totalRounds}
-          </div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            BADGES EARNED
-          </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.green }}>
-            {earnedBadges}/{badges.length}
-          </div>
-        </div>
-        {!isMobile && (
-          <div style={cardStyle}>
-            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-              AVG SCORE
+        {[
+          { label: 'DRILLS COMPLETED', value: totalDrills, color: theme.accent },
+          { label: 'ROUNDS FIRED', value: totalRounds, color: theme.textPrimary },
+          { label: 'BADGES EARNED', value: `${earnedBadges}/${badges.length}`, color: theme.green },
+          { label: 'AVG SCORE', value: sessions.length > 0 ? (sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length).toFixed(1) : '—', color: theme.blue },
+        ].map(stat => (
+          <div key={stat.label} style={cardStyle}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, marginBottom: '6px' }}>
+              {stat.label}
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: theme.blue }}>
-              {sessions.length > 0 ? (sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length).toFixed(1) : '--'}
+            <div style={{ fontFamily: 'monospace', fontSize: '28px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+              {stat.value}
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Badges Section */}

@@ -31,7 +31,7 @@ function InsightsCarousel({ insights, card, sectionLabel }: {
     return (
       <div style={card}>
         <div style={sectionLabel}>Training Insights</div>
-        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#666' }}>Log sessions to see insights.</div>
+        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>Log sessions to see insights.</div>
       </div>
     );
   }
@@ -59,7 +59,7 @@ function InsightsCarousel({ insights, card, sectionLabel }: {
                 onClick={() => setIndex(i)}
                 style={{
                   width: '5px', height: '5px', borderRadius: '50%',
-                  backgroundColor: i === index ? '#ffd43b' : 'rgba(255,255,255,0.2)',
+                  backgroundColor: i === index ? theme.accent : 'rgba(255,255,255,0.2)',
                   cursor: 'pointer', transition: 'background-color 0.2s',
                 }}
               />
@@ -69,11 +69,11 @@ function InsightsCarousel({ insights, card, sectionLabel }: {
       </div>
       <div style={{
         padding: '7px 10px',
-        backgroundColor: '#07071a',
-        borderLeft: '2px solid #51cf66',
+        backgroundColor: theme.bg,
+        borderLeft: '2px solid ' + theme.green,
         borderRadius: '0 4px 4px 0',
         fontFamily: 'monospace', fontSize: '11px',
-        color: 'rgba(255,255,255,0.6)',
+        color: theme.textSecondary,
         minHeight: '28px',
       }}>
         {insights[index]}

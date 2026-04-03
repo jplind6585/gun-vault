@@ -16,11 +16,11 @@ interface GunVaultProps {
 }
 
 export const typeAccent: Record<string, string> = {
-  Pistol:     '#ffd43b',
-  Rifle:      '#74c0fc',
-  Shotgun:    '#51cf66',
-  Suppressor: '#a0a0b0',
-  NFA:        '#ff6b6b',
+  Pistol:     theme.accent,
+  Rifle:      theme.blue,
+  Shotgun:    theme.green,
+  Suppressor: theme.textSecondary,
+  NFA:        theme.red,
 };
 
 const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold', 'Transferred'];
@@ -390,15 +390,15 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
           {/* Clear filters */}
           {activeFilterCount > 0 && (
             <button onClick={clearAllFilters} style={{
-              padding: '7px',
-              backgroundColor: 'transparent',
-              border: `0.5px solid ${theme.border}`,
+              padding: '9px',
+              backgroundColor: 'rgba(255,212,59,0.06)',
+              border: `0.5px solid ${theme.accent}`,
               borderRadius: '5px',
-              color: theme.textMuted,
-              fontFamily: 'monospace', fontSize: '9px',
-              letterSpacing: '0.8px', cursor: 'pointer',
+              color: theme.accent,
+              fontFamily: 'monospace', fontSize: '10px',
+              letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 600,
             }}>
-              CLEAR ALL FILTERS
+              CLEAR {activeFilterCount} FILTER{activeFilterCount !== 1 ? 'S' : ''}
             </button>
           )}
         </div>

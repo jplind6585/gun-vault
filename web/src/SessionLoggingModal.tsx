@@ -82,67 +82,53 @@ export function SessionLoggingModal({ gun, onClose, onSessionLogged }: SessionLo
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.9)',
+        backgroundColor: 'rgba(0,0,0,0.8)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'center',
         zIndex: 2000,
-        padding: '24px'
       }}
       onClick={onClose}
     >
       <div
         style={{
           backgroundColor: theme.surface,
-          borderRadius: '8px',
-          maxWidth: '600px',
+          borderRadius: '12px 12px 0 0',
           width: '100%',
-          padding: '32px',
-          position: 'relative'
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            border: `0.5px solid ${theme.border}`,
-            color: theme.textPrimary,
-            fontSize: '20px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          ×
-        </button>
+        {/* Sticky header */}
+        <div style={{
+          position: 'sticky', top: 0, backgroundColor: theme.surface,
+          borderBottom: `0.5px solid ${theme.border}`,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          zIndex: 1,
+        }}>
+          <div>
+            <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1px', color: theme.textPrimary }}>
+              LOG RANGE SESSION
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginTop: '2px' }}>
+              {gun.make} {gun.model} · {gun.caliber}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', color: theme.textMuted,
+              fontSize: '22px', cursor: 'pointer', lineHeight: 1, padding: '4px',
+            }}
+          >
+            ×
+          </button>
+        </div>
 
-        {/* Title */}
-        <h2 style={{
-          fontFamily: 'monospace',
-          fontSize: '20px',
-          fontWeight: 700,
-          letterSpacing: '1px',
-          margin: '0 0 4px 0'
-        }}>
-          LOG RANGE SESSION
-        </h2>
-        <p style={{
-          fontSize: '14px',
-          color: theme.textSecondary,
-          margin: '0 0 24px 0',
-          fontFamily: 'monospace'
-        }}>
-          {gun.make} {gun.model} • {gun.caliber}
-        </p>
+        <div style={{ padding: '20px' }}>
 
         {/* Form */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -400,6 +386,7 @@ export function SessionLoggingModal({ gun, onClose, onSessionLogged }: SessionLo
             LOG SESSION
           </button>
         </div>
+        </div>{/* end padding wrapper */}
       </div>
     </div>
   );

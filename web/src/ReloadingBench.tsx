@@ -171,52 +171,31 @@ export function ReloadingBench() {
       {/* Header */}
       <div style={{
         borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
+        paddingBottom: '12px',
+        marginBottom: '16px'
       }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: isMobile ? '20px' : '24px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
-        }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1.5px', color: theme.textPrimary, marginBottom: '2px' }}>
           RELOADING BENCH
-        </h1>
-        <p style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
-        }}>
-          Manage load recipes, track components, and develop loads safely
-        </p>
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+          Load recipes · component inventory · load development
+        </div>
       </div>
 
       {/* Safety Warning */}
       <div style={{
-        ...cardStyle,
-        backgroundColor: theme.red,
-        borderColor: theme.red,
-        marginBottom: '24px',
-        padding: '14px'
+        marginBottom: '16px',
+        padding: '12px 14px',
+        backgroundColor: 'rgba(255,107,107,0.08)',
+        border: `0.5px solid ${theme.red}`,
+        borderLeft: `3px solid ${theme.red}`,
+        borderRadius: '6px',
       }}>
-        <div style={{
-          fontSize: '12px',
-          fontWeight: 700,
-          marginBottom: '6px',
-          color: '#fff'
-        }}>
-          ⚠️ SAFETY WARNING
+        <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.red, marginBottom: '4px', letterSpacing: '0.5px' }}>
+          SAFETY
         </div>
-        <div style={{
-          fontSize: '10px',
-          lineHeight: '1.5',
-          color: '#fff'
-        }}>
-          Always start low and work up. Never exceed published maximum loads. Consult multiple reloading manuals.
-          This app is for record-keeping only and does not provide load data recommendations.
+        <div style={{ fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.6', color: theme.textSecondary }}>
+          Always start at minimum load and work up. Never exceed published maximums. Consult multiple manuals. This app is for record-keeping only.
         </div>
       </div>
 

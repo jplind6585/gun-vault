@@ -143,74 +143,28 @@ export function Wishlist() {
       paddingBottom: isMobile ? '80px' : '24px'
     }}>
       {/* Header */}
-      <div style={{
-        borderBottom: `0.5px solid ${theme.border}`,
-        paddingBottom: '16px',
-        marginBottom: '24px'
-      }}>
-        <h1 style={{
-          fontFamily: 'monospace',
-          fontSize: isMobile ? '20px' : '24px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
-          margin: '0 0 8px 0'
-        }}>
-          WISHLIST & COLLECTION PLANNING
-        </h1>
-        <p style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          letterSpacing: '0.5px',
-          color: theme.textSecondary,
-          margin: 0
-        }}>
-          Track desired firearms, budget, and analyze collection gaps
-        </p>
+      <div style={{ borderBottom: `0.5px solid ${theme.border}`, paddingBottom: '12px', marginBottom: '16px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1.5px', color: theme.textPrimary, marginBottom: '2px' }}>
+          WISHLIST
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+          Collection planning · budget tracking · gap analysis
+        </div>
       </div>
 
       {/* Stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-        gap: isMobile ? '12px' : '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            ITEMS
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+        {[
+          { label: 'ITEMS', value: wishlistItems.length, color: theme.accent },
+          { label: 'TOTAL COST', value: `$${totalValue.toLocaleString()}`, color: theme.textPrimary },
+          { label: 'SAVED', value: `$${totalSaved.toLocaleString()}`, color: theme.green },
+          { label: 'HIGH PRIORITY', value: highPriorityCount, color: theme.red },
+        ].map(stat => (
+          <div key={stat.label} style={cardStyle}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, marginBottom: '6px' }}>{stat.label}</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '24px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>{stat.value}</div>
           </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.accent }}>
-            {wishlistItems.length}
-          </div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-            TOTAL VALUE
-          </div>
-          <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: theme.textPrimary }}>
-            ${totalValue.toLocaleString()}
-          </div>
-        </div>
-        {!isMobile && (
-          <>
-            <div style={cardStyle}>
-              <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                SAVED
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: theme.green }}>
-                ${totalSaved.toLocaleString()}
-              </div>
-            </div>
-            <div style={cardStyle}>
-              <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
-                HIGH PRIORITY
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: theme.red }}>
-                {highPriorityCount}
-              </div>
-            </div>
-          </>
-        )}
+        ))}
       </div>
 
       {/* Budget Progress */}
@@ -253,24 +207,29 @@ export function Wishlist() {
       {/* Gap Analysis */}
       {newCalibers.length > 0 && (
         <div style={{
-          ...cardStyle,
-          backgroundColor: theme.blue,
-          borderColor: theme.blue,
+          backgroundColor: 'rgba(116,192,252,0.08)',
+          border: `0.5px solid ${theme.blue}`,
+          borderLeft: `3px solid ${theme.blue}`,
+          borderRadius: '6px',
           marginBottom: '24px',
           padding: '14px'
         }}>
           <div style={{
-            fontSize: '12px',
+            fontFamily: 'monospace',
+            fontSize: '9px',
             fontWeight: 700,
+            letterSpacing: '0.8px',
             marginBottom: '6px',
-            color: '#fff'
+            color: theme.blue,
+            textTransform: 'uppercase' as const,
           }}>
-            📊 COLLECTION GAPS
+            GAP ANALYSIS
           </div>
           <div style={{
-            fontSize: '10px',
+            fontFamily: 'monospace',
+            fontSize: '11px',
             lineHeight: '1.5',
-            color: '#fff'
+            color: theme.textSecondary
           }}>
             Your wishlist includes {newCalibers.length} new caliber{newCalibers.length !== 1 ? 's' : ''}: {newCalibers.join(', ')}
           </div>
@@ -279,9 +238,9 @@ export function Wishlist() {
             style={{
               marginTop: '10px',
               padding: '6px 12px',
-              backgroundColor: '#fff',
+              backgroundColor: 'transparent',
               color: theme.blue,
-              border: 'none',
+              border: `0.5px solid ${theme.blue}`,
               borderRadius: '4px',
               fontFamily: 'monospace',
               fontSize: '10px',

@@ -15,10 +15,10 @@ interface SessionRecapsProps {
 
 const PURPOSE_COLORS: Record<string, string> = {
   Drills: theme.blue,
-  Competition: '#ff6b6b',
-  Zeroing: '#51cf66',
+  Competition: theme.red,
+  Zeroing: theme.green,
   Qualification: '#cc5de8',
-  'Carry Eval': '#ff922b',
+  'Carry Eval': theme.orange,
   Warmup: theme.textMuted,
   Fun: theme.accent,
 };
@@ -182,7 +182,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
         {statCard('Sessions', sessions.length, 'all time')}
         {statCard('This Month', roundsThisMonth.toLocaleString(), 'rounds', theme.green)}
-        {statCard('Last Session', gapDays === Infinity ? '—' : gapDays + 'd', 'ago', gapDays > 14 ? '#ff6b6b' : theme.textSecondary)}
+        {statCard('Last Session', gapDays === Infinity ? '—' : gapDays + 'd', 'ago', gapDays > 14 ? theme.red : theme.textSecondary)}
       </div>
 
       {/* LIST / INSIGHTS tab switcher */}
@@ -276,12 +276,12 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           padding: '12px 14px',
           marginBottom: '16px',
         }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: '#ff6b6b', letterSpacing: '0.5px', marginBottom: '8px', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red, letterSpacing: '0.5px', marginBottom: '8px', textTransform: 'uppercase' }}>
             Maintenance Due
           </div>
           {maintenanceAlerts.slice(0, 3).map(alert => (
-            <div key={alert.gun.id} style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff9999', marginBottom: '4px' }}>
-              ⚠ {alert.gun.make} {alert.gun.model} — {alert.message}
+            <div key={alert.gun.id} style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, marginBottom: '4px' }}>
+              <span style={{ color: theme.red, fontWeight: 700 }}>MAINT </span>{alert.gun.make} {alert.gun.model} — {alert.message}
             </div>
           ))}
         </div>
@@ -379,7 +379,17 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           backgroundColor: theme.surface, borderRadius: '8px',
           border: `0.5px solid ${theme.border}`,
         }}>
-          <div style={{ fontSize: '36px', marginBottom: '12px', opacity: 0.3 }}>🎯</div>
+          <div style={{ marginBottom: '12px', opacity: 0.3 }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="18" cy="18" r="15" />
+              <circle cx="18" cy="18" r="9" />
+              <circle cx="18" cy="18" r="3" />
+              <line x1="18" y1="3" x2="18" y2="0" />
+              <line x1="18" y1="33" x2="18" y2="36" />
+              <line x1="3" y1="18" x2="0" y2="18" />
+              <line x1="33" y1="18" x2="36" y2="18" />
+            </svg>
+          </div>
           <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px' }}>
             {sessions.length === 0 ? 'NO SESSIONS YET' : 'NO RESULTS'}
           </div>
@@ -779,11 +789,11 @@ function SessionCard({
       <div style={{
         position: 'absolute', top: 0, right: 0, bottom: 0,
         width: '120px',
-        backgroundColor: '#e03131',
+        backgroundColor: theme.red,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         borderRadius: '0 6px 6px 0',
       }}>
-        <span style={{ fontSize: '20px', userSelect: 'none' }}>🗑</span>
+        <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '1px', userSelect: 'none' }}>DELETE</span>
       </div>
 
       {/* Main row — tap to expand */}
@@ -956,7 +966,7 @@ function ExpandedAnalysis({ analysis }: { analysis: import('./types').TargetPhot
       {analysis.equipmentWarnings?.length ? (
         <div>
           {analysis.equipmentWarnings.map((w, i) => (
-            <div key={i} style={{ fontFamily: 'monospace', fontSize: '10px', color: '#ff6b6b' }}>⚠ {w}</div>
+            <div key={i} style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.red }}><span style={{ fontWeight: 700 }}>WARN </span>{w}</div>
           ))}
         </div>
       ) : null}
@@ -1509,14 +1519,14 @@ function AnalyticsPanel({
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
                 {g.rounds.toLocaleString()} rds
-                {g.issues > 0 && <span style={{ color: '#ff9999', marginLeft: '6px' }}>⚠ {g.issues}</span>}
+                {g.issues > 0 && <span style={{ color: theme.red, marginLeft: '6px', fontWeight: 700 }}>{g.issues} ISS</span>}
               </div>
             </div>
             <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
               <div style={{
                 height: '100%',
                 width: `${Math.round((g.rounds / maxGunRounds) * 100)}%`,
-                backgroundColor: g.issues / g.sessions > 0.2 ? '#ff6b6b' : theme.accent,
+                backgroundColor: g.issues / g.sessions > 0.2 ? theme.red : theme.accent,
                 borderRadius: '2px',
                 transition: 'width 0.3s',
               }} />
