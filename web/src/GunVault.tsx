@@ -7,7 +7,7 @@ import { SessionLoggingModal } from './SessionLoggingModal';
 import { CSVImportModal } from './CSVImportModal';
 
 type TypeFilter = 'All' | 'Pistol' | 'Rifle' | 'Shotgun' | 'NFA' | 'Suppressor';
-type SortOption = 'make' | 'roundCount' | 'acquiredPriceDesc' | 'acquiredPriceAsc' | 'capacity' | 'lastShot';
+type SortOption = 'make' | 'acquiredPriceDesc' | 'acquiredPriceAsc' | 'lastShot';
 
 interface GunVaultProps {
   onGunSelect: (gun: Gun) => void;
@@ -102,10 +102,8 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
     }
     return [...list].sort((a, b) => {
       switch (sortBy) {
-        case 'roundCount':    return (b.roundCount || 0) - (a.roundCount || 0);
         case 'acquiredPriceDesc': return (b.acquiredPrice || 0) - (a.acquiredPrice || 0);
         case 'acquiredPriceAsc':  return (a.acquiredPrice || 0) - (b.acquiredPrice || 0);
-        case 'capacity':      return (b.capacity || 0) - (a.capacity || 0);
         case 'lastShot': {
           const dA = lastShotMap[a.id] || '';
           const dB = lastShotMap[b.id] || '';
@@ -278,10 +276,8 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
           }}
         >
           <option value="make">A–Z</option>
-          <option value="roundCount">Most Fired</option>
           <option value="acquiredPriceDesc">Price ↓</option>
           <option value="acquiredPriceAsc">Price ↑</option>
-          <option value="capacity">Capacity ↓</option>
           <option value="lastShot">Last Shot</option>
         </select>
       </div>
