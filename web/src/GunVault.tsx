@@ -784,7 +784,7 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
           }}
         >
           <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
-          <span style={{ fontSize: '7px', letterSpacing: '0.5px' }}>LOG</span>
+          <span style={{ fontSize: '7px', letterSpacing: '0.5px' }}>SESSION</span>
         </button>
       </div>
       {/* Nav chevron */}

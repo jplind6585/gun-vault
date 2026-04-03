@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { theme } from './theme';
+import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { exportVaultBackup, importVaultBackup, resetAllData } from './storage';
 
 const SETTINGS_KEY = 'lindcott_settings';
 
 export interface AppSettings {
   units: 'imperial' | 'metric';
+  cleanThresholdRounds: number;   // rounds since last clean before alert fires
+  ammoLowThreshold: number;       // total rounds per caliber below which alert fires
+  idleGunDays: number;            // days without a session before a gun is flagged idle
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   units: 'imperial',
+  cleanThresholdRounds: 500,
+  ammoLowThreshold: 200,
+  idleGunDays: 60,
 };
 
 export function getSettings(): AppSettings {
@@ -139,6 +145,64 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
           }}>
             ×
           </button>
+        </div>
+
+        {/* Appearance */}
+        <div style={{ padding: '16px 20px', borderBottom: '0.5px solid ' + theme.border }}>
+          <div style={sectionLabel}>APPEARANCE</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {([
+              { key: false, label: 'DARK' },
+              { key: true, label: 'LIGHT' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={label}
+                onClick={() => { if (isOutdoorMode() !== key) toggleOutdoorMode(); }}
+                style={{
+                  flex: 1, padding: '10px',
+                  backgroundColor: isOutdoorMode() === key ? theme.accent : 'transparent',
+                  border: '0.5px solid ' + (isOutdoorMode() === key ? theme.accent : theme.border),
+                  borderRadius: '6px',
+                  color: isOutdoorMode() === key ? theme.bg : theme.textSecondary,
+                  fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
+                  letterSpacing: '0.5px', cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Alert Thresholds */}
+        <div style={{ padding: '16px 20px', borderBottom: '0.5px solid ' + theme.border }}>
+          <div style={sectionLabel}>ALERT THRESHOLDS</div>
+          {([
+            { key: 'cleanThresholdRounds' as const, label: 'Cleaning interval', unit: 'rounds' },
+            { key: 'ammoLowThreshold'     as const, label: 'Ammo low alert',    unit: 'rounds per caliber' },
+            { key: 'idleGunDays'          as const, label: 'Idle gun alert',     unit: 'days without session' },
+          ]).map(({ key, label, unit }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div>
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>{label}</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{unit}</div>
+              </div>
+              <input
+                type="number"
+                value={settings[key]}
+                onChange={e => {
+                  const v = parseInt(e.target.value);
+                  if (!isNaN(v) && v > 0) update({ [key]: v });
+                }}
+                style={{
+                  width: '72px', padding: '6px 8px', textAlign: 'right',
+                  backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`,
+                  borderRadius: '4px', color: theme.textPrimary,
+                  fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, outline: 'none',
+                }}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Units */}

@@ -67,7 +67,7 @@ function AppCore() {
   const [devOpen, setDevOpen] = useState(false);
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devTapCount, setDevTapCount] = useState(0);
-  const [vaultSection, setVaultSection] = useState<'guns' | 'ammo'>('guns');
+  const [vaultSection, setVaultSection] = useState<'guns' | 'ammo' | 'optics'>('guns');
   const [showSettings, setShowSettings] = useState(false);
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
@@ -183,8 +183,7 @@ function AppCore() {
     if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'optics')       return <AppHeader title="Optics" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('optics'); }} backLabel="Optics" />;
+    if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} backLabel="Vault" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
     if (currentView === 'field-guide')  return <AppHeader title="Field Guide" />;
     return null;
@@ -211,7 +210,7 @@ function AppCore() {
       const section = currentView === 'arsenal' ? 'ammo' : vaultSection;
       return (
         <div>
-          {/* GUNS / AMMO toggle — sticky at top of content */}
+          {/* GUNS / AMMO / OPTICS toggle — sticky at top of content */}
           <div style={{
             display: 'flex',
             gap: '8px',
@@ -222,7 +221,7 @@ function AppCore() {
             top: 0,
             zIndex: 10,
           }}>
-            {(['guns', 'ammo'] as const).map(s => (
+            {(['guns', 'ammo', 'optics'] as const).map(s => (
               <button
                 key={s}
                 onClick={() => { setVaultSection(s); if (currentView === 'arsenal') setCurrentView('vault'); }}
@@ -240,7 +239,7 @@ function AppCore() {
                   cursor: 'pointer',
                 }}
               >
-                {s === 'guns' ? 'GUNS' : 'AMMO'}
+                {s === 'guns' ? 'GUNS' : s === 'ammo' ? 'AMMO' : 'OPTICS'}
               </button>
             ))}
           </div>
@@ -250,7 +249,9 @@ function AppCore() {
                 onAddGun={() => setShowAddForm(true)}
                 onImportRequest={() => setShowCSVImport(true)}
               />
-            : <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
+            : section === 'ammo'
+            ? <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
+            : <OpticsList onSelectOptic={(o) => { setSelectedOpticId(o.id); setCurrentView('optic-detail'); }} />
           }
         </div>
       );
@@ -272,8 +273,7 @@ function AppCore() {
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist />;
-    if (currentView === 'optics')      return <OpticsList onSelectOptic={(o) => { setSelectedOpticId(o.id); setCurrentView('optic-detail'); }} />;
-    if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('optics'); }} />;
+    if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
     if (currentView === 'field-guide') return <FieldGuide />;

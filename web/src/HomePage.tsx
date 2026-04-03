@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { theme } from './theme';
-import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
+import { getAllGuns, getAllSessions, getAllAmmo, updateGun } from './storage';
+import { getSettings } from './SettingsPanel';
 import type { Gun, Session, AmmoLot } from './types';
 
 interface HomePageProps {
@@ -19,68 +20,6 @@ interface HomePageProps {
 
 type TimePeriod = 'week' | 'month' | 'year';
 
-function InsightsCarousel({ insights, card, sectionLabel }: {
-  insights: string[];
-  card: React.CSSProperties;
-  sectionLabel: React.CSSProperties;
-}) {
-  const [index, setIndex] = useState(0);
-  const startXRef = useRef<number | null>(null);
-
-  if (insights.length === 0) {
-    return (
-      <div style={card}>
-        <div style={sectionLabel}>Training Insights</div>
-        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>Log sessions to see insights.</div>
-      </div>
-    );
-  }
-
-  function onTouchStart(e: React.TouchEvent) {
-    startXRef.current = e.touches[0].clientX;
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (startXRef.current === null) return;
-    const dx = e.changedTouches[0].clientX - startXRef.current;
-    if (dx < -40) setIndex(i => Math.min(i + 1, insights.length - 1));
-    else if (dx > 40) setIndex(i => Math.max(i - 1, 0));
-    startXRef.current = null;
-  }
-
-  return (
-    <div style={card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div style={sectionLabel}>Training Insights</div>
-        {insights.length > 1 && (
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {insights.map((_, i) => (
-              <div
-                key={i}
-                onClick={() => setIndex(i)}
-                style={{
-                  width: '5px', height: '5px', borderRadius: '50%',
-                  backgroundColor: i === index ? theme.accent : 'rgba(255,255,255,0.2)',
-                  cursor: 'pointer', transition: 'background-color 0.2s',
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <div style={{
-        padding: '7px 10px',
-        backgroundColor: theme.bg,
-        borderLeft: '2px solid ' + theme.green,
-        borderRadius: '0 4px 4px 0',
-        fontFamily: 'monospace', fontSize: '11px',
-        color: theme.textSecondary,
-        minHeight: '28px',
-      }}>
-        {insights[index]}
-      </div>
-    </div>
-  );
-}
 
 // Categorise an ammo lot by matching its caliber to guns in vault
 function ammoType(lot: AmmoLot, guns: Gun[]): 'Handgun' | 'Rifle' | 'Shotgun' | 'Other' {
@@ -175,25 +114,129 @@ export function HomePage({
   }, {} as Record<string, number>);
   const topCal = Object.entries(roundsByCal).sort(([,a],[,b]) => b - a)[0];
 
-  // ── Recommendations + insights ────────────────────────────────────────────
-  const recs: string[] = [];
-  const dirtyGuns = guns.filter(g =>
-    sessions.filter(s => s.gunId === g.id).reduce((sum, s) => sum + s.roundsExpended, 0) >= 500
-  );
-  if (dirtyGuns.length > 0)
-    recs.push(`${dirtyGuns.length} gun${dirtyGuns.length > 1 ? 's' : ''} due for cleaning`);
-  if (daysSinceLast !== null && daysSinceLast > 30)
-    recs.push(`${daysSinceLast} days since last session`);
-  if (totalAmmoRounds < 500 && guns.length > 0)
-    recs.push('Ammo stock below 500 rounds');
+  // ── Smart ARMORY alerts ───────────────────────────────────────────────────
+  const cfg = getSettings();
+  const activeGuns = guns.filter(g => g.status !== 'Sold' && g.status !== 'Transferred');
 
-  const insights: string[] = [];
-  const recent10 = sortedSessions.slice(0, 10);
-  const avgRecent = recent10.length > 0
-    ? Math.round(recent10.reduce((s,x) => s + x.roundsExpended, 0) / recent10.length) : 0;
-  if (avgRecent > 0) insights.push(`Avg ${avgRecent} rds · last ${recent10.length} sessions`);
-  if (topCal) insights.push(`Top caliber: ${topCal[0]} — ${topCal[1].toLocaleString()} rds`);
-  if (top3[0]?.gun) insights.push(`Most fired: ${top3[0].gun!.make} ${top3[0].gun!.model}`);
+  interface ArmoryAlert { gunId?: string; label: string; action?: string; }
+  const armoryAlerts: ArmoryAlert[] = [];
+
+  // 1. Cleaning due — only guns that have been shot
+  for (const g of activeGuns) {
+    if (!g.roundCount || g.roundCount === 0) continue;
+    const shotsSinceClean = g.lastCleanedRoundCount != null
+      ? (g.roundCount - g.lastCleanedRoundCount)
+      : g.roundCount;
+    if (shotsSinceClean >= cfg.cleanThresholdRounds) {
+      const name = g.displayName || `${g.make} ${g.model}`;
+      armoryAlerts.push({
+        gunId: g.id,
+        label: `${name} — ${shotsSinceClean.toLocaleString()} rds since clean`,
+        action: 'LOG CLEAN',
+      });
+    }
+  }
+
+  // 2. Ammo low — only calibers with a gun shot in last 90 days
+  const ninetyDaysAgo = new Date(now); ninetyDaysAgo.setDate(now.getDate() - 90);
+  const recentlyUsedCalibers = new Set(
+    sessions
+      .filter(s => new Date(s.date) >= ninetyDaysAgo)
+      .map(s => guns.find(g => g.id === s.gunId)?.caliber)
+      .filter(Boolean) as string[]
+  );
+  const roundsByCaliber: Record<string, number> = {};
+  ammo.forEach(lot => { roundsByCaliber[lot.caliber] = (roundsByCaliber[lot.caliber] || 0) + lot.quantity; });
+  for (const cal of recentlyUsedCalibers) {
+    const qty = roundsByCaliber[cal] || 0;
+    if (qty < cfg.ammoLowThreshold) {
+      armoryAlerts.push({ label: `${cal} — only ${qty} rds remaining` });
+    }
+  }
+
+  // 3. Idle gun — 3+ sessions on record, none in N days
+  for (const g of activeGuns) {
+    const gunSessions = sessions.filter(s => s.gunId === g.id);
+    if (gunSessions.length < 3) continue;
+    const lastGunSession = gunSessions.sort((a, b) => b.date.localeCompare(a.date))[0];
+    const idleDays = Math.floor((now.getTime() - new Date(lastGunSession.date).getTime()) / 86400000);
+    if (idleDays >= cfg.idleGunDays) {
+      const name = g.displayName || `${g.make} ${g.model}`;
+      armoryAlerts.push({ label: `${name} hasn't been shot in ${idleDays}d` });
+    }
+  }
+
+  const topArmoryAlerts = armoryAlerts.slice(0, 3);
+
+  // ── Smart RANGE recommendations ───────────────────────────────────────────
+  interface RangeRec { label: string; }
+  const rangeRecs: RangeRec[] = [];
+
+  // 1. Frequency dropping — need 6+ sessions to establish baseline
+  if (sortedSessions.length >= 6) {
+    function gapDays(a: Session, b: Session) {
+      return (new Date(a.date).getTime() - new Date(b.date).getTime()) / 86400000;
+    }
+    const avgGapRecent = (
+      gapDays(sortedSessions[0], sortedSessions[1]) +
+      gapDays(sortedSessions[1], sortedSessions[2])
+    ) / 2;
+    const avgGapPrior = (
+      gapDays(sortedSessions[3], sortedSessions[4]) +
+      gapDays(sortedSessions[4], sortedSessions[5])
+    ) / 2;
+    if (avgGapPrior > 0 && avgGapRecent > avgGapPrior * 1.5) {
+      rangeRecs.push({ label: `Sessions are spacing out — avg gap up from ${Math.round(avgGapPrior)}d to ${Math.round(avgGapRecent)}d` });
+    }
+  }
+
+  // 2. Neglected gun — 2+ guns with history, one hasn't been shot in 45d
+  const gunsWithHistory = activeGuns.filter(g => sessions.filter(s => s.gunId === g.id).length >= 3);
+  if (gunsWithHistory.length >= 2) {
+    const neglected = gunsWithHistory
+      .map(g => {
+        const last = sessions.filter(s => s.gunId === g.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+        const days = Math.floor((now.getTime() - new Date(last.date).getTime()) / 86400000);
+        return { g, days };
+      })
+      .filter(x => x.days >= 45)
+      .sort((a, b) => b.days - a.days)[0];
+    if (neglected) {
+      const name = neglected.g.displayName || `${neglected.g.make} ${neglected.g.model}`;
+      rangeRecs.push({ label: `${name} hasn't been shot in ${neglected.days}d` });
+    }
+  }
+
+  // 3. Recurring issue — same issue type 2+ times in last 60 days on same gun
+  const sixtyDaysAgo = new Date(now); sixtyDaysAgo.setDate(now.getDate() - 60);
+  const recentIssues = sessions.filter(s => new Date(s.date) >= sixtyDaysAgo && s.issues && s.issueTypes?.length);
+  const issueCount: Record<string, Record<string, number>> = {};
+  for (const s of recentIssues) {
+    for (const t of (s.issueTypes || [])) {
+      if (!issueCount[s.gunId]) issueCount[s.gunId] = {};
+      issueCount[s.gunId][t] = (issueCount[s.gunId][t] || 0) + 1;
+    }
+  }
+  for (const [gunId, counts] of Object.entries(issueCount)) {
+    for (const [type, count] of Object.entries(counts)) {
+      if (count >= 2) {
+        const g = guns.find(x => x.id === gunId);
+        if (g) {
+          const name = g.displayName || `${g.make} ${g.model}`;
+          rangeRecs.push({ label: `${type} logged ${count}× recently on ${name}` });
+        }
+      }
+    }
+  }
+
+  const topRangeRecs = rangeRecs.slice(0, 2);
+
+  function handleLogClean(gunId: string) {
+    const today = new Date().toISOString().split('T')[0];
+    const g = guns.find(x => x.id === gunId);
+    updateGun(gunId, { lastCleanedDate: today, lastCleanedRoundCount: g?.roundCount || 0 });
+    setGuns(getAllGuns());
+  }
 
   // ── Shared styles ─────────────────────────────────────────────────────────
   const card: React.CSSProperties = {
@@ -446,7 +489,7 @@ export function HomePage({
                       minHeight: '28px',
                     }}
                   >
-                    LOG
+                    + SESSION
                   </button>
                 </div>
               </div>
@@ -455,28 +498,59 @@ export function HomePage({
         </div>
       )}
 
-      {/* ── RECOMMENDATIONS + INSIGHTS ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+      {/* ── ARMORY STATUS ── */}
+      <div style={{ ...card, marginBottom: '10px' }}>
+        <div style={sectionLabel}>ARMORY STATUS</div>
+        {topArmoryAlerts.length === 0 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>All clear. Armory is in order.</div>
+        ) : topArmoryAlerts.map((alert, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '7px 10px', marginBottom: i < topArmoryAlerts.length - 1 ? '6px' : 0,
+            backgroundColor: theme.bg,
+            borderLeft: `2px solid ${theme.accent}`,
+            borderRadius: '0 4px 4px 0',
+          }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, flex: 1 }}>
+              {alert.label}
+            </div>
+            {alert.action && alert.gunId && (
+              <button
+                onClick={() => handleLogClean(alert.gunId!)}
+                style={{
+                  marginLeft: '10px', padding: '4px 8px', flexShrink: 0,
+                  backgroundColor: 'transparent', border: `0.5px solid ${theme.accent}`,
+                  borderRadius: '3px', color: theme.accent,
+                  fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.5px',
+                  fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                {alert.action}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
 
-        <div style={card}>
-          <div style={sectionLabel}>Recommendations</div>
-          {recs.length === 0
-            ? <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>All clear.</div>
-            : recs.slice(0, 3).map((r, i) => (
-              <div key={i} style={{
-                padding: '7px 10px', marginBottom: i < recs.length - 1 ? '6px' : 0,
-                backgroundColor: theme.bg,
-                borderLeft: `2px solid ${theme.accent}`,
-                borderRadius: '0 4px 4px 0',
-                fontFamily: 'monospace', fontSize: '11px',
-                color: theme.textSecondary,
-              }}>{r}</div>
-            ))
-          }
-        </div>
-
-        <InsightsCarousel insights={insights} card={card} sectionLabel={sectionLabel} />
-
+      {/* ── RANGE INSIGHTS ── */}
+      <div style={{ ...card, marginBottom: '10px' }}>
+        <div style={sectionLabel}>RANGE INSIGHTS</div>
+        {topRangeRecs.length === 0 ? (
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
+            {sessions.length < 6 ? 'Log more sessions to see patterns.' : 'Looking good — no issues detected.'}
+          </div>
+        ) : topRangeRecs.map((rec, i) => (
+          <div key={i} style={{
+            padding: '7px 10px', marginBottom: i < topRangeRecs.length - 1 ? '6px' : 0,
+            backgroundColor: theme.bg,
+            borderLeft: `2px solid ${theme.green}`,
+            borderRadius: '0 4px 4px 0',
+            fontFamily: 'monospace', fontSize: '11px',
+            color: theme.textSecondary,
+          }}>
+            {rec.label}
+          </div>
+        ))}
       </div>
 
       {/* Version tap target — 7 taps unlocks dev tools */}
