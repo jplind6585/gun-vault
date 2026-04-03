@@ -139,123 +139,6 @@ function getCategoryColor(category: string): string {
   }
 }
 
-// ============================================================================
-// SHOPPING LIST EXPORT (HTML print window)
-// ============================================================================
-
-function exportShoppingList(allAmmo: AmmoLot[], gunCalibers: Set<string>) {
-  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-  // Only include low-stock lots that have a gun (hasGun)
-  const lowLots = allAmmo.filter(lot => {
-    const t = getSmartThreshold(lot);
-    if (!(t > 0 && lot.quantity < t)) return false;
-    const hasGun = gunCalibers.has(lot.caliber.toLowerCase()) || gunCalibers.has(normalizeCaliberLabel(lot.caliber).toLowerCase());
-    return hasGun;
-  });
-
-  if (lowLots.length === 0) {
-    return;
-  }
-
-  // Separate critical vs low
-  const criticalLots = lowLots.filter(lot => {
-    const t = getSmartThreshold(lot);
-    return (lot.quantity / t) * 100 < 25;
-  });
-  const lowOnlyLots = lowLots.filter(lot => {
-    const t = getSmartThreshold(lot);
-    const pct = (lot.quantity / t) * 100;
-    return pct >= 25 && pct < 100;
-  });
-
-  // Total restock cost
-  let totalRestockCost = 0;
-  let hasCostData = false;
-  lowLots.forEach(lot => {
-    if (lot.purchasePricePerRound) {
-      const need = Math.max(0, getSmartThreshold(lot) - lot.quantity);
-      totalRestockCost += need * lot.purchasePricePerRound;
-      hasCostData = true;
-    }
-  });
-
-  function buildItem(lot: AmmoLot): string {
-    const t = getSmartThreshold(lot);
-    const pct = (lot.quantity / t) * 100;
-    const cls = pct < 25 ? 'critical' : 'low';
-    const need = Math.max(0, t - lot.quantity);
-    const costStr = lot.purchasePricePerRound
-      ? `<div class="item-cost">Est. restock: $${(need * lot.purchasePricePerRound).toFixed(2)} @ ${(lot.purchasePricePerRound * 100).toFixed(0)}¢/rd</div>`
-      : '';
-    return `
-      <div class="item ${cls}">
-        <div>
-          <div class="item-name">${normalizeCaliberLabel(lot.caliber)}</div>
-          <div class="item-detail">${lot.brand}${lot.productLine ? ' ' + lot.productLine : ''} · ${lot.grainWeight}gr ${lot.bulletType || ''}</div>
-          ${costStr}
-        </div>
-        <div class="item-counts">
-          <div class="item-qty">${lot.quantity}</div>
-          <div class="item-target">/ ${t} target</div>
-          <div class="item-target">need ${need}</div>
-        </div>
-      </div>`;
-  }
-
-  const criticalSection = criticalLots.length > 0 ? `
-    <div class="section">
-      <div class="section-header">CRITICAL — Below 25% of Target</div>
-      ${criticalLots.map(buildItem).join('')}
-    </div>` : '';
-
-  const lowSection = lowOnlyLots.length > 0 ? `
-    <div class="section">
-      <div class="section-header">LOW STOCK — Below Target</div>
-      ${lowOnlyLots.map(buildItem).join('')}
-    </div>` : '';
-
-  const costFooter = hasCostData ? `
-    <div style="margin-top: 24px; padding: 16px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd;">
-      <div style="font-size: 11px; color: #666; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;">ESTIMATED TOTAL RESTOCK COST</div>
-      <div style="font-size: 28px; font-weight: 700; font-family: monospace;">$${totalRestockCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-    </div>` : '';
-
-  const html = `<html><head><title>Ammo Shopping List</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', monospace; background: #fff; color: #111; padding: 32px; }
-  h1 { font-size: 24px; font-weight: 700; letter-spacing: 2px; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 8px; }
-  .meta { font-size: 11px; color: #666; margin-bottom: 32px; }
-  .section { margin-bottom: 24px; }
-  .section-header { font-size: 10px; letter-spacing: 1px; color: #666; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-  .item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px; margin-bottom: 8px; border-radius: 4px; border-left: 4px solid #ccc; }
-  .item.critical { border-left-color: #e03131; background: #fff5f5; }
-  .item.low { border-left-color: #f59f00; background: #fffbeb; }
-  .item-name { font-size: 14px; font-weight: 700; }
-  .item-detail { font-size: 11px; color: #555; margin-top: 2px; }
-  .item-counts { text-align: right; }
-  .item-qty { font-size: 20px; font-weight: 700; font-family: monospace; }
-  .item-target { font-size: 10px; color: #888; }
-  .item-cost { font-size: 11px; color: #555; margin-top: 2px; }
-  .footer { margin-top: 40px; font-size: 10px; color: #aaa; text-align: center; border-top: 1px solid #eee; padding-top: 16px; }
-  @media print { body { padding: 16px; } }
-</style></head><body>
-<h1>AMMO SHOPPING LIST</h1>
-<div class="meta">Generated ${today} · ${lowLots.length} item${lowLots.length !== 1 ? 's' : ''} need restocking</div>
-${criticalSection}
-${lowSection}
-${costFooter}
-<div class="footer">Generated by Lindcott Armory · ${today}</div>
-</body></html>`;
-
-  const w = window.open('', '_blank');
-  if (w) {
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => w.print(), 500);
-  }
-}
 
 // ============================================================================
 // MAIN ARSENAL COMPONENT
@@ -497,22 +380,22 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted }}>AMMO INVENTORY</span>
           <button
-            onClick={() => exportShoppingList(allAmmo, gunCalibers)}
+            onClick={() => lowStockLots.length > 0 && setShowLowStockModal(true)}
             style={{
               padding: '4px 8px',
               background: 'transparent',
-              color: theme.textSecondary,
-              border: `0.5px solid ${theme.border}`,
+              color: lowStockLots.length > 0 ? theme.textSecondary : theme.textMuted,
+              border: `0.5px solid ${lowStockLots.length > 0 ? theme.border : 'transparent'}`,
               borderRadius: '4px',
               fontFamily: 'monospace',
               fontSize: '9px',
               letterSpacing: '0.5px',
-              cursor: 'pointer',
+              cursor: lowStockLots.length > 0 ? 'pointer' : 'default',
               fontWeight: 600,
               whiteSpace: 'nowrap'
             }}
           >
-            EXPORT LIST
+            {lowStockLots.length > 0 ? `SHOPPING LIST (${lowStockLots.length})` : 'SHOPPING LIST'}
           </button>
         </div>
         {/* Stats row */}
