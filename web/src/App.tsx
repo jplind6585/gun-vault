@@ -307,7 +307,7 @@ function AppCore() {
         onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
         onNavigateToSessions={() => setCurrentView('sessions')}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-        onNavigateToMore={() => setCurrentView('field-guide')}
+        onNavigateToMore={() => setCurrentView('more')}
       />
       {showSmartSearch && (
         <SmartSearch
