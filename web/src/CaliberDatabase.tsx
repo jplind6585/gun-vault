@@ -91,10 +91,10 @@ export function CaliberDatabase() {
 
 const chipStyle = (active: boolean): React.CSSProperties => ({
     padding: '5px 10px',
-    backgroundColor: active ? theme.caliberRed : theme.surface,
-    border: '0.5px solid ' + (active ? theme.caliberRed : theme.border),
+    backgroundColor: active ? theme.accent : theme.surface,
+    border: '0.5px solid ' + (active ? theme.accent : theme.border),
     borderRadius: '16px',
-    color: active ? '#fff' : theme.textSecondary,
+    color: active ? theme.bg : theme.textSecondary,
     fontFamily: 'monospace',
     fontSize: '10px',
     fontWeight: active ? 700 : 400,
@@ -145,10 +145,10 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
             onClick={() => { setComparisonMode(c => !c); setSelectedForComparison(new Set()); setShowComparisonTable(false); }}
             style={{
               padding: '8px 12px',
-              backgroundColor: comparisonMode ? theme.caliberRed : theme.surface,
-              border: '0.5px solid ' + (comparisonMode ? theme.caliberRed : theme.border),
+              backgroundColor: comparisonMode ? theme.accent : theme.surface,
+              border: '0.5px solid ' + (comparisonMode ? theme.accent : theme.border),
               borderRadius: '8px',
-              color: comparisonMode ? '#fff' : theme.textSecondary,
+              color: comparisonMode ? theme.bg : theme.textSecondary,
               fontFamily: 'monospace',
               fontSize: '10px',
               cursor: 'pointer',
@@ -163,26 +163,32 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
         </div>
 
         {/* Row 2: Type chips */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
-          {TYPE_CHIPS.map(chip => (
-            <button key={chip.value} onClick={() => setFilterType(chip.value)} style={chipStyle(filterType === chip.value)}>
-              {chip.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 3: Ownership chips + count */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-            {OWN_CHIPS.map(chip => (
-              <button key={chip.value} onClick={() => setFilterOwnership(chip.value)} style={chipStyle(filterOwnership === chip.value)}>
+        <div>
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '5px' }}>Type</div>
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', paddingRight: '16px', scrollbarWidth: 'none' }}>
+            {TYPE_CHIPS.map(chip => (
+              <button key={chip.value} onClick={() => setFilterType(chip.value)} style={chipStyle(filterType === chip.value)}>
                 {chip.label}
               </button>
             ))}
           </div>
-          <span style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', flexShrink: 0, marginLeft: '8px' }}>
-            {filteredCartridges.length}/{allCartridges.length}
-          </span>
+        </div>
+
+        {/* Row 3: Ownership chips + count */}
+        <div>
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '5px' }}>Filter by</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {OWN_CHIPS.map(chip => (
+                <button key={chip.value} onClick={() => setFilterOwnership(chip.value)} style={chipStyle(filterOwnership === chip.value)}>
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <span style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', flexShrink: 0, marginLeft: '8px' }}>
+              {filteredCartridges.length}/{allCartridges.length}
+            </span>
+          </div>
         </div>
       </div>
 
