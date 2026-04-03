@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import { FieldGuideOptics } from './FieldGuideOptics';
 import { FieldGuideCompetition } from './FieldGuideCompetition';
@@ -1100,8 +1100,8 @@ export function FieldGuide() {
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
   const [platformTab, setPlatformTab] = useState<'timeline' | 'deployed'>('timeline');
   const [platformCategory, setPlatformCategory] = useState<string>('All');
-  const [deployedCountry, setDeployedCountry] = useState<string>('All');
-  const [deployedRole, setDeployedRole] = useState<string>('All');
+  const [deployedCountry, setDeployedCountry] = useState<string>('');
+  const [deployedRole, setDeployedRole] = useState<string>('');
   const [selectedWeapon, setSelectedWeapon] = useState<ServiceWeapon | null>(null);
 
   // ── Glossary filtering & grouping ──────────────────────────────────────────
@@ -1759,39 +1759,84 @@ export function FieldGuide() {
         {/* ── DEPLOYED TAB ── */}
         {platformTab === 'deployed' && (
           <div>
-            {/* Searchable dropdowns */}
-            <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 12px', marginBottom: '0' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>COUNTRY</div>
-                <input
-                  type="text"
-                  list="country-list"
-                  value={deployedCountry}
-                  onChange={e => setDeployedCountry(e.target.value)}
-                  placeholder="All countries..."
-                  style={{ width: '100%', padding: '7px 10px', backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', outline: 'none', boxSizing: 'border-box' }}
-                />
-                <datalist id="country-list">
-                  <option value="All" />
-                  {allCountries.map(c => <option key={c} value={c} />)}
-                </datalist>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>GUN TYPE</div>
-                <input
-                  type="text"
-                  list="role-list"
-                  value={deployedRole}
-                  onChange={e => setDeployedRole(e.target.value)}
-                  placeholder="All types..."
-                  style={{ width: '100%', padding: '7px 10px', backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', outline: 'none', boxSizing: 'border-box' }}
-                />
-                <datalist id="role-list">
-                  <option value="All" />
-                  {ALL_ROLES.map(r => <option key={r} value={r} />)}
-                </datalist>
-              </div>
-            </div>
+            {/* Filters */}
+            {(() => {
+              function GanttSelect({ label, value, options, onChange }: {
+                label: string;
+                value: string;
+                options: string[];
+                onChange: (v: string) => void;
+              }) {
+                const [open, setOpen] = useState(false);
+                const ref = useRef<HTMLDivElement>(null);
+                useEffect(() => {
+                  function handleClick(e: MouseEvent) {
+                    if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+                  }
+                  document.addEventListener('mousedown', handleClick);
+                  return () => document.removeEventListener('mousedown', handleClick);
+                }, []);
+                return (
+                  <div ref={ref} style={{ flex: 1, position: 'relative' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '4px' }}>{label}</div>
+                    <button
+                      onClick={() => setOpen(o => !o)}
+                      style={{
+                        width: '100%', padding: '7px 10px', textAlign: 'left',
+                        backgroundColor: theme.surface, border: `0.5px solid ${open ? theme.accent : theme.border}`,
+                        borderRadius: '6px', color: value ? theme.textPrimary : theme.textMuted,
+                        fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        outline: 'none',
+                      }}
+                    >
+                      <span>{value || 'All'}</span>
+                      <span style={{ opacity: 0.5, fontSize: '9px', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
+                    </button>
+                    {open && (
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                        backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+                        borderRadius: '6px', zIndex: 100, maxHeight: '200px', overflowY: 'auto',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                      }}>
+                        <div
+                          onClick={() => { onChange(''); setOpen(false); }}
+                          style={{
+                            padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                            color: !value ? theme.accent : theme.textMuted,
+                            cursor: 'pointer', borderBottom: `0.5px solid ${theme.border}`,
+                            backgroundColor: !value ? 'rgba(255,255,255,0.04)' : 'transparent',
+                          }}
+                        >
+                          All
+                        </div>
+                        {options.map(opt => (
+                          <div
+                            key={opt}
+                            onClick={() => { onChange(opt); setOpen(false); }}
+                            style={{
+                              padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                              color: value === opt ? theme.accent : theme.textSecondary,
+                              cursor: 'pointer',
+                              backgroundColor: value === opt ? 'rgba(255,255,255,0.04)' : 'transparent',
+                            }}
+                          >
+                            {opt}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 12px' }}>
+                  <GanttSelect label="COUNTRY" value={deployedCountry} options={allCountries} onChange={setDeployedCountry} />
+                  <GanttSelect label="GUN TYPE" value={deployedRole} options={ALL_ROLES} onChange={setDeployedRole} />
+                </div>
+              );
+            })()}
 
             {/* Gantt chart — single unified scroll container */}
             <div style={{ paddingBottom: '40px' }}>
