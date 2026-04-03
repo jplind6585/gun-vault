@@ -205,7 +205,7 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
         ))}
       </div>
 
-      {mostActiveGunId && gunMap.get(mostActiveGunId) && activeTab === 'list' && (
+      {totalCost > 0 && activeTab === 'list' && (
         <div style={{
           backgroundColor: theme.surface,
           border: `0.5px solid ${theme.border}`,
@@ -213,21 +213,12 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
           padding: '10px 14px',
           marginBottom: '16px',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          justifyContent: 'flex-end',
         }}>
-          <div>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '2px' }}>Primary Platform</div>
-            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, fontWeight: 700 }}>
-              {gunMap.get(mostActiveGunId)!.make} {gunMap.get(mostActiveGunId)!.model}
-            </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '2px' }}>Total Spent</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>${totalCost.toFixed(0)}</div>
           </div>
-          {totalCost > 0 && (
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '2px' }}>Total Spent</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>${totalCost.toFixed(0)}</div>
-            </div>
-          )}
         </div>
       )}
 
@@ -258,11 +249,11 @@ export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
                 cursor: 'pointer', padding: '2px 7px', letterSpacing: '0.5px',
               }}
             >
-              {heatmapExpanded ? '12 WK' : '52 WK'}
+              {heatmapExpanded ? '12 MO' : '12 WK'}
             </button>
           </div>
-          <div style={{ overflowX: heatmapExpanded ? 'auto' : 'hidden' }}>
-            <ActivityHeatmap sessions={sessions} weekCount={heatmapExpanded ? 52 : 12} />
+          <div>
+            <ActivityHeatmap sessions={sessions} mode={heatmapExpanded ? '12M' : '12W'} />
           </div>
         </div>
       )}

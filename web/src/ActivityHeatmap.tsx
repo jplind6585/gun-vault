@@ -1,11 +1,12 @@
 // GitHub-style contribution heatmap — range activity
+// Modes: '12W' = last 12 weeks (wide cells), '12M' = last 12 months (fit all in same grid)
 import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import type { Session } from './types';
 
 interface ActivityHeatmapProps {
   sessions: Session[];
-  weekCount?: number; // 12 or 52
+  mode?: '12W' | '12M';
 }
 
 function getRoundColor(rounds: number): string {
@@ -16,25 +17,21 @@ function getRoundColor(rounds: number): string {
   return theme.accent;
 }
 
-export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ sessions, mode = '12W' }: ActivityHeatmapProps) {
   const [tooltip, setTooltip] = useState<{ date: string; rounds: number; x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState(10);
   const GAP = 2;
 
-  // Measure container width on mount and resize
+  const weekCount = mode === '12W' ? 12 : 52;
+
+  // Always fit to container width — no horizontal scroll
   useEffect(() => {
     function measure() {
       if (!containerRef.current) return;
       const w = containerRef.current.clientWidth;
-      if (weekCount <= 12) {
-        // Fill available width for short modes
-        const size = Math.floor((w - (weekCount - 1) * GAP) / weekCount);
-        setCellSize(Math.max(8, Math.min(size, 18)));
-      } else {
-        // Fixed size for scrollable long mode
-        setCellSize(10);
-      }
+      const size = Math.floor((w - (weekCount - 1) * GAP) / weekCount);
+      setCellSize(Math.max(4, Math.min(size, 20)));
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -49,12 +46,11 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
     roundsByDate.set(s.date, prev + s.roundsExpended);
   });
 
-  // Build exactly weekCount weeks ending today
+  // Build exactly weekCount weeks ending today, aligned to Sunday
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const startDate = new Date(today);
   startDate.setDate(startDate.getDate() - (weekCount * 7) + 1);
-  // Align to Sunday of that week
   startDate.setDate(startDate.getDate() - startDate.getDay());
 
   const weeks: Array<Array<{ dateStr: string; rounds: number; isFuture: boolean }>> = [];
@@ -86,12 +82,11 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
   });
 
   const stride = cellSize + GAP;
-  const totalWidth = weeks.length * stride - GAP;
 
   return (
-    <div ref={containerRef} style={{ width: '100%', overflowX: weekCount > 12 ? 'auto' : 'hidden', position: 'relative' }}>
+    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden', position: 'relative' }}>
       {/* Month labels */}
-      <div style={{ position: 'relative', height: '14px', marginBottom: '2px', minWidth: totalWidth }}>
+      <div style={{ position: 'relative', height: '14px', marginBottom: '2px' }}>
         {monthLabels.map(({ label, col }) => (
           <span
             key={label + '-' + col}
@@ -111,41 +106,31 @@ export function ActivityHeatmap({ sessions, weekCount = 52 }: ActivityHeatmapPro
       </div>
 
       {/* Grid */}
-      <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', gap: GAP, minWidth: totalWidth }}>
-          {weeks.map((week, wi) => (
-            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
-              {week.map(({ dateStr, rounds, isFuture }) => (
-                <div
-                  key={dateStr}
-                  onMouseEnter={(e) => {
-                    if (!isFuture) {
-                      const rect = (e.target as HTMLElement).getBoundingClientRect();
-                      setTooltip({ date: dateStr, rounds, x: rect.left, y: rect.top });
-                    }
-                  }}
-                  onMouseLeave={() => setTooltip(null)}
-                  style={{
-                    width: cellSize,
-                    height: cellSize,
-                    borderRadius: 2,
-                    backgroundColor: isFuture ? 'transparent' : getRoundColor(rounds),
-                    cursor: rounds > 0 && !isFuture ? 'pointer' : 'default',
-                    flexShrink: 0,
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-        {/* Right fade hint for 12-week view */}
-        {weekCount <= 12 && (
-          <div style={{
-            position: 'absolute', top: 0, right: 0, bottom: 0,
-            width: '24px', pointerEvents: 'none',
-            background: 'linear-gradient(to right, transparent, rgba(7,7,26,0.9))',
-          }} />
-        )}
+      <div style={{ display: 'flex', gap: GAP }}>
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+            {week.map(({ dateStr, rounds, isFuture }) => (
+              <div
+                key={dateStr}
+                onMouseEnter={(e) => {
+                  if (!isFuture) {
+                    const rect = (e.target as HTMLElement).getBoundingClientRect();
+                    setTooltip({ date: dateStr, rounds, x: rect.left, y: rect.top });
+                  }
+                }}
+                onMouseLeave={() => setTooltip(null)}
+                style={{
+                  width: cellSize,
+                  height: cellSize,
+                  borderRadius: 2,
+                  backgroundColor: isFuture ? 'transparent' : getRoundColor(rounds),
+                  cursor: rounds > 0 && !isFuture ? 'pointer' : 'default',
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        ))}
       </div>
 
       {/* Legend */}
