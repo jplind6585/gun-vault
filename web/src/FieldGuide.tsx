@@ -404,93 +404,117 @@ interface Platform {
   id: string;
   name: string;
   origin: string;
+  year: number;   // introduction year — used for chronological timeline sort
   era: string;
   category: string;
+  categoryColor: string;
   body: string;
 }
 
 const PLATFORMS: Platform[] = [
   {
-    id: 'ar15',
-    name: 'AR-15 / M16 / M4 Family',
-    origin: 'USA',
-    era: '1959–present',
-    category: 'Rifle',
-    body: 'Designed by Eugene Stoner for ArmaLite, the AR-15 is now the most-produced rifle platform in American history. The direct-impingement gas system and modular lower/upper split have spawned an entire ecosystem of parts, calibers, and configurations. The military M16 and M4 variants have served in every US conflict since Vietnam. Today\'s civilian AR-15 market encompasses hundreds of manufacturers and thousands of configurations.',
-  },
-  {
-    id: 'ak47',
-    name: 'AK-47 / AKM / AK-74 Family',
-    origin: 'USSR / Russia',
-    era: '1947–present',
-    category: 'Rifle',
-    body: 'Mikhail Kalashnikov\'s gas-operated rifle emerged from WWII combat experience and a Soviet requirement for a 7.62x39mm infantry weapon. The long-stroke piston system and loose tolerances give it legendary reliability in adverse conditions. An estimated 75–100 million AK-pattern rifles have been produced — the most manufactured firearm in history. The 5.45x39mm AK-74 variant replaced the AKM in Soviet service in 1974.',
-  },
-  {
-    id: 'glock17',
-    name: 'Glock 17 / Glock Family',
-    origin: 'Austria',
-    era: '1982–present',
-    category: 'Pistol',
-    body: 'Gaston Glock\'s polymer-frame, striker-fired pistol revolutionized the handgun industry when it was adopted by the Austrian Army in 1982. The safe-action trigger system, high-capacity magazines, and simplified field-strip procedure set the template for virtually every modern polymer pistol. Glock pistols are carried by over 65% of US law enforcement agencies and military units in dozens of countries.',
+    id: 'mosin-nagant',
+    name: 'Mosin-Nagant M91/30',
+    origin: 'Russia / USSR',
+    year: 1891,
+    era: '1891–1960s',
+    category: 'Bolt Rifle',
+    categoryColor: '#74c0fc',
+    body: 'Designed jointly by Sergei Mosin and Leon Nagant, the 7.62x54mmR Mosin-Nagant was the standard Soviet infantry rifle through both World Wars and the Winter War. Over 37 million produced — one of the most manufactured rifles in history. The M91/30 PU sniper variant was used with devastating effect at Stalingrad and throughout the Eastern Front.',
   },
   {
     id: '1911',
     name: 'M1911 / 1911 Family',
     origin: 'USA',
+    year: 1911,
     era: '1911–present',
     category: 'Pistol',
-    body: 'John Browning\'s .45 ACP semi-automatic pistol served as the US military\'s standard sidearm from 1911 to 1985 — 74 years of continuous service. The single-action locked-breech design became the template for modern semi-automatic pistols. Still in production by dozens of manufacturers, the 1911 commands one of the most devoted followings in firearms history and remains competitive in practical and bullseye shooting.',
+    categoryColor: '#51cf66',
+    body: 'John Browning\'s .45 ACP semi-automatic pistol served as the US military\'s standard sidearm from 1911 to 1985 — 74 years of continuous service. The single-action locked-breech design became the template for modern semi-automatic pistols. Still in production by dozens of manufacturers and competitive in practical and bullseye shooting today.',
+  },
+  {
+    id: 'ak47',
+    name: 'AK-47 / AKM / AK-74 Family',
+    origin: 'USSR / Russia',
+    year: 1947,
+    era: '1947–present',
+    category: 'Rifle',
+    categoryColor: '#ff6b6b',
+    body: 'Mikhail Kalashnikov\'s gas-operated rifle emerged from WWII combat experience. The long-stroke piston system and loose tolerances give it legendary reliability in adverse conditions. An estimated 75–100 million AK-pattern rifles have been produced — the most manufactured firearm in history.',
+  },
+  {
+    id: 'ar15',
+    name: 'AR-15 / M16 / M4 Family',
+    origin: 'USA',
+    year: 1959,
+    era: '1959–present',
+    category: 'Rifle',
+    categoryColor: '#ff6b6b',
+    body: 'Designed by Eugene Stoner for ArmaLite, the AR-15 is the most-produced rifle platform in American history. The direct-impingement gas system and modular lower/upper split have spawned an entire ecosystem of parts, calibers, and configurations. The M16 and M4 variants have served in every US conflict since Vietnam.',
   },
   {
     id: 'remington700',
     name: 'Remington Model 700',
     origin: 'USA',
+    year: 1962,
     era: '1962–present',
-    category: 'Bolt-Action Rifle',
-    body: 'The most successful bolt-action rifle in American history, the Model 700\'s push-feed action, three-position safety, and aftermarket ecosystem made it the foundation for US military and law enforcement sniper programs (M24, M40). Its controlled round push-feed can also be had in the aftermarket. Chambered in over 40 calibers over its production run, from .17 Remington to .338 Lapua.',
-  },
-  {
-    id: 'mosin-nagant',
-    name: 'Mosin-Nagant M91/30',
-    origin: 'Russia / USSR',
-    era: '1891–1960s',
-    category: 'Bolt-Action Rifle',
-    body: 'Designed jointly by Sergei Mosin and Leon Nagant, the 7.62x54mmR Mosin-Nagant was the standard Soviet infantry rifle through both World Wars and the Winter War. Produced in enormous numbers — over 37 million made — it remains one of the most common surplus rifles in the world. The M91/30 PU sniper variant was used with devastating effect at Stalingrad and throughout the Eastern Front.',
+    category: 'Bolt Rifle',
+    categoryColor: '#74c0fc',
+    body: 'The most successful bolt-action rifle in American history. The Model 700\'s push-feed action and aftermarket ecosystem made it the foundation for US military and law enforcement sniper programs (M24, M40). Chambered in over 40 calibers over its production run.',
   },
   {
     id: 'mp5',
     name: 'HK MP5',
     origin: 'Germany',
+    year: 1966,
     era: '1966–present',
     category: 'Submachine Gun',
-    body: 'Heckler & Koch\'s roller-delayed blowback submachine gun became the definitive hostage rescue and counter-terrorism weapon after its use by GSG-9 at Mogadishu in 1977. Available in over 30 variants, the MP5 is renowned for its accuracy at close range relative to other SMGs. Still in production and active service; widely replaced by SBRs in military use but remains preferred in many law enforcement roles.',
-  },
-  {
-    id: 'barrett-m82',
-    name: 'Barrett M82 / M107',
-    origin: 'USA',
-    era: '1982–present',
-    category: 'Anti-Materiel Rifle',
-    body: 'Ronnie Barrett\'s semi-automatic .50 BMG rifle entered US military service in Desert Storm, where it was used to defeat light armor, aircraft, and explosive ordnance at extreme ranges. The recoil-operated action and muzzle brake make the massive cartridge manageable. Maximum effective range against point targets exceeds 1,800 meters; the M107A1 variant adds a suppressor-ready brake and titanium components.',
-  },
-  {
-    id: 'fn-scar',
-    name: 'FN SCAR (Mk 16 / Mk 17)',
-    origin: 'Belgium',
-    era: '2004–present',
-    category: 'Rifle',
-    body: 'FN Herstal\'s Special Operations Forces Combat Assault Rifle won the SOCOM SCAR competition in 2004. Available in 5.56mm (Mk 16 / SCAR-L) and 7.62mm (Mk 17 / SCAR-H) variants, the folding stock and free-float rail system were ahead of their time. The SCAR-H in 7.62 NATO has become the preferred precision/designated marksman platform for many SOF units.',
+    categoryColor: '#ffa94d',
+    body: 'Heckler & Koch\'s roller-delayed blowback SMG became the definitive hostage rescue weapon after its use by GSG-9 at Mogadishu in 1977. Over 30 variants produced. Renowned for accuracy relative to other SMGs. Still preferred in many law enforcement roles despite being replaced by SBRs in military use.',
   },
   {
     id: 'sig-p226',
     name: 'SIG Sauer P226 / P-Series',
     origin: 'Switzerland/Germany',
+    year: 1980,
     era: '1980–present',
     category: 'Pistol',
-    body: 'The P226 narrowly lost the 1984 US Army pistol trials to the Beretta 92 on cost — not performance. The US Navy SEALs, unwilling to accept the verdict, adopted the P226 anyway, where it served for decades. The DA/SA trigger system and all-metal construction give it a reputation for smoothness and durability. The P-series spawned the P229, P228, and the modern P320 modular platform.',
+    categoryColor: '#51cf66',
+    body: 'The P226 narrowly lost the 1984 US Army trials to the Beretta 92 on cost — not performance. The Navy SEALs, unwilling to accept that verdict, adopted it anyway where it served for decades. The DA/SA trigger and all-metal construction give it a reputation for smoothness and durability that spawned the P229, P228, and modern P320.',
   },
-];
+  {
+    id: 'barrett-m82',
+    name: 'Barrett M82 / M107',
+    origin: 'USA',
+    year: 1982,
+    era: '1982–present',
+    category: 'Anti-Materiel',
+    categoryColor: '#cc5de8',
+    body: 'Ronnie Barrett\'s semi-automatic .50 BMG rifle entered military service in Desert Storm, used to defeat light armor and explosive ordnance at extreme ranges. The recoil-operated action and muzzle brake make the massive cartridge manageable. Maximum effective range against point targets exceeds 1,800 meters.',
+  },
+  {
+    id: 'glock17',
+    name: 'Glock 17 / Glock Family',
+    origin: 'Austria',
+    year: 1982,
+    era: '1982–present',
+    category: 'Pistol',
+    categoryColor: '#51cf66',
+    body: 'Gaston Glock\'s polymer-frame, striker-fired pistol revolutionized the handgun industry when the Austrian Army adopted it in 1982. The safe-action trigger, high-capacity magazines, and simple field-strip set the template for virtually every modern polymer pistol. Carried by over 65% of US law enforcement agencies.',
+  },
+  {
+    id: 'fn-scar',
+    name: 'FN SCAR (Mk 16 / Mk 17)',
+    origin: 'Belgium',
+    year: 2004,
+    era: '2004–present',
+    category: 'Rifle',
+    categoryColor: '#ff6b6b',
+    body: 'FN Herstal\'s Special Operations Forces Combat Assault Rifle won the SOCOM SCAR competition in 2004. Available in 5.56mm (Mk 16) and 7.62mm (Mk 17) variants. The SCAR-H has become the preferred precision/designated marksman platform for many SOF units worldwide.',
+  },
+]
+  .slice()
+  .sort((a, b) => a.year - b.year); // chronological order
 
 // ─── BALLISTICS DATA ──────────────────────────────────────────────────────────
 
@@ -1116,57 +1140,100 @@ export function FieldGuide() {
     return (
       <div style={containerStyle}>
         <div style={headerStyle}>
-          <button style={backBtnStyle} onClick={() => setSection('home')}>
-            ← Back
-          </button>
-          <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>
-            Platforms
-          </span>
+          <button style={backBtnStyle} onClick={() => setSection('home')}>← Back</button>
+          <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>Platforms</span>
         </div>
 
-        <div style={{ padding: '12px 16px 32px' }}>
-          {PLATFORMS.map((p) => (
-            <div
-              key={p.id}
-              style={{
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '10px 16px 0', borderBottom: '0.5px solid ' + theme.border, paddingBottom: '10px' }}>
+          {[
+            { label: 'Pistol', color: '#51cf66' },
+            { label: 'Rifle', color: '#ff6b6b' },
+            { label: 'Bolt Rifle', color: '#74c0fc' },
+            { label: 'Submachine Gun', color: '#ffa94d' },
+            { label: 'Anti-Materiel', color: '#cc5de8' },
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }}/>
+              <span style={{ fontSize: '9px', fontFamily: 'monospace', color: theme.textMuted, letterSpacing: '0.5px' }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline */}
+        <div style={{ position: 'relative', padding: '20px 16px 60px 44px' }}>
+          {/* Vertical line */}
+          <div style={{
+            position: 'absolute',
+            left: '28px',
+            top: '20px',
+            bottom: '60px',
+            width: '1px',
+            background: `linear-gradient(to bottom, transparent, ${theme.border} 60px, ${theme.border} calc(100% - 40px), transparent)`,
+          }}/>
+
+          {PLATFORMS.map((p, i) => (
+            <div key={p.id} style={{ position: 'relative', marginBottom: i < PLATFORMS.length - 1 ? '28px' : 0 }}>
+              {/* Timeline dot */}
+              <div style={{
+                position: 'absolute',
+                left: '-22px',
+                top: '14px',
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: p.categoryColor,
+                border: '2px solid ' + theme.bg,
+                boxShadow: '0 0 0 1px ' + p.categoryColor + '60',
+                zIndex: 1,
+              }}/>
+
+              {/* Year label on line */}
+              <div style={{
+                position: 'absolute',
+                left: '-42px',
+                top: '11px',
+                fontSize: '8px',
+                fontFamily: 'monospace',
+                color: theme.textMuted,
+                letterSpacing: '0.3px',
+                whiteSpace: 'nowrap',
+                textAlign: 'right',
+                width: '16px',
+              }}>
+                {p.year}
+              </div>
+
+              {/* Card */}
+              <div style={{
                 backgroundColor: theme.surface,
                 border: '0.5px solid ' + theme.border,
-                borderRadius: '10px',
-                padding: '12px',
-                marginBottom: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                <div
-                  style={{
-                    fontSize: '13px',
+                borderLeft: '2px solid ' + p.categoryColor,
+                borderRadius: '6px',
+                padding: '10px 12px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2px', gap: '8px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.3px', lineHeight: 1.3 }}>
+                    {p.name}
+                  </div>
+                  <span style={{
+                    fontSize: '9px',
+                    fontFamily: 'monospace',
+                    color: p.categoryColor,
                     fontWeight: 700,
-                    color: theme.textPrimary,
                     letterSpacing: '0.5px',
-                    flex: 1,
-                    paddingRight: '8px',
-                  }}
-                >
-                  {p.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: theme.accent,
-                    letterSpacing: '0.8px',
-                    fontWeight: 600,
                     flexShrink: 0,
                     paddingTop: '2px',
-                  }}
-                >
-                  {p.category}
+                  }}>
+                    {p.category.toUpperCase()}
+                  </span>
                 </div>
-              </div>
-              <div style={{ fontSize: '11px', color: theme.textMuted, letterSpacing: '0.3px', marginBottom: '8px' }}>
-                {p.origin} · {p.era}
-              </div>
-              <div style={{ fontSize: '12px', color: theme.textSecondary, lineHeight: 1.6, letterSpacing: '0.2px' }}>
-                {p.body}
+                <div style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace', marginBottom: '6px' }}>
+                  {p.origin} · {p.era}
+                </div>
+                <div style={{ fontSize: '12px', color: theme.textSecondary, lineHeight: 1.65, fontFamily: 'monospace' }}>
+                  {p.body}
+                </div>
               </div>
             </div>
           ))}

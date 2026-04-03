@@ -21,7 +21,6 @@ export function CaliberDatabase() {
   const [showComparisonTable, setShowComparisonTable] = useState(false);
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [showSortMenu, setShowSortMenu] = useState(false);
 
   const filteredCartridges = useMemo(() => {
     let filtered = allCartridges.filter(cart => {
@@ -90,17 +89,7 @@ export function CaliberDatabase() {
     { value: 'wishlist', label: 'WISHLIST' },
   ];
 
-  const SORT_OPTIONS: { field: SortField; label: string }[] = [
-    { field: 'name', label: 'NAME' },
-    { field: 'year', label: 'YEAR' },
-    { field: 'type', label: 'TYPE' },
-    { field: 'bulletDia', label: 'BULLET DIA' },
-    { field: 'velocity', label: 'VELOCITY' },
-    { field: 'energy', label: 'ENERGY' },
-    { field: 'psi', label: 'MAX PSI' },
-  ];
-
-  const chipStyle = (active: boolean): React.CSSProperties => ({
+const chipStyle = (active: boolean): React.CSSProperties => ({
     padding: '5px 10px',
     backgroundColor: active ? theme.caliberRed : theme.surface,
     border: '0.5px solid ' + (active ? theme.caliberRed : theme.border),
@@ -133,7 +122,7 @@ export function CaliberDatabase() {
         gap: '8px',
       }}>
 
-        {/* Row 1: Search + Sort + Compare */}
+        {/* Row 1: Search + Compare */}
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <input
             type="text"
@@ -153,28 +142,9 @@ export function CaliberDatabase() {
             }}
           />
           <button
-            onClick={() => setShowSortMenu(s => !s)}
-            style={{
-              padding: '8px 10px',
-              backgroundColor: showSortMenu ? theme.caliberRed : theme.surface,
-              border: '0.5px solid ' + (showSortMenu ? theme.caliberRed : theme.border),
-              borderRadius: '8px',
-              color: showSortMenu ? '#fff' : theme.textSecondary,
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              whiteSpace: 'nowrap',
-              WebkitTapHighlightColor: 'transparent',
-              outline: 'none',
-            }}
-          >
-            ≡ {sortField !== 'name' ? sortField.toUpperCase() : 'SORT'} {sortDirection === 'asc' ? '↑' : '↓'}
-          </button>
-          <button
             onClick={() => { setComparisonMode(c => !c); setSelectedForComparison(new Set()); setShowComparisonTable(false); }}
             style={{
-              padding: '8px 10px',
+              padding: '8px 12px',
               backgroundColor: comparisonMode ? theme.caliberRed : theme.surface,
               border: '0.5px solid ' + (comparisonMode ? theme.caliberRed : theme.border),
               borderRadius: '8px',
@@ -188,44 +158,9 @@ export function CaliberDatabase() {
               outline: 'none',
             }}
           >
-            {comparisonMode ? 'CANCEL' : '≈ COMPARE'}
+            {comparisonMode ? 'CANCEL' : 'COMPARE'}
           </button>
         </div>
-
-        {/* Sort menu */}
-        {showSortMenu && (
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {SORT_OPTIONS.map(opt => (
-              <button
-                key={opt.field}
-                onClick={() => {
-                  if (sortField === opt.field) {
-                    setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
-                  } else {
-                    setSortField(opt.field);
-                    setSortDirection('asc');
-                  }
-                  setShowSortMenu(false);
-                }}
-                style={{
-                  padding: '5px 10px',
-                  backgroundColor: sortField === opt.field ? theme.caliberRed : theme.surface,
-                  border: '0.5px solid ' + (sortField === opt.field ? theme.caliberRed : theme.border),
-                  borderRadius: '6px',
-                  color: sortField === opt.field ? '#fff' : theme.textSecondary,
-                  fontFamily: 'monospace',
-                  fontSize: '10px',
-                  cursor: 'pointer',
-                  letterSpacing: '0.5px',
-                  WebkitTapHighlightColor: 'transparent',
-                  outline: 'none',
-                }}
-              >
-                {opt.label} {sortField === opt.field ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Row 2: Type chips */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
