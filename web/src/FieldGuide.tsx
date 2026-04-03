@@ -858,7 +858,7 @@ const SERVICE_WEAPONS: ServiceWeapon[] = [
     story: "Gaston Glock had never designed a firearm when he submitted a polymer-framed pistol to the Austrian Army's 1980 trials — he was a curtain rod manufacturer with expertise in polymer injection molding. The resulting Glock 17 passed trials that required 10,000 rounds without malfunction, and its radical polymer frame cut weight by 30% versus steel competitors. American tabloids falsely claimed the 'plastic pistol' was invisible to metal detectors — a total fabrication that nonetheless drove enormous public interest. The Glock's consistent trigger pull, minimal controls, and legendary reliability made it the dominant law enforcement and military sidearm of the late 20th century, adopted by police in 65 countries.",
   },
   {
-    id: 'sw-p226', name: 'SIG P226', countries: ['United States (SEAL)', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm',
+    id: 'sw-p226', name: 'SIG P226', countries: ['United States', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm',
     story: "The P226 narrowly lost the US Army's XM9 contract to Beretta in 1984 — not on performance, but because SIG's per-unit price was slightly higher. The Navy SEALs, unconvinced by Army procurement decisions, evaluated the pistol independently and adopted it as their standard sidearm, where it served for three decades. The P226's double-action/single-action trigger, machined aluminum frame, and meticulous Swiss-German manufacturing gave it a reputation as the most accurate and reliable 9mm service pistol of its era. It was replaced in SEAL service by the Glock 19 in 2015 after a competitive evaluation prioritized weight savings over the SIG's premium build quality.",
   },
   {
@@ -921,7 +921,7 @@ const SERVICE_WEAPONS: ServiceWeapon[] = [
     story: "The Sten (named for its designers Shepherd and Turpin, and Enfield) was created in 1940 after Dunkirk left the British Army desperately short of infantry weapons and unable to acquire enough Thompsons from America. The Mark II cost just £2 10s to produce and could be manufactured in small workshops — simple enough that resistance fighters in occupied Europe made them from plumbing parts. The horizontal side-mounted magazine, copied from the German MP28, fed poorly and caused most stoppages; experienced soldiers carried the weapon at a 45-degree cant to improve feed. Its simplicity was both its greatest virtue and its greatest flaw: the open-bolt design made accidental discharge a known hazard.",
   },
   {
-    id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'USA (LEO)', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm',
+    id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'United States', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm',
     story: "The MP5 applied the roller-delayed blowback system of the G3 rifle to a 9mm submachine gun — an unusual choice that allowed it to fire from a closed bolt, giving it accuracy competitive with pistols. This precision made it the preferred weapon of hostage rescue and counter-terrorism units worldwide after the GSG 9 used it in the famous 1977 Mogadishu airliner rescue. The Iranian Embassy siege in London (1980), conducted by the SAS in live television, made the MP5 a global icon. By the 2000s the rise of body armor and the need for rifle-caliber penetration began shifting SWAT teams to short-barreled rifles, but the MP5 remains standard in dozens of military and police organizations.",
   },
   // Sniper Rifles
@@ -1791,21 +1791,24 @@ export function FieldGuide() {
       onChange: (v: string) => void;
     }) {
       const [open, setOpen] = useState(false);
+      const [search, setSearch] = useState('');
       const ref = useRef<HTMLDivElement>(null);
+      const inputRef = useRef<HTMLInputElement>(null);
       useEffect(() => {
         function handleClick(e: MouseEvent) {
-          if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+          if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setSearch(''); }
         }
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
       }, []);
+      const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
       return (
         <div ref={ref} style={{ position: 'relative', flex: 1 }}>
           <button
-            onClick={() => setOpen(o => !o)}
+            onClick={() => { setOpen(o => !o); setSearch(''); setTimeout(() => inputRef.current?.focus(), 50); }}
             style={{
               width: '100%', padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              backgroundColor: theme.bg, border: '0.5px solid ' + theme.border, borderRadius: '6px',
+              backgroundColor: theme.bg, border: '0.5px solid ' + (open ? theme.accent : theme.border), borderRadius: '6px',
               color: value ? theme.textPrimary : theme.textMuted, fontFamily: 'monospace', fontSize: '11px',
               letterSpacing: '0.5px', cursor: 'pointer', outline: 'none',
             }}
@@ -1817,31 +1820,51 @@ export function FieldGuide() {
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100,
               backgroundColor: theme.surface, border: '0.5px solid ' + theme.border,
-              borderRadius: '6px', overflow: 'hidden', maxHeight: '220px', overflowY: 'auto',
+              borderRadius: '6px', overflow: 'hidden',
             }}>
-              <div
-                onClick={() => { onChange(''); setOpen(false); }}
+              <input
+                ref={inputRef}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Type to filter..."
                 style={{
-                  padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
-                  color: value === '' ? theme.accent : theme.textMuted, cursor: 'pointer',
-                  backgroundColor: value === '' ? 'rgba(255,212,59,0.08)' : 'transparent',
+                  width: '100%', padding: '8px 12px', boxSizing: 'border-box',
+                  backgroundColor: theme.bg, border: 'none', borderBottom: '0.5px solid ' + theme.border,
+                  color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', outline: 'none',
                 }}
-              >
-                All
+              />
+              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                {!search && (
+                  <div
+                    onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
+                    style={{
+                      padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                      color: value === '' ? theme.accent : theme.textMuted, cursor: 'pointer',
+                      backgroundColor: value === '' ? 'rgba(255,212,59,0.08)' : 'transparent',
+                    }}
+                  >
+                    All
+                  </div>
+                )}
+                {filtered.map(opt => (
+                  <div
+                    key={opt}
+                    onClick={() => { onChange(opt); setOpen(false); setSearch(''); }}
+                    style={{
+                      padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
+                      color: value === opt ? theme.accent : theme.textSecondary, cursor: 'pointer',
+                      backgroundColor: value === opt ? 'rgba(255,212,59,0.08)' : 'transparent',
+                    }}
+                  >
+                    {opt}
+                  </div>
+                ))}
+                {filtered.length === 0 && (
+                  <div style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
+                    No matches
+                  </div>
+                )}
               </div>
-              {options.map(opt => (
-                <div
-                  key={opt}
-                  onClick={() => { onChange(opt); setOpen(false); }}
-                  style={{
-                    padding: '8px 12px', fontFamily: 'monospace', fontSize: '11px',
-                    color: value === opt ? theme.accent : theme.textSecondary, cursor: 'pointer',
-                    backgroundColor: value === opt ? 'rgba(255,212,59,0.08)' : 'transparent',
-                  }}
-                >
-                  {opt}
-                </div>
-              ))}
             </div>
           )}
         </div>
