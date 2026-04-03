@@ -185,9 +185,9 @@ export function MoreMenu({ onNavigate }: MoreMenuProps) {
       id: 'wishlist',
       Icon: IconWishlist,
       label: 'Wishlist',
-      sub: 'Want list',
-      available: true,
-      onPress: () => onNavigate('wishlist'),
+      sub: 'Coming soon',
+      available: false,
+      onPress: () => {},
     },
     {
       id: 'gunsmithing',
