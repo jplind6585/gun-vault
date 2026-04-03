@@ -106,6 +106,40 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
 
   // T
   { acronym: 'TMJ', expansion: 'Total Metal Jacket', definition: 'A bullet fully encased in metal jacket including the base, unlike standard FMJ. Eliminates base exposure that vaporizes lead under high heat. Preferred for indoor ranges to reduce airborne lead contamination.', group: 'T' },
+
+  // ── General terms — for shooters who are new to firearms ─────────────────
+
+  { acronym: 'Action', expansion: 'Operating Mechanism', definition: 'The mechanical system that loads, fires, and ejects cartridges. Common types: Semi-Automatic (auto-loads next round after each shot), Bolt-Action (manually cycle a bolt handle between shots), Lever-Action (work a lever under the receiver), Revolver (rotating cylinder), Pump (slide a fore-end), Single-Shot (one round at a time).', group: 'A' },
+
+  { acronym: 'Barrel Length', expansion: 'Barrel Length', definition: 'Distance from the chamber to the muzzle, measured in inches. Longer barrels produce higher velocity and are easier to aim accurately at distance. Shorter barrels are more compact. Legally significant: rifles must have a barrel of 16"+ and shotguns 18"+ to avoid NFA regulation.', group: 'B' },
+  { acronym: 'Bolt-Action', expansion: 'Bolt-Action Firearm', definition: 'A firearm type where the shooter manually lifts and pulls back a bolt handle to eject the fired case, then pushes it forward to chamber a new round. Simple, reliable, and extremely accurate. The standard choice for hunting rifles and precision long-range shooting.', group: 'B' },
+
+  { acronym: 'Caliber', expansion: 'Cartridge / Bore Diameter', definition: 'The size designation of a firearm and the ammunition it fires — usually the bullet\'s diameter in inches or millimeters (e.g., 9mm, .45 ACP, .308 Win). A firearm can only safely fire the specific caliber it is chambered for.', group: 'C' },
+  { acronym: 'Capacity', expansion: 'Magazine or Cylinder Capacity', definition: 'The maximum number of rounds a magazine (semi-automatic) or cylinder (revolver) can hold before requiring a reload. May be legally restricted to 10 rounds or fewer in some states.', group: 'C' },
+  { acronym: 'Chamber', expansion: 'Cartridge Chamber', definition: 'The cavity at the rear of the barrel where a cartridge sits when ready to fire. "Chambered" means a round is loaded and ready. "Clearing the chamber" means verifying it is empty — a core safety step.', group: 'C' },
+
+  { acronym: 'Elevation', expansion: 'Vertical Scope / Sight Adjustment', definition: 'The up/down adjustment on a scope or iron sight. Dialing elevation up raises the bullet\'s point of impact. Used to compensate for bullet drop at longer distances.', group: 'E' },
+
+  { acronym: 'Grain (gr)', expansion: 'Grain — Unit of Bullet Weight', definition: 'The standard unit for measuring bullet and powder weight. 1 grain = 1/7000th of a pound. Common pistol bullets are 115–230 gr; rifle bullets 55–175 gr. Heavier bullets are slower but carry more energy at distance; lighter bullets are faster and shoot flatter.', group: 'G' },
+
+  { acronym: 'Magazine', expansion: 'Detachable Magazine', definition: 'A spring-loaded container that holds and feeds cartridges into a semi-automatic firearm. Not a "clip" — magazines are self-contained feeding devices. Revolvers use a rotating cylinder instead. Magazines are typically made of metal or polymer.', group: 'M' },
+  { acronym: 'Muzzle', expansion: 'Muzzle — Front of the Barrel', definition: 'The open front end of the barrel where the bullet exits. Rule #2 of firearm safety: never point the muzzle at anything you are not willing to destroy. Muzzle devices (suppressors, flash hiders, muzzle brakes) thread onto the muzzle.', group: 'M' },
+  { acronym: 'Muzzle Velocity', expansion: 'Bullet Speed at the Muzzle (fps)', definition: 'The speed of a bullet as it exits the barrel, measured in feet per second (fps). Higher velocity = flatter trajectory and more energy delivered to the target. Affected by barrel length, powder charge, bullet weight, and temperature.', group: 'M' },
+
+  { acronym: 'Par Time', expansion: 'Par Time — Training Benchmark', definition: 'The target completion time for a shooting drill, measured with a shot timer. Finishing under par = pass; over par = more practice needed. A structured way to track improvement over time without just "shooting for fun."', group: 'P' },
+  { acronym: 'Plinking', expansion: 'Casual Informal Shooting', definition: 'Informal, recreational shooting at cans, bottles, or paper targets — just for fun, no training structure or scoring. Great way for new shooters to build comfort and confidence with a firearm.', group: 'P' },
+
+  { acronym: 'Reticle', expansion: 'Scope Crosshair / Aiming Pattern', definition: 'The aiming pattern visible inside a scope or reflex sight. Can be a simple crosshair (+), dot, mil-dot grid, or complex BDC pattern. Illuminated reticles glow for low-light use. The reticle is what you align on the target before pressing the trigger.', group: 'R' },
+  { acronym: 'Round Count', expansion: 'Total Rounds Fired', definition: 'The cumulative number of rounds (bullets) fired through a specific firearm. Tracked to monitor wear, plan maintenance intervals, and determine when components like recoil springs should be replaced. Similar to mileage on a car.', group: 'R' },
+
+  { acronym: 'Semi-Automatic', expansion: 'Semi-Automatic Action', definition: 'A firearm that automatically ejects the spent case and chambers the next round after each shot — but requires a separate trigger pull for each bullet fired. Not "fully automatic" (which fires continuously while the trigger is held). The most common action in modern pistols, many rifles, and some shotguns.', group: 'S' },
+  { acronym: 'Suppressor', expansion: 'Sound Suppressor / Silencer', definition: 'A device threaded onto the muzzle that reduces the sound of a gunshot by trapping and cooling expanding gases. Often called a "silencer" — but real suppressors reduce, not eliminate, the sound. Regulated as NFA items in the US: $200 tax stamp, ATF approval, months-long wait.', group: 'S' },
+
+  { acronym: 'Turret', expansion: 'Scope Adjustment Turret', definition: 'The knobs on the top and side of a scope used to adjust point of impact. The elevation turret adjusts up/down; the windage turret adjusts left/right. Each click moves impact by a specific MOA or MIL increment. "Capping the turrets" protects them from accidental adjustment.', group: 'T' },
+
+  { acronym: 'Windage', expansion: 'Horizontal Scope / Sight Adjustment', definition: 'The left/right adjustment on a scope or iron sight, used to correct for wind drift or zero error. Turning windage right moves the point of impact right. Paired with elevation (up/down), windage completes the two-axis adjustment system of all modern optics.', group: 'W' },
+
+  { acronym: 'Zero / Zeroing', expansion: 'Sight Alignment at a Specific Distance', definition: 'The process of adjusting a scope or iron sights so the point of aim (where the crosshair points) matches the point of impact (where the bullet lands) at a specific distance. A "100-yard zero" means the gun is sighted in to hit exactly where you aim at 100 yards. Bullets drop beyond that distance due to gravity.', group: 'Z' },
 ];
 
 // ─── CAMOS DATA ───────────────────────────────────────────────────────────────
@@ -708,61 +742,55 @@ export function FieldGuide() {
   // ── HOME ────────────────────────────────────────────────────────────────────
 
   if (section === 'home') {
+    const IcnCartridges = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 21 L10 10 Q10 3 12 3 Q14 3 14 10 L14 21 Z"/>
+        <line x1="10" y1="11.5" x2="14" y2="11.5"/>
+        <line x1="10" y1="17" x2="14" y2="17"/>
+      </svg>
+    );
+    const IcnPlatforms = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="13" y1="10" x2="22" y2="10"/>
+        <line x1="20" y1="10" x2="20" y2="8.5"/>
+        <rect x="7" y="9" width="6" height="4.5" rx="0.5"/>
+        <path d="M7 10 L3 9.5 L2 12 L3 13 L7 13.5"/>
+        <path d="M10 13.5 L9.5 17.5 L12 17.5 L12 13.5"/>
+      </svg>
+    );
+    const IcnBallistics = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M2 20 Q5 5 12 4 Q19 5 22 20"/>
+        <line x1="12" y1="4" x2="12" y2="12" strokeDasharray="2 2"/>
+        <line x1="1" y1="21.5" x2="23" y2="21.5"/>
+        <circle cx="22" cy="20" r="1.5" fill={theme.accent}/>
+      </svg>
+    );
+    const IcnGlossary = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/>
+        <line x1="8" y1="8" x2="16" y2="8"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+        <line x1="8" y1="16" x2="13" y2="16"/>
+      </svg>
+    );
+    const IcnOptics = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="12" cy="12" r="8"/>
+        <line x1="12" y1="4" x2="12" y2="8.5"/>
+        <line x1="12" y1="15.5" x2="12" y2="20"/>
+        <line x1="4" y1="12" x2="8.5" y2="12"/>
+        <line x1="15.5" y1="12" x2="20" y2="12"/>
+        <circle cx="12" cy="12" r="1.5" fill={theme.accent} stroke="none"/>
+      </svg>
+    );
+
     const homeCards = [
-      {
-        icon: '📖',
-        title: 'Cartridges',
-        subtitle: 'Specs, history & ballistics',
-        action: () => setSection('cartridges'),
-      },
-      {
-        icon: '🔫',
-        title: 'Platforms',
-        subtitle: 'Famous firearm families',
-        action: () => setSection('platforms'),
-      },
-      {
-        icon: '🎯',
-        title: 'Ballistics',
-        subtitle: 'External & terminal concepts',
-        action: () => setSection('ballistics'),
-      },
-      {
-        icon: '🔧',
-        title: 'Maintenance',
-        subtitle: 'Cleaning & care guides',
-        action: () => setSection('maintenance'),
-      },
-      {
-        icon: '📋',
-        title: 'Glossary',
-        subtitle: 'Acronyms & terms decoded',
-        action: () => setSection('glossary'),
-      },
-      {
-        icon: '🌿',
-        title: 'Camos',
-        subtitle: 'Patterns from around the world',
-        action: () => setSection('camos'),
-      },
-      {
-        icon: '🔭',
-        title: 'Optics',
-        subtitle: 'Scopes, red dots & beyond',
-        action: () => setSection('optics'),
-      },
-      {
-        icon: '🏆',
-        title: 'Competition',
-        subtitle: 'Formats historical & modern',
-        action: () => setSection('competition'),
-      },
-      {
-        icon: '🎖️',
-        title: 'Marksmanship',
-        subtitle: 'Doctrine from the field manuals',
-        action: () => setSection('marksmanship'),
-      },
+      { icon: <IcnCartridges/>, title: 'Cartridges', subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
+      { icon: <IcnPlatforms/>,  title: 'Platforms',  subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
+      { icon: <IcnBallistics/>, title: 'Ballistics', subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
+      { icon: <IcnGlossary/>,   title: 'Glossary',   subtitle: 'Acronyms & terms decoded',     action: () => setSection('glossary') },
+      { icon: <IcnOptics/>,     title: 'Optics',     subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
     ];
 
     return (
@@ -805,7 +833,7 @@ export function FieldGuide() {
                 gap: '6px',
               }}
             >
-              <span style={{ fontSize: '28px', lineHeight: 1 }}>{card.icon}</span>
+              <div style={{ lineHeight: 0 }}>{card.icon}</div>
               <span
                 style={{
                   fontSize: '13px',
