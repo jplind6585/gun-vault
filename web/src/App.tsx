@@ -66,31 +66,7 @@ function App() {
     });
   }, []);
 
-  if (!ready) {
-    return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100dvh', backgroundColor: theme.bg, gap: '16px',
-      }}>
-        <div style={{ fontSize: '32px' }}>🔫</div>
-        <div style={{ color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', letterSpacing: '1px' }}>
-          LOADING VAULT...
-        </div>
-      </div>
-    );
-  }
-
-  function handleVersionTap() {
-    const next = devTapCount + 1;
-    setDevTapCount(next);
-    if (next >= 7) {
-      setDevUnlocked(true);
-      setDevTapCount(0);
-    }
-  }
-
-
-  // Keyboard shortcuts
+  // Keyboard shortcuts — must be before any early return to satisfy rules of hooks
   useEffect(() => {
     function handleKeyPress(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -115,6 +91,29 @@ function App() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
+
+  if (!ready) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100dvh', backgroundColor: theme.bg, gap: '16px',
+      }}>
+        <div style={{ fontSize: '32px' }}>🔫</div>
+        <div style={{ color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', letterSpacing: '1px' }}>
+          LOADING VAULT...
+        </div>
+      </div>
+    );
+  }
+
+  function handleVersionTap() {
+    const next = devTapCount + 1;
+    setDevTapCount(next);
+    if (next >= 7) {
+      setDevUnlocked(true);
+      setDevTapCount(0);
+    }
+  }
 
   function loadGuns() {
     setAllGuns(getAllGuns());
