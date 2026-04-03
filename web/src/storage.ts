@@ -169,35 +169,15 @@ export function getAllGuns(): Gun[] {
   const data = localStorage.getItem(GUNS_KEY);
   if (!data) return [];
 
-  let guns = JSON.parse(data) as Gun[];
+  const guns = JSON.parse(data) as Gun[];
   const sessions = getAllSessions();
-  let needsPersist = false;
 
-  // Calculate round counts and enrich with market values
-  const enrichedGuns = guns.map(gun => {
-    const withRounds = {
-      ...gun,
-      roundCount: sessions
-        .filter(s => s.gunId === gun.id)
-        .reduce((sum, s) => sum + s.roundsExpended, 0)
-    };
-
-    // Enrich with market values if missing
-    if (!gun.estimatedFMV || !gun.insuranceValue) {
-      const enriched = enrichGunWithMarketValue(withRounds);
-      needsPersist = true;
-      return enriched;
-    }
-
-    return withRounds;
-  });
-
-  // Persist enriched values back to storage
-  if (needsPersist) {
-    localStorage.setItem(GUNS_KEY, JSON.stringify(enrichedGuns));
-  }
-
-  return enrichedGuns;
+  return guns.map(gun => ({
+    ...gun,
+    roundCount: sessions
+      .filter(s => s.gunId === gun.id)
+      .reduce((sum, s) => sum + s.roundsExpended, 0)
+  }));
 }
 
 export function getGunById(id: string): Gun | null {
