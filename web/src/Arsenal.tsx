@@ -487,101 +487,19 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
     }}>
       {/* Stats Bar */}
       <div style={{
-        display: 'flex',
-        gap: '12px',
         marginBottom: '16px',
         padding: '10px 14px',
         backgroundColor: theme.surface,
         borderRadius: '6px',
         border: `0.5px solid ${theme.border}`,
-        alignItems: 'center',
-        flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>TOTAL ROUNDS</span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.accent, fontFamily: 'monospace' }}>
-            {totalRounds.toLocaleString()}
-          </span>
-        </div>
-        <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>LOTS</span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>
-            {totalLots}
-          </span>
-        </div>
-        <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
-        <div
-          onClick={() => lowStockLots.length > 0 && setShowLowStockModal(true)}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1px',
-            cursor: lowStockLots.length > 0 ? 'pointer' : 'default'
-          }}
-        >
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>LOW STOCK</span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: lowStockLots.length > 0 ? theme.red : theme.green, fontFamily: 'monospace' }}>
-            {lowStockLots.length}
-          </span>
-        </div>
-        <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>REPLACEMENT COST</span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>
-            {'$' + replacementCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-          </span>
-          {allAmmo.some(l => !l.currentMarketPrice && !l.purchasePricePerRound) && (
-            <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>
-              est. — add prices for accuracy
-            </span>
-          )}
-          {pricesStale && staleLot && (
-            <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>
-              prices may be stale{' '}
-              <span
-                onClick={() => setSelectedLot(staleLot)}
-                style={{ color: theme.accent, cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                UPDATE
-              </span>
-            </span>
-          )}
-        </div>
-        {/* Task 9: Total Invested stat */}
-        <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px', position: 'relative' }}>
-            TOTAL INVESTED{' '}
-            <span
-              onClick={() => setShowInvestedTooltip(v => !v)}
-              style={{ cursor: 'pointer', fontSize: '9px' }}
-            >
-              ⓘ
-            </span>
-            {showInvestedTooltip && (
-              <span onClick={() => setShowInvestedTooltip(false)} style={{
-                position: 'absolute', bottom: '16px', left: 0,
-                backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
-                borderRadius: '4px', padding: '5px 8px', fontSize: '9px',
-                color: theme.textSecondary, whiteSpace: 'nowrap', zIndex: 10,
-                fontFamily: 'monospace', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              }}>
-                Based on purchase quantities &amp; prices recorded
-              </span>
-            )}
-          </span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textMuted, fontFamily: 'monospace' }}>
-            {totalInvested > 0
-              ? `$${totalInvested.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-              : '—'}
-          </span>
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexShrink: 0 }}>
+        {/* Header row: label + export */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted }}>AMMO INVENTORY</span>
           <button
             onClick={() => exportShoppingList(allAmmo, gunCalibers)}
             style={{
-              padding: '7px 10px',
+              padding: '4px 8px',
               background: 'transparent',
               color: theme.textSecondary,
               border: `0.5px solid ${theme.border}`,
@@ -596,6 +514,71 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
           >
             EXPORT LIST
           </button>
+        </div>
+        {/* Stats row */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>TOTAL ROUNDS</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: theme.accent, fontFamily: 'monospace' }}>
+              {totalRounds.toLocaleString()}
+            </span>
+          </div>
+          <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>LOTS</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>
+              {totalLots}
+            </span>
+          </div>
+          <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
+          <div
+            onClick={() => lowStockLots.length > 0 && setShowLowStockModal(true)}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1px', cursor: lowStockLots.length > 0 ? 'pointer' : 'default' }}
+          >
+            <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>LOW STOCK</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: lowStockLots.length > 0 ? theme.red : theme.green, fontFamily: 'monospace' }}>
+              {lowStockLots.length}
+            </span>
+          </div>
+          <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>REPLACEMENT COST</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>
+              {'$' + replacementCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+            {allAmmo.some(l => !l.currentMarketPrice && !l.purchasePricePerRound) && (
+              <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>est. — add prices for accuracy</span>
+            )}
+            {pricesStale && staleLot && (
+              <span style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace' }}>
+                prices may be stale{' '}
+                <span onClick={() => setSelectedLot(staleLot)} style={{ color: theme.accent, cursor: 'pointer', textDecoration: 'underline' }}>UPDATE</span>
+              </span>
+            )}
+          </div>
+          <div style={{ height: '28px', width: '0.5px', backgroundColor: theme.border }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', position: 'relative' }}>
+            <span style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+              TOTAL INVESTED{' '}
+              <span onClick={() => setShowInvestedTooltip(v => !v)} style={{ cursor: 'pointer', fontSize: '9px' }}>ⓘ</span>
+              {showInvestedTooltip && (
+                <span onClick={() => setShowInvestedTooltip(false)} style={{
+                  position: 'absolute', bottom: '16px', left: 0,
+                  backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+                  borderRadius: '4px', padding: '5px 8px', fontSize: '9px',
+                  color: theme.textSecondary, whiteSpace: 'nowrap', zIndex: 10,
+                  fontFamily: 'monospace', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                }}>
+                  Based on purchase quantities &amp; prices recorded
+                </span>
+              )}
+            </span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: theme.textMuted, fontFamily: 'monospace' }}>
+              {totalInvested > 0
+                ? `$${totalInvested.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                : '—'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -613,68 +596,67 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
         </div>
       )}
 
-      {/* View Toggle — chips like GunVault */}
-      <div style={{
-        display: 'flex',
-        gap: '6px',
-        marginBottom: '16px',
-        overflowX: 'auto',
-        flexWrap: 'nowrap'
-      }}>
-        {(['calibers', 'lots'] as const).map(mode => (
-          <button
-            key={mode}
-            onClick={() => {
-              setViewMode(mode);
-              if (mode === 'calibers') setSelectedCaliber(null);
-            }}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '20px',
-              border: viewMode === mode ? 'none' : `0.5px solid ${theme.border}`,
-              backgroundColor: viewMode === mode ? theme.accent : 'transparent',
-              color: viewMode === mode ? theme.bg : theme.textSecondary,
-              fontFamily: 'monospace',
-              fontSize: '9px',
-              letterSpacing: '0.8px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {mode === 'calibers' ? 'BY CALIBER' : 'ALL LOTS'}
-          </button>
-        ))}
+      {/* View Toggle — segmented control */}
+      <div style={{ display: 'flex', marginBottom: '14px' }}>
+        <div style={{
+          display: 'inline-flex',
+          backgroundColor: theme.surface,
+          border: `0.5px solid ${theme.border}`,
+          borderRadius: '6px',
+          padding: '2px',
+          gap: '2px',
+        }}>
+          {(['calibers', 'lots'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => { setViewMode(m); if (m === 'calibers') setSelectedCaliber(null); }}
+              style={{
+                padding: '5px 14px',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: viewMode === m ? theme.accent : 'transparent',
+                color: viewMode === m ? theme.bg : theme.textSecondary,
+                fontFamily: 'monospace',
+                fontSize: '9px',
+                letterSpacing: '0.8px',
+                cursor: 'pointer',
+                fontWeight: viewMode === m ? 700 : 400,
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.1s',
+              }}
+            >
+              {m === 'calibers' ? 'BY CALIBER' : 'ALL LOTS'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Category filter — shown in BOTH views (Task 3 adds it to calibers view) */}
-      <div style={{
-        display: 'flex',
-        gap: '4px',
-        marginBottom: '16px',
-        flexWrap: 'wrap'
-      }}>
-        {(['all', 'Match', 'Practice', 'Self Defense', 'Hunting'] as const).map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            style={{
-              padding: '6px 11px',
-              backgroundColor: categoryFilter === cat ? theme.accent : 'transparent',
-              color: categoryFilter === cat ? theme.bg : theme.textMuted,
-              border: `0.5px solid ${categoryFilter === cat ? theme.accent : theme.border}`,
-              borderRadius: '20px',
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              letterSpacing: '0.5px',
-              cursor: 'pointer',
-              fontWeight: categoryFilter === cat ? 700 : 400,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {cat === 'all' ? 'ALL' : cat}
-          </button>
-        ))}
+      {/* Category filter */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Filter by</div>
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          {(['all', 'Match', 'Practice', 'Self Defense', 'Hunting'] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: categoryFilter === cat ? theme.accent : theme.surface,
+                color: categoryFilter === cat ? theme.bg : theme.textMuted,
+                border: `0.5px solid ${categoryFilter === cat ? theme.accent : theme.border}`,
+                borderRadius: '16px',
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                letterSpacing: '0.5px',
+                cursor: 'pointer',
+                fontWeight: categoryFilter === cat ? 700 : 400,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {cat === 'all' ? 'ALL' : cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Caliber search + sort bar (calibers view only) */}
