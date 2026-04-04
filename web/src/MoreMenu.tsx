@@ -127,6 +127,16 @@ function IconGunsmithing({ size = 26, muted = false }: { size?: number; muted?: 
   );
 }
 
+function IconLegal({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
+  const c = muted ? theme.textMuted : theme.textPrimary;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 3L4 7V12C4 16.4 7.4 20.5 12 21C16.6 20.5 20 16.4 20 12V7L12 3Z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M9 12L11 14L15 10" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 function IconEvents({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
   const c = muted ? theme.textMuted : theme.textPrimary;
   return (
@@ -204,6 +214,14 @@ export function MoreMenu({ onNavigate }: MoreMenuProps) {
       sub: 'Coming soon',
       available: false,
       onPress: () => {},
+    },
+    {
+      id: 'legal',
+      Icon: IconLegal,
+      label: 'Legal',
+      sub: 'Terms · Privacy',
+      available: true,
+      onPress: () => onNavigate('legal'),
     },
   ];
 

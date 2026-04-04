@@ -459,3 +459,18 @@ export async function syncZero(z: OpticZero): Promise<void> {
   const { error } = await supabase.from('optic_zeros').upsert(row);
   if (error) console.warn('[sync] zero failed:', error.message);
 }
+
+// ── Account deletion ──────────────────────────────────────────────────────────
+
+/** Delete all of the current user's data from every Supabase table. */
+export async function deleteAccountData(): Promise<void> {
+  const userId = await getCurrentUserId();
+  if (!userId) return;
+  const tables = [
+    'guns', 'sessions', 'ammo_lots', 'target_analyses',
+    'optics', 'mounts', 'optic_assignments', 'optic_zeros',
+  ] as const;
+  await Promise.allSettled(
+    tables.map(t => supabase.from(t).delete().eq('user_id', userId))
+  );
+}

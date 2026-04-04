@@ -34,10 +34,11 @@ const MoreMenu = lazy(() => import('./MoreMenu').then(m => ({ default: m.MoreMen
 const FieldGuide = lazy(() => import('./FieldGuide').then(m => ({ default: m.FieldGuide })));
 const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.OpticsList })));
 const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
+const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.LegalDocs })));
 
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal';
 
 function App() {
   const [unlocked, setUnlocked] = useState(isUnlocked);
@@ -186,6 +187,7 @@ function AppCore() {
     if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} backLabel="Vault" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
     if (currentView === 'field-guide')  return <AppHeader title="Field Guide" />;
+    if (currentView === 'legal')        return <AppHeader title="Legal" onBack={() => setCurrentView('more')} backLabel="More" />;
     return null;
   }
 
@@ -277,6 +279,7 @@ function AppCore() {
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
     if (currentView === 'field-guide') return <FieldGuide />;
+    if (currentView === 'legal') return <LegalDocs />;
     return null;
   }
 
@@ -326,6 +329,7 @@ function AppCore() {
           onClose={() => setShowSettings(false)}
           onImport={() => { setShowSettings(false); setShowCSVImport(true); setCurrentView('vault'); setVaultSection('guns'); }}
           onExport={() => { setShowSettings(false); exportInsuranceClaim(allGuns); }}
+          onNavigateToLegal={() => { setShowSettings(false); setCurrentView('legal'); }}
         />
       )}
       <Toast toasts={toasts} onDismiss={dismissToast} />

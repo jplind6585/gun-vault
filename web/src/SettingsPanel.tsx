@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { exportVaultBackup, importVaultBackup, resetAllData } from './storage';
+import { deleteAccountData } from './lib/sync';
+import { useAuth } from './auth/AuthProvider';
 
 const SETTINGS_KEY = 'lindcott_settings';
 
@@ -34,12 +36,16 @@ interface SettingsPanelProps {
   onClose: () => void;
   onImport: () => void;
   onExport: () => void;
+  onNavigateToLegal: () => void;
 }
 
-export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProps) {
+export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }: SettingsPanelProps) {
+  const { user, signOut } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(getSettings);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  // deleteStep: 0=normal | 1=warning+download | 2=countdown confirm
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
   const [deleteCountdown, setDeleteCountdown] = useState(5);
+  const [deleteWorking, setDeleteWorking] = useState(false);
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,23 +60,30 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
     if (e.target === e.currentTarget) onClose();
   }
 
-  function startDeleteConfirm() {
-    setDeleteConfirm(true);
+  function startCountdown() {
+    setDeleteStep(2);
     setDeleteCountdown(5);
     countdownRef.current = setInterval(() => {
       setDeleteCountdown(n => {
-        if (n <= 1) {
-          clearInterval(countdownRef.current!);
-          return 0;
-        }
+        if (n <= 1) { clearInterval(countdownRef.current!); return 0; }
         return n - 1;
       });
     }, 1000);
   }
 
   function cancelDelete() {
-    setDeleteConfirm(false);
+    setDeleteStep(0);
     if (countdownRef.current) clearInterval(countdownRef.current);
+  }
+
+  async function confirmDelete() {
+    if (deleteCountdown > 0 || deleteWorking) return;
+    setDeleteWorking(true);
+    try {
+      await deleteAccountData();
+    } catch { /* offline — continue anyway */ }
+    await signOut().catch(() => {});
+    resetAllData(); // clears localStorage + reloads
   }
 
   useEffect(() => () => { if (countdownRef.current) clearInterval(countdownRef.current); }, []);
@@ -296,70 +309,120 @@ export function SettingsPanel({ onClose, onImport, onExport }: SettingsPanelProp
 
         {/* Privacy / Delete Account */}
         <div style={{ padding: '16px 20px', borderBottom: '0.5px solid ' + theme.border }}>
-          <div style={sectionLabel}>PRIVACY</div>
+          <div style={sectionLabel}>ACCOUNT & PRIVACY</div>
 
-          {!deleteConfirm ? (
+          {deleteStep === 0 && (
             <>
+              {user && (
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px' }}>
+                  Signed in as {user.email}
+                </div>
+              )}
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px', lineHeight: 1.6 }}>
-                Lindcott Armory stores all data locally on your device. Nothing is sent to any server. You own your data — export or delete it at any time.
+                Your data is stored locally on your device. Cloud sync is optional and encrypted. You own your data.
               </div>
+              {user && (
+                <button
+                  onClick={() => signOut()}
+                  style={{ ...btnBase, width: '100%', flex: undefined, marginBottom: '8px' }}
+                >
+                  SIGN OUT
+                </button>
+              )}
               <button
-                onClick={startDeleteConfirm}
-                style={{
-                  ...btnBase,
-                  width: '100%',
-                  flex: undefined,
-                  color: theme.red,
-                  borderColor: 'rgba(255,107,107,0.3)',
-                }}
+                onClick={() => setDeleteStep(1)}
+                style={{ ...btnBase, width: '100%', flex: undefined, color: theme.red, borderColor: 'rgba(255,107,107,0.3)' }}
               >
-                DELETE ALL DATA
+                DELETE ACCOUNT & ALL DATA
               </button>
             </>
-          ) : (
+          )}
+
+          {deleteStep === 1 && (
+            <div style={{
+              backgroundColor: 'rgba(255,107,107,0.06)',
+              border: '0.5px solid rgba(255,107,107,0.35)',
+              borderRadius: '8px',
+              padding: '16px',
+            }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.red, fontWeight: 700, marginBottom: '10px' }}>
+                THIS CANNOT BE UNDONE
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, marginBottom: '16px', lineHeight: 1.7 }}>
+                Deleting your account will permanently erase all firearms, sessions, ammo records, optics, and analyses — from this device and from cloud storage.
+                {'\n\n'}We recommend downloading a backup before continuing.
+              </div>
+              <button
+                onClick={exportVaultBackup}
+                style={{ ...btnBase, width: '100%', flex: undefined, marginBottom: '10px' }}
+              >
+                DOWNLOAD DATA BACKUP (JSON)
+              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={cancelDelete} style={{ ...btnBase, flex: 1 }}>
+                  CANCEL
+                </button>
+                <button
+                  onClick={startCountdown}
+                  style={{ ...btnBase, flex: 1, color: theme.red, borderColor: 'rgba(255,107,107,0.4)' }}
+                >
+                  CONTINUE →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {deleteStep === 2 && (
             <div style={{
               backgroundColor: 'rgba(255,107,107,0.08)',
-              border: '0.5px solid rgba(255,107,107,0.4)',
+              border: '0.5px solid rgba(255,107,107,0.5)',
               borderRadius: '8px',
               padding: '16px',
             }}>
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, fontWeight: 700, marginBottom: '8px' }}>
-                DELETE ALL VAULT DATA?
+                FINAL CONFIRMATION
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '14px', lineHeight: 1.6 }}>
-                This will permanently delete all guns, sessions, ammo, and analyses. This cannot be undone. Export a backup first if you want to keep your data.
+                Your account and all data will be permanently deleted. This action is irreversible.
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={cancelDelete}
-                  style={{ ...btnBase, flex: 1 }}
-                >
+                <button onClick={cancelDelete} style={{ ...btnBase, flex: 1 }} disabled={deleteWorking}>
                   CANCEL
                 </button>
                 <button
-                  onClick={() => deleteCountdown === 0 && resetAllData()}
-                  disabled={deleteCountdown > 0}
+                  onClick={confirmDelete}
+                  disabled={deleteCountdown > 0 || deleteWorking}
                   style={{
-                    ...btnBase,
-                    flex: 1,
-                    backgroundColor: deleteCountdown === 0 ? theme.red : 'transparent',
-                    color: deleteCountdown === 0 ? '#fff' : 'rgba(255,107,107,0.5)',
+                    ...btnBase, flex: 1,
+                    backgroundColor: deleteCountdown === 0 && !deleteWorking ? theme.red : 'transparent',
+                    color: deleteCountdown === 0 && !deleteWorking ? '#fff' : 'rgba(255,107,107,0.5)',
                     borderColor: 'rgba(255,107,107,0.4)',
-                    cursor: deleteCountdown === 0 ? 'pointer' : 'default',
+                    cursor: deleteCountdown === 0 && !deleteWorking ? 'pointer' : 'default',
                   }}
                 >
-                  {deleteCountdown > 0 ? `DELETE (${deleteCountdown})` : 'CONFIRM DELETE'}
+                  {deleteWorking ? 'DELETING...' : deleteCountdown > 0 ? `DELETE (${deleteCountdown})` : 'DELETE ACCOUNT'}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Version */}
-        <div style={{ padding: '16px 20px' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>
+        {/* Version + Legal */}
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
             LINDCOTT ARMORY v1.0
           </div>
+          <button
+            onClick={() => { onClose(); onNavigateToLegal(); }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.5px',
+              color: theme.textMuted, textDecoration: 'underline',
+              padding: '2px 4px',
+            }}
+          >
+            Terms of Service · Privacy Policy
+          </button>
         </div>
       </div>
     </div>
