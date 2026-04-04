@@ -210,7 +210,7 @@ export interface Cartridge {
 
   // Classification
   type: 'Rifle' | 'Pistol' | 'Shotgun' | 'Revolver' | 'Rimfire';
-  standardization: 'SAAMI' | 'CIP' | 'Military' | 'Wildcat' | 'Proprietary';
+  standardization: 'SAAMI' | 'CIP' | 'NATO' | 'Soviet / Russian GRAU' | 'Wildcat' | 'Proprietary' | 'Obsolete / Non-standard';
   productionStatus: 'Active' | 'Limited' | 'Obsolete' | 'Military Surplus';
   availability: 'Abundant' | 'Common' | 'Moderate' | 'Limited' | 'Scarce' | 'Collector Only';
 
@@ -238,6 +238,9 @@ export interface Cartridge {
   caseCapacityGrains?: number;
   maxPressurePSI?: number;
   maxPressureCUP?: number;
+  rimType?: 'Rimless' | 'Rimmed' | 'Semi-Rimmed' | 'Belted' | 'Rebated' | 'Rimfire';
+  primerType?: string;
+  typicalTwistRate?: string;
 
   // Ballistic Performance (typical ranges)
   commonBulletWeights: number[]; // grains
