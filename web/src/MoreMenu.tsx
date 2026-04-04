@@ -149,8 +149,26 @@ function IconEvents({ size = 26, muted = false }: { size?: number; muted?: boole
   );
 }
 
+function IconAssistant({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
+  const c = muted ? theme.textMuted : theme.accent;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M19 16L19.75 19L22 19.75L19.75 20.5L19 23L18.25 20.5L16 19.75L18.25 19L19 16Z" stroke={c} strokeWidth="1.2" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 export function MoreMenu({ onNavigate }: MoreMenuProps) {
   const tools: ToolCard[] = [
+    {
+      id: 'assistant',
+      Icon: IconAssistant,
+      label: 'AI Assistant',
+      sub: 'Ask your vault',
+      available: true,
+      onPress: () => onNavigate('assistant'),
+    },
     {
       id: 'field-guide',
       Icon: IconFieldGuide,

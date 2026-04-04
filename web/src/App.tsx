@@ -31,6 +31,7 @@ const StyleDemo = lazy(() => import('./StyleDemo').then(m => ({ default: m.Style
 const SettingsPanel = lazy(() => import('./SettingsPanel').then(m => ({ default: m.SettingsPanel })));
 const CSVImportModal = lazy(() => import('./CSVImportModal').then(m => ({ default: m.CSVImportModal })));
 const MoreMenu = lazy(() => import('./MoreMenu').then(m => ({ default: m.MoreMenu })));
+const ArmoryAssistant = lazy(() => import('./ArmoryAssistant').then(m => ({ default: m.ArmoryAssistant })));
 const FieldGuide = lazy(() => import('./FieldGuide').then(m => ({ default: m.FieldGuide })));
 const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.OpticsList })));
 const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
@@ -38,7 +39,7 @@ const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.Legal
 
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
 
 function App() {
   const [unlocked, setUnlocked] = useState(isUnlocked);
@@ -187,6 +188,7 @@ function AppCore() {
     if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} backLabel="Vault" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
     if (currentView === 'field-guide')  return <AppHeader title="Field Guide" />;
+    if (currentView === 'assistant')    return <AppHeader title="AI Assistant" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'legal')        return <AppHeader title="Legal" onBack={() => setCurrentView('more')} backLabel="More" />;
     return null;
   }
@@ -278,6 +280,7 @@ function AppCore() {
     if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
+    if (currentView === 'assistant')   return <ArmoryAssistant />;
     if (currentView === 'field-guide') return <FieldGuide />;
     if (currentView === 'legal') return <LegalDocs />;
     return null;

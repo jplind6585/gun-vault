@@ -320,6 +320,77 @@ Format: zero correction first, then group diagnosis, then one next step.`;
   return callClaude(anthropicMessages, systemPrompt, 'target_coach', 512);
 }
 
+// ── Armory Assistant ─────────────────────────────────────────────────────────
+
+const ASSISTANT_SYSTEM_PROMPT = `You are the Lindcott Armory AI — a knowledgeable, straight-talking firearms assistant with full access to this user's personal vault data.
+
+CAPABILITIES:
+- Answer questions about firearms, cartridges, ammunition, optics, and ballistics
+- Analyze the user's personal vault data and give specific, personalized insights
+- Help with maintenance planning, ammo selection, and range performance
+- Explain historical and technical context for any firearm or cartridge
+- Assist with training planning and drill selection
+
+HARD LIMITS — never provide guidance on:
+- Converting semi-automatic firearms to fire automatically
+- Manufacturing, modifying, or acquiring NFA items (suppressors, SBR/SBS, destructive devices, machine guns) outside legal channels
+- Defeating federal, state, or local background check or transfer requirements
+- Illegal modifications of any kind in any jurisdiction
+- Methods to defeat firearm safety mechanisms for harmful purposes
+
+If a question touches these areas, briefly explain you can't help with that and suggest consulting a licensed FFL dealer or firearms attorney. Then move on.
+
+TONE: Direct and practical — like a trusted gunsmith or experienced range instructor. Not preachy. Answer the question.`;
+
+export function buildVaultContext(guns: Gun[], sessions: Session[], ammoLots: AmmoLot[]): string {
+  const lines: string[] = [`VAULT CONTEXT (${new Date().toLocaleDateString()}):\n`];
+
+  // Guns
+  lines.push(`FIREARMS (${guns.length} total):`);
+  guns.forEach(g => {
+    const cleaning = g.lastCleanedRoundCount != null && g.roundCount != null
+      ? `, ${g.roundCount - g.lastCleanedRoundCount} rounds since last cleaning`
+      : '';
+    lines.push(`  - ${g.make} ${g.model} (${g.caliber}, ${g.type}) — ${g.roundCount ?? 0} total rounds${cleaning}`);
+  });
+
+  // Ammo
+  const ammoByCalibер = ammoLots.reduce<Record<string, number>>((acc, lot) => {
+    acc[lot.caliber] = (acc[lot.caliber] ?? 0) + (lot.quantity ?? 0);
+    return acc;
+  }, {});
+  const ammoEntries = Object.entries(ammoByCalibер).sort((a, b) => b[1] - a[1]);
+  lines.push(`\nAMMO INVENTORY (${ammoLots.length} lots, ${Object.values(ammoByCalibер).reduce((a, b) => a + b, 0)} total rounds):`);
+  ammoEntries.forEach(([caliber, qty]) => lines.push(`  - ${caliber}: ${qty} rounds`));
+
+  // Recent sessions
+  const recent = [...sessions]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 8);
+  lines.push(`\nRECENT SESSIONS (last ${recent.length}):`);
+  recent.forEach(s => {
+    const gunName = guns.find(g => g.id === s.gunId);
+    const label = gunName ? `${gunName.make} ${gunName.model}` : 'Unknown gun';
+    const issues = s.issues ? ` — issues: ${s.issueTypes?.join(', ') || 'yes'}` : '';
+    lines.push(`  - ${s.date}: ${label} | ${s.roundsExpended} rounds | ${s.purpose?.join(', ') || 'general'}${issues}`);
+  });
+
+  return lines.join('\n');
+}
+
+export async function callArmoryAssistant(
+  vaultContext: string,
+  messages: { role: 'user' | 'assistant'; content: string }[],
+): Promise<string> {
+  const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${vaultContext}`;
+  return callClaude(
+    messages.map(m => ({ role: m.role, content: m.content })),
+    systemPrompt,
+    'assistant',
+    1024,
+  );
+}
+
 // ── Training gap ─────────────────────────────────────────────────────────────
 
 export function getTrainingGapDays(sessions: Session[]): number {
