@@ -456,7 +456,7 @@ export function TargetAnalysis() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  const touchStartRef = useRef<{ touches: { id: number; x: number; y: number }[]; scale: number; offset: { x: number; y: number } } | null>(null);
+  const touchStartRef = useRef<{ touches: { id: number; x: number; y: number }[]; scale: number; offset: { x: number; y: number }; canvasRectLeft?: number; canvasRectTop?: number } | null>(null);
   const touchMovedRef = useRef(false);
   const lastTouchTimeRef = useRef(0);
 
@@ -561,25 +561,21 @@ export function TargetAnalysis() {
     const lw = Math.max(2, displayRatio * 1.5);
 
     // ── Calibration endpoints + connecting line ───────────────────────────
-    calibPts.forEach((pt, i) => {
-      // Circle
+    calibPts.forEach((pt, _i) => {
+      // Circle — no border so it blends with the target
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, calibR, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255,50,50,0.82)';
       ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = lw;
-      ctx.stroke();
 
-      // White cross in center for precise alignment
+      // Semi-transparent red crosshair — visible but not distracting
       const arm = Math.max(6, calibR * 0.42);
-      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.strokeStyle = 'rgba(255,50,50,0.35)';
       ctx.lineWidth = Math.max(1.5, displayRatio * 1.2);
       ctx.beginPath();
       ctx.moveTo(pt.x - arm, pt.y); ctx.lineTo(pt.x + arm, pt.y);
       ctx.moveTo(pt.x, pt.y - arm); ctx.lineTo(pt.x, pt.y + arm);
       ctx.stroke();
-
     });
 
     if (calibPts.length === 2) {
@@ -729,35 +725,37 @@ export function TargetAnalysis() {
     if (e.touches.length === 2) {
       e.preventDefault();
       const t0 = e.touches[0]; const t1 = e.touches[1];
+      const cRect = canvasRef.current?.getBoundingClientRect();
       touchStartRef.current = {
         touches: [{ id: t0.identifier, x: t0.clientX, y: t0.clientY }, { id: t1.identifier, x: t1.clientX, y: t1.clientY }],
         scale, offset,
+        canvasRectLeft: cRect?.left ?? 0,
+        canvasRectTop: cRect?.top ?? 0,
       };
       touchMovedRef.current = false;
     } else if (e.touches.length === 1) {
       const t = e.touches[0];
       touchStartRef.current = { touches: [{ id: t.identifier, x: t.clientX, y: t.clientY }], scale, offset };
       touchMovedRef.current = false;
+      draggingRef.current = null; // drag only activates via long-press
       const pt = toCanvas(t.clientX, t.clientY);
-      const draggable = findDraggable(pt);
-      draggingRef.current = draggable;
-      if (draggable) {
-        loupeCenterRef.current = pt;
-        setLoupeScreenPos({ x: t.clientX, y: t.clientY });
+      const potentialDraggable = findDraggable(pt);
+      const clientX = t.clientX, clientY = t.clientY;
+      // Long-press: drag existing mark OR precision placement loupe
+      longPressTimerRef.current = setTimeout(() => {
+        if (touchMovedRef.current) return;
+        const canvasPt = toCanvas(clientX, clientY);
+        loupeCenterRef.current = canvasPt;
+        setLoupeScreenPos({ x: clientX, y: clientY });
         setShowLoupe(true);
-      } else {
-        // Long-press activates loupe for precise placement
-        const clientX = t.clientX, clientY = t.clientY;
-        longPressTimerRef.current = setTimeout(() => {
-          isLongPressLoupeRef.current = true;
-          const canvasPt = toCanvas(clientX, clientY);
-          loupeCenterRef.current = canvasPt;
-          setLoupeScreenPos({ x: clientX, y: clientY });
-          setShowLoupe(true);
-          drawLoupeAt(canvasPt);
-          haptic();
-        }, 420);
-      }
+        drawLoupeAt(canvasPt);
+        haptic();
+        if (potentialDraggable) {
+          draggingRef.current = potentialDraggable; // drag mode
+        } else {
+          isLongPressLoupeRef.current = true; // precision placement mode
+        }
+      }, 420);
     }
   };
 
@@ -771,8 +769,17 @@ export function TargetAnalysis() {
       const newScale = Math.min(5, Math.max(1, start.scale * (startDist > 0 ? curDist / startDist : 1)));
       const sMidX = (start.touches[0].x + start.touches[1].x) / 2;
       const sMidY = (start.touches[0].y + start.touches[1].y) / 2;
+      const cMidX = (t0.clientX + t1.clientX) / 2;
+      const cMidY = (t0.clientY + t1.clientY) / 2;
+      // Zoom anchored to the finger midpoint: the canvas pixel under the midpoint stays fixed
+      const scaleRatio = newScale / start.scale;
+      const anchorX = sMidX - (start.canvasRectLeft ?? 0);
+      const anchorY = sMidY - (start.canvasRectTop ?? 0);
       setScale(newScale);
-      setOffset({ x: start.offset.x + (t0.clientX + t1.clientX) / 2 - sMidX, y: start.offset.y + (t0.clientY + t1.clientY) / 2 - sMidY });
+      setOffset({
+        x: start.offset.x + (cMidX - sMidX) - anchorX * (scaleRatio - 1),
+        y: start.offset.y + (cMidY - sMidY) - anchorY * (scaleRatio - 1),
+      });
       touchMovedRef.current = true;
     } else if (e.touches.length === 1 && touchStartRef.current?.touches.length === 1) {
       const t = e.touches[0];
@@ -800,16 +807,17 @@ export function TargetAnalysis() {
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     clearTimeout(longPressTimerRef.current);
     if (draggingRef.current) {
+      // Drag released — mark is already at new position
       draggingRef.current = null;
       touchStartRef.current = null;
       touchMovedRef.current = false;
       clearLoupe();
       return;
     }
+    const touch = e.changedTouches[0];
     if (isLongPressLoupeRef.current) {
-      // Drop the mark at the current loupe position (offset upward so finger doesn't cover pin)
-      const touch = e.changedTouches[0];
-      const pt = toCanvas(touch.clientX, touch.clientY - 28);
+      // Precision loupe placement — mark goes exactly at finger position
+      const pt = toCanvas(touch.clientX, touch.clientY);
       handleCanvasTap(pt.x, pt.y);
       isLongPressLoupeRef.current = false;
       clearLoupe();
@@ -818,9 +826,8 @@ export function TargetAnalysis() {
       return;
     }
     if (e.changedTouches.length === 1 && touchStartRef.current?.touches.length === 1 && !touchMovedRef.current) {
-      const touch = e.changedTouches[0];
-      // Offset upward so fingertip doesn't cover the placed pin
-      const pt = toCanvas(touch.clientX, touch.clientY - 28);
+      // Quick tap — place mark at exact touch position (no upward offset)
+      const pt = toCanvas(touch.clientX, touch.clientY);
       handleCanvasTap(pt.x, pt.y);
     }
     touchStartRef.current = null;
