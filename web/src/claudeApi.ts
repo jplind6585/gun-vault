@@ -1,6 +1,7 @@
 // Claude API — routed through Supabase Edge Function (production-safe)
 // Your Anthropic key lives in Supabase secrets, never in the browser.
 import type { Session, Gun, AmmoLot, TargetPhotoAnalysis } from './types';
+import type { ShooterProfile } from './shooterProfile';
 import { supabase, SUPABASE_URL } from './lib/supabase';
 
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/claude`;
@@ -374,6 +375,72 @@ export function buildVaultContext(guns: Gun[], sessions: Session[], ammoLots: Am
     const issues = s.issues ? ` — issues: ${s.issueTypes?.join(', ') || 'yes'}` : '';
     lines.push(`  - ${s.date}: ${label} | ${s.roundsExpended} rounds | ${s.purpose?.join(', ') || 'general'}${issues}`);
   });
+
+  return lines.join('\n');
+}
+
+// ── Full context (vault + shooter profile) ───────────────────────────────────
+
+export function buildFullContext(
+  guns: Gun[],
+  sessions: Session[],
+  ammoLots: AmmoLot[],
+  profile: ShooterProfile | null,
+): string {
+  const vaultSection = buildVaultContext(guns, sessions, ammoLots);
+
+  if (!profile) return vaultSection;
+
+  const lines: string[] = [vaultSection, '\nSHOOTER PROFILE:'];
+
+  // Top personas
+  if (profile.primaryPersonas.length > 0) {
+    const personas = profile.primaryPersonas
+      .map(p => `${p.type.replace(/_/g, ' ')} (${Math.round(p.probability * 100)}%)`)
+      .join(', ');
+    lines.push(`  Persona: ${personas}`);
+  }
+
+  // Skills (only intermediate and above, sorted by level)
+  const levelOrder: Record<string, number> = { expert: 4, advanced: 3, intermediate: 2, beginner: 1, none: 0 };
+  const significantSkills = profile.skills
+    .filter(s => s.level !== 'none' && s.level !== 'beginner')
+    .sort((a, b) => (levelOrder[b.level] ?? 0) - (levelOrder[a.level] ?? 0))
+    .slice(0, 8);
+
+  if (significantSkills.length > 0) {
+    lines.push('  Skills:');
+    significantSkills.forEach(s => {
+      const conf = s.confidence >= 0.7 ? '' : ' (inferred)';
+      lines.push(`    - ${s.domain.replace(/_/g, ' ')}: ${s.level}${conf}`);
+    });
+  }
+
+  // Active goals
+  const activeGoals = profile.goals.filter(g => g.status === 'active');
+  if (activeGoals.length > 0) {
+    lines.push('  Active goals:');
+    activeGoals.slice(0, 5).forEach(g => lines.push(`    - ${g.text}`));
+  }
+
+  // Accuracy highlights (high/medium confidence only)
+  const confidentAccuracy = profile.accuracyProfiles
+    .filter(p => p.confidence === 'high' || p.confidence === 'medium')
+    .filter(p => p.medianMOA !== undefined);
+
+  if (confidentAccuracy.length > 0) {
+    lines.push('  Accuracy profiles:');
+    confidentAccuracy.slice(0, 4).forEach(ap => {
+      const gun = guns.find(g => g.id === ap.gunId);
+      const name = gun ? `${gun.make} ${gun.model}` : ap.gunId;
+      lines.push(`    - ${name}: ${ap.medianMOA?.toFixed(1)} MOA median (${ap.sessionCount} sessions, ${ap.confidence} confidence)`);
+    });
+  }
+
+  // Training gap
+  if (profile.daysSinceLastSession < 9999) {
+    lines.push(`  Days since last session: ${profile.daysSinceLastSession}`);
+  }
 
   return lines.join('\n');
 }

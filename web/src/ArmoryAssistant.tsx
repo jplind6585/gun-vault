@@ -1,10 +1,9 @@
 // Armory Assistant — conversational AI with full vault context
 import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
-import { callArmoryAssistant, buildVaultContext } from './claudeApi';
-import { getAllGuns } from './storage';
-import { getAllSessions } from './storage';
-import { getAllAmmoLots } from './storage';
+import { callArmoryAssistant, buildFullContext } from './claudeApi';
+import { getAllGuns, getAllSessions, getAllAmmoLots } from './storage';
+import { useShooterProfile } from './useShooterProfile';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,14 +79,15 @@ export function ArmoryAssistant() {
   const [vaultContext, setVaultContext] = useState<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { profile } = useShooterProfile();
 
-  // Build vault context once on mount
+  // Build full context (vault + shooter profile) whenever profile updates
   useEffect(() => {
     const guns = getAllGuns();
     const sessions = getAllSessions();
     const ammo = getAllAmmoLots();
-    setVaultContext(buildVaultContext(guns, sessions, ammo));
-  }, []);
+    setVaultContext(buildFullContext(guns, sessions, ammo, profile));
+  }, [profile]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
