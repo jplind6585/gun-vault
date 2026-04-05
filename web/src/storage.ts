@@ -163,6 +163,7 @@ async function initializeSeedData(): Promise<void> {
   localStorage.setItem(CARTRIDGES_KEY, JSON.stringify(cartridgesWithIds));
   localStorage.setItem(INITIALIZED_KEY, 'true');
   localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+  localStorage.setItem('gunvault_is_demo', 'true'); // cleared when a real user signs in
 
   const totalRounds = ammoWithIds.reduce((sum, lot) => sum + lot.quantity, 0);
   console.log('✅ Loaded ' + gunsWithIds.length + ' guns, ' + sessionsWithIds.length + ' sessions, ' + ammoWithIds.length + ' ammo lots (' + totalRounds.toLocaleString() + ' rounds), and ' + cartridgesWithIds.length + ' cartridges into vault');
@@ -497,6 +498,14 @@ export function resetAllData(): void {
   localStorage.clear();
   console.log('🗑️  All data cleared. Refresh to reload seed data.');
   window.location.reload();
+}
+
+/** Clear demo/seed data without reloading — used when a real user signs in fresh. */
+export function clearDemoData(): void {
+  ['gunvault_guns', 'gunvault_sessions', 'gunvault_ammo',
+   'gunvault_initialized', 'gunvault_is_demo', 'gunvault_shooter_profile',
+   'gunvault_onboarding_dismissed_at'].forEach(k => localStorage.removeItem(k));
+  _initPromise = null; // allow re-initialization next time ensureInitialized() is called
 }
 
 // ============================================================================

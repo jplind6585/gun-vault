@@ -1,8 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { theme } from './theme';
 import { getAllGuns, addGun, ensureInitialized } from './storage';
-import { AuthProvider } from './auth/AuthProvider';
-import { PasscodeGate, isUnlocked } from './auth/PasscodeGate';
+import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { LoginScreen } from './auth/LoginScreen';
+import { WelcomeScreen } from './WelcomeScreen';
 import type { Gun } from './types';
 import { GunVault } from './GunVault';
 import { GunDetail } from './GunDetail';
@@ -45,10 +46,6 @@ import './App.css';
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
 
 function App() {
-  const [unlocked, setUnlocked] = useState(isUnlocked);
-
-  if (!unlocked) return <PasscodeGate onUnlock={() => setUnlocked(true)} />;
-
   return (
     <AuthProvider>
       <AppCore />
@@ -57,6 +54,7 @@ function App() {
 }
 
 function AppCore() {
+  const { user, loading: authLoading } = useAuth();
   const [ready, setReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
@@ -119,6 +117,23 @@ function AppCore() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
+
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100dvh', backgroundColor: theme.bg,
+      }}>
+        <div style={{ color: theme.textSecondary, fontFamily: 'monospace', fontSize: '12px', letterSpacing: '1px' }}>
+          LOADING...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   if (!ready) {
     return (
@@ -206,6 +221,12 @@ function AppCore() {
   }
 
   function renderView() {
+    if (currentView === 'home' && allGuns.length === 0) return (
+      <WelcomeScreen
+        onAddGun={() => setShowAddForm(true)}
+        onRestoreBackup={() => setShowCSVImport(true)}
+      />
+    );
     if (currentView === 'home') return (
       <HomePage
         onNavigateToVault={() => setCurrentView('vault')}

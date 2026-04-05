@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { pullFromSupabase, pushLocalDataToSupabase } from '../lib/sync';
+import { clearDemoData } from '../storage';
 
 interface AuthContextValue {
   user: User | null;
@@ -41,8 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Try to pull existing data from Supabase first
         const hadData = await pullFromSupabase();
         if (!hadData) {
-          // New user — push whatever is in localStorage (seed data or prior data)
-          await pushLocalDataToSupabase();
+          const isDemo = localStorage.getItem('gunvault_is_demo') === 'true';
+          if (isDemo) {
+            // New user who only has seed/demo data — clear it, they start fresh
+            clearDemoData();
+          } else {
+            // New user who entered their own data before signing in — push it up
+            await pushLocalDataToSupabase();
+          }
         }
       }
 
