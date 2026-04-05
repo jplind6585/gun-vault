@@ -3,6 +3,7 @@ import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { exportVaultBackup, importVaultBackup, resetAllData } from './storage';
 import { deleteAccountData } from './lib/sync';
 import { useAuth } from './auth/AuthProvider';
+import { supabase } from './lib/supabase';
 
 const SETTINGS_KEY = 'lindcott_settings';
 
@@ -40,8 +41,12 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }: SettingsPanelProps) {
-  const { user, signOut } = useAuth();
+  const { user, isAnonymous, signOut } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(getSettings);
+  const [upgradeEmail, setUpgradeEmail] = useState('');
+  const [upgradeSent, setUpgradeSent] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
   // deleteStep: 0=normal | 1=warning+download | 2=countdown confirm
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
   const [deleteCountdown, setDeleteCountdown] = useState(5);
@@ -87,6 +92,16 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }
   }
 
   useEffect(() => () => { if (countdownRef.current) clearInterval(countdownRef.current); }, []);
+
+  async function handleUpgrade(e: React.FormEvent) {
+    e.preventDefault();
+    if (!upgradeEmail.trim()) return;
+    setUpgradeLoading(true);
+    setUpgradeError('');
+    const { error } = await supabase.auth.updateUser({ email: upgradeEmail.trim() });
+    setUpgradeLoading(false);
+    if (error) { setUpgradeError(error.message); } else { setUpgradeSent(true); }
+  }
 
   async function handleRestoreFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -313,14 +328,77 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }
 
           {deleteStep === 0 && (
             <>
-              {user && (
-                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px' }}>
-                  Signed in as {user.email}
+              {/* Anonymous user — upgrade prompt */}
+              {isAnonymous && !upgradeSent && (
+                <div style={{
+                  backgroundColor: `${theme.accent}0d`,
+                  border: `0.5px solid ${theme.accent}40`,
+                  borderRadius: '8px',
+                  padding: '14px',
+                  marginBottom: '14px',
+                }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.accent, letterSpacing: '0.5px', marginBottom: '6px' }}>
+                    BACK UP YOUR DATA
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, lineHeight: 1.6, marginBottom: '12px' }}>
+                    Your vault syncs privately. Add an email to access it from any device — no password needed.
+                  </div>
+                  <form onSubmit={handleUpgrade}>
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={upgradeEmail}
+                      onChange={e => setUpgradeEmail(e.target.value)}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      style={{
+                        width: '100%', padding: '10px 12px', boxSizing: 'border-box',
+                        backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`,
+                        borderRadius: '6px', color: theme.textPrimary,
+                        fontFamily: 'monospace', fontSize: '12px', outline: 'none',
+                        marginBottom: '8px',
+                      }}
+                    />
+                    {upgradeError && (
+                      <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.red, marginBottom: '8px' }}>
+                        {upgradeError}
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={upgradeLoading || !upgradeEmail.trim()}
+                      style={{
+                        ...btnBase, width: '100%', flex: undefined,
+                        backgroundColor: upgradeLoading || !upgradeEmail.trim() ? 'transparent' : theme.accent,
+                        color: upgradeLoading || !upgradeEmail.trim() ? theme.textMuted : theme.bg,
+                        borderColor: upgradeLoading || !upgradeEmail.trim() ? theme.border : theme.accent,
+                      }}
+                    >
+                      {upgradeLoading ? 'SENDING...' : 'SECURE THIS ACCOUNT'}
+                    </button>
+                  </form>
                 </div>
               )}
+
+              {isAnonymous && upgradeSent && (
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px', lineHeight: 1.6 }}>
+                  Check <span style={{ color: theme.textSecondary }}>{upgradeEmail}</span> for a link to secure your account.
+                </div>
+              )}
+
+              {/* Named account */}
+              {!isAnonymous && user && (
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px' }}>
+                  {user.email
+                    ? `Signed in as ${user.email}`
+                    : `Signed in via ${user.app_metadata?.provider ?? 'SSO'}`}
+                </div>
+              )}
+
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '12px', lineHeight: 1.6 }}>
-                Your data is stored locally on your device. Cloud sync is optional and encrypted. You own your data.
+                Your data is stored locally on your device. Cloud sync is encrypted. You own your data.
               </div>
+
               {user && (
                 <button
                   onClick={() => signOut()}

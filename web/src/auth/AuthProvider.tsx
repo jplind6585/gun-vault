@@ -7,12 +7,14 @@ import { clearDemoData } from '../storage';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  isAnonymous: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
+  isAnonymous: false,
   signOut: async () => {},
 });
 
@@ -23,6 +25,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isAnonymous = user?.is_anonymous ?? false;
 
   useEffect(() => {
     // Get initial session
@@ -71,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isAnonymous, signOut }}>
       {children}
     </AuthContext.Provider>
   );
