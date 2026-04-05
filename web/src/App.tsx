@@ -219,6 +219,8 @@ function AppCore() {
         onDevTools={devUnlocked ? () => setDevOpen(o => !o) : undefined}
         onVersionTap={handleVersionTap}
         devTapCount={devTapCount}
+        onSetupProfile={() => setShowOnboarding(true)}
+        onEditGoals={() => setShowOnboarding(true)}
       />
     );
     if (currentView === 'vault' || currentView === 'arsenal') {

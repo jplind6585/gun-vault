@@ -3,6 +3,7 @@ import { theme } from './theme';
 import { getAllGuns, getAllSessions, getAllAmmo, updateGun } from './storage';
 import { getSettings } from './SettingsPanel';
 import type { Gun, Session, AmmoLot } from './types';
+import { ShooterProfileCard } from './ShooterProfileCard';
 
 interface HomePageProps {
   onNavigateToVault: () => void;
@@ -16,6 +17,8 @@ interface HomePageProps {
   onDevTools?: () => void;
   onVersionTap?: () => void;
   devTapCount?: number;
+  onSetupProfile?: () => void;
+  onEditGoals?: () => void;
 }
 
 type TimePeriod = 'week' | 'month' | 'year';
@@ -47,6 +50,8 @@ export function HomePage({
   onDevTools,
   onVersionTap,
   devTapCount = 0,
+  onSetupProfile,
+  onEditGoals,
 }: HomePageProps) {
   const [guns, setGuns]       = useState<Gun[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -553,6 +558,9 @@ export function HomePage({
           </div>
         ))}
       </div>
+
+      {/* ── SHOOTER PROFILE ── */}
+      <ShooterProfileCard onSetupProfile={onSetupProfile} onEditGoals={onEditGoals} />
 
       {/* Version tap target — 7 taps unlocks dev tools */}
       <div style={{ paddingBottom: '8px', textAlign: 'center' }}>
