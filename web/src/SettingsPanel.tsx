@@ -98,6 +98,7 @@ interface SettingsPanelProps {
   onImport: () => void;
   onExport: () => void;
   onNavigateToLegal: () => void;
+  onFeedbackOpen: () => void;
 }
 
 // ── Accordion section wrapper ─────────────────────────────────────────────────
@@ -214,7 +215,7 @@ function SegmentedControl<T extends string>({ options, value, onChange }: { opti
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }: SettingsPanelProps) {
+export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, onFeedbackOpen }: SettingsPanelProps) {
   const { user, isAnonymous, signOut } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(getSettings);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
@@ -654,7 +655,22 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal }
         )}
 
         {/* ── Footer ── */}
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={onFeedbackOpen}
+            style={{
+              padding: '10px 24px',
+              backgroundColor: 'transparent',
+              border: '0.5px solid ' + theme.border,
+              borderRadius: '6px',
+              color: theme.textSecondary,
+              fontFamily: 'monospace', fontSize: '11px',
+              fontWeight: 600, letterSpacing: '0.5px',
+              cursor: 'pointer',
+            }}
+          >
+            SEND FEEDBACK
+          </button>
           <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>LINDCOTT ARMORY v1.0</div>
           <button
             onClick={() => { onClose(); onNavigateToLegal(); }}

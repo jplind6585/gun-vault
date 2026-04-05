@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { theme } from './theme';
 
 const EFFECTIVE_DATE = 'April 2026';
-const CONTACT_EMAIL = 'support@lindcottfarms.com';
+const CONTACT_EMAIL = 'support@lindcottarmory.com';
 const APP_NAME = 'Lindcott Armory';
-const COMPANY = 'Lindcott Farms LLC';
+const COMPANY = 'Lindcott Armory LLC';
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 

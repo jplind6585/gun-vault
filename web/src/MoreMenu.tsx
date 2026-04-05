@@ -14,6 +14,7 @@ interface ToolCard {
 
 interface MoreMenuProps {
   onNavigate: (view: string) => void;
+  onFeedbackOpen?: () => void;
 }
 
 // ── SVG icons (24px viewBox, monochrome, consistent stroke) ──────────────────
@@ -159,7 +160,17 @@ function IconAssistant({ size = 26, muted = false }: { size?: number; muted?: bo
   );
 }
 
-export function MoreMenu({ onNavigate }: MoreMenuProps) {
+function IconFeedback({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
+  const c = muted ? theme.textMuted : theme.textPrimary;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M8 10H16M8 13.5H13" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+export function MoreMenu({ onNavigate, onFeedbackOpen }: MoreMenuProps) {
   const tools: ToolCard[] = [
     {
       id: 'assistant',
@@ -240,6 +251,14 @@ export function MoreMenu({ onNavigate }: MoreMenuProps) {
       sub: 'Terms · Privacy',
       available: true,
       onPress: () => onNavigate('legal'),
+    },
+    {
+      id: 'feedback',
+      Icon: IconFeedback,
+      label: 'Feedback',
+      sub: 'Bug or idea?',
+      available: !!onFeedbackOpen,
+      onPress: () => onFeedbackOpen?.(),
     },
   ];
 

@@ -38,6 +38,7 @@ const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.Opt
 const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
 const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.LegalDocs })));
 const OnboardingConversation = lazy(() => import('./OnboardingConversation').then(m => ({ default: m.OnboardingConversation })));
+const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 
 import { useShooterProfile } from './useShooterProfile';
 import { shouldShowOnboarding } from './profileStorage';
@@ -76,6 +77,7 @@ function AppCore() {
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
 
@@ -320,7 +322,7 @@ function AppCore() {
     if (currentView === 'wishlist')    return <Wishlist />;
     if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
-    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} />;
+    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} />;
     if (currentView === 'assistant')   return <ArmoryAssistant />;
     if (currentView === 'field-guide') return <FieldGuide />;
     if (currentView === 'legal') return <LegalDocs />;
@@ -374,8 +376,10 @@ function AppCore() {
           onImport={() => { setShowSettings(false); setShowCSVImport(true); setCurrentView('vault'); setVaultSection('guns'); }}
           onExport={() => { setShowSettings(false); exportInsuranceClaim(allGuns); }}
           onNavigateToLegal={() => { setShowSettings(false); setCurrentView('legal'); }}
+          onFeedbackOpen={() => { setShowSettings(false); setShowFeedback(true); }}
         />
       )}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 
