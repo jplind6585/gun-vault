@@ -36,7 +36,10 @@ const FieldGuide = lazy(() => import('./FieldGuide').then(m => ({ default: m.Fie
 const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.OpticsList })));
 const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
 const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.LegalDocs })));
+const OnboardingConversation = lazy(() => import('./OnboardingConversation').then(m => ({ default: m.OnboardingConversation })));
 
+import { useShooterProfile } from './useShooterProfile';
+import { shouldShowOnboarding } from './profileStorage';
 import './App.css';
 
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
@@ -73,6 +76,8 @@ function AppCore() {
   const [showSettings, setShowSettings] = useState(false);
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { profile, refresh: refreshProfile } = useShooterProfile();
 
   // Initialize seed data before first render
   useEffect(() => {
@@ -81,6 +86,13 @@ function AppCore() {
       loadGuns();
     });
   }, []);
+
+  // Show onboarding when profile is loaded and conditions are met
+  useEffect(() => {
+    if (ready && profile) {
+      setShowOnboarding(shouldShowOnboarding(profile.totalSessions, profile.onboardingCompleted));
+    }
+  }, [ready, profile]);
 
   // Keyboard shortcuts — must be before any early return to satisfy rules of hooks
   useEffect(() => {
@@ -337,6 +349,14 @@ function AppCore() {
       )}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
+
+      {/* Onboarding modal — shown once after 3rd session */}
+      {showOnboarding && (
+        <OnboardingConversation
+          onComplete={() => { setShowOnboarding(false); refreshProfile(); }}
+          onDismiss={() => setShowOnboarding(false)}
+        />
+      )}
 
       {/* ── GLOBAL FAB ── shown on main views only, hidden when modals are open */}
       {(['home','vault','sessions'] as AppView[]).includes(currentView) && !showAddForm && !showSettings && (

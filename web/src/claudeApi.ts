@@ -458,6 +458,70 @@ export async function callArmoryAssistant(
   );
 }
 
+// ── Onboarding conversation ───────────────────────────────────────────────────
+
+const ONBOARDING_SYSTEM_PROMPT = `You are setting up a shooter profile for a Lindcott Armory user.
+You have their vault data. Your job: ask 4–5 focused questions (one at a time) to learn their goals and experience. Then wrap up.
+
+QUESTIONS TO COVER (adapt based on what you already know from vault data — skip anything obvious):
+1. Experience: how long they've been shooting, how they got started
+2. Primary discipline or focus right now
+3. One skill they're actively working to improve
+4. How often they get to the range
+5. (Optional) Something coming up — a match, hunt, class, or purchase goal
+
+RULES:
+- One question per message. Never stack questions.
+- Use vault data. If they have a PRS rifle, don't ask if they shoot long range — you already know.
+- Be direct and warm. 2–4 sentences per message maximum.
+- After 4–5 exchanges (minimum 3 questions answered), wrap up with a brief summary of what you've learned. End your wrap-up message with exactly this on its own line: PROFILE_READY
+- Do not output PROFILE_READY before at least 3 questions have been answered.`;
+
+export async function callOnboardingAssistant(
+  vaultContext: string,
+  messages: { role: 'user' | 'assistant'; content: string }[],
+): Promise<string> {
+  const systemPrompt = `${ONBOARDING_SYSTEM_PROMPT}\n\n${vaultContext}`;
+  return callClaude(
+    messages.map(m => ({ role: m.role, content: m.content })),
+    systemPrompt,
+    'onboarding',
+    512,
+  );
+}
+
+export async function extractOnboardingGoals(
+  vaultContext: string,
+  conversation: { role: 'user' | 'assistant'; content: string }[],
+): Promise<{ goals: string[]; notes: string }> {
+  const systemPrompt = `${ONBOARDING_SYSTEM_PROMPT}\n\n${vaultContext}`;
+  const extractionPrompt = `Based on the conversation above, extract the user's goals and key profile notes.
+Return only valid JSON:
+{
+  "goals": ["specific goal 1", "specific goal 2"],
+  "notes": "brief summary of shooter background, 1-2 sentences"
+}
+Goals should be specific, actionable, first-person statements. 2–4 goals max.`;
+
+  const raw = await callClaude(
+    [
+      ...conversation.map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: extractionPrompt },
+    ],
+    systemPrompt,
+    'onboarding_extract',
+    512,
+  );
+
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+  } catch {
+    // fall through
+  }
+  return { goals: [], notes: '' };
+}
+
 // ── Training gap ─────────────────────────────────────────────────────────────
 
 export function getTrainingGapDays(sessions: Session[]): number {

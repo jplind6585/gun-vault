@@ -29,6 +29,25 @@ export function clearProfile(): void {
   localStorage.removeItem(PROFILE_KEY);
 }
 
+// ── Onboarding trigger ────────────────────────────────────────────────────────
+
+const DISMISS_KEY = 'gunvault_onboarding_dismissed_at';
+const DISMISS_DAYS = 7;
+
+export function shouldShowOnboarding(totalSessions: number, onboardingCompleted: boolean): boolean {
+  if (onboardingCompleted || totalSessions < 3) return false;
+  const dismissedAt = localStorage.getItem(DISMISS_KEY);
+  if (dismissedAt) {
+    const days = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24);
+    if (days < DISMISS_DAYS) return false;
+  }
+  return true;
+}
+
+export function dismissOnboarding(): void {
+  localStorage.setItem(DISMISS_KEY, Date.now().toString());
+}
+
 // ── Partial updates ───────────────────────────────────────────────────────────
 
 export function updateProfileField<K extends keyof ShooterProfile>(
