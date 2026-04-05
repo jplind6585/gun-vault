@@ -4,6 +4,7 @@ import { getAllGuns, getAllSessions, getAllAmmo, updateGun } from './storage';
 import { getSettings } from './SettingsPanel';
 import type { Gun, Session, AmmoLot } from './types';
 import { ShooterProfileCard } from './ShooterProfileCard';
+import { MilestoneNotification } from './MilestoneNotification';
 
 interface HomePageProps {
   onNavigateToVault: () => void;
@@ -558,6 +559,9 @@ export function HomePage({
           </div>
         ))}
       </div>
+
+      {/* ── MILESTONE NOTIFICATION ── */}
+      <MilestoneNotification />
 
       {/* ── SHOOTER PROFILE ── */}
       <ShooterProfileCard onSetupProfile={onSetupProfile} onEditGoals={onEditGoals} />

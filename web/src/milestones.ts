@@ -221,6 +221,55 @@ export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
   },
 ];
 
+// ── Category map (drives ribbon accent color) ─────────────────────────────────
+
+export type MilestoneCategory = 'commitment' | 'range' | 'collection' | 'craft';
+
+export const MILESTONE_CATEGORY: Record<string, MilestoneCategory> = {
+  first_session:       'commitment',
+  session_10:          'commitment',
+  session_50:          'commitment',
+  century_session:     'commitment',
+  thousand_rounds:     'commitment',
+  ten_thousand_rounds: 'commitment',
+  consistent_shooter:  'commitment',
+  first_long_range:    'range',
+  extreme_range:       'range',
+  first_competition:   'range',
+  drill_master:        'range',
+  zeroed_in:           'range',
+  carry_eval:          'range',
+  target_analyst:      'range',
+  issue_free_10:       'range',
+  collector_5:         'collection',
+  collector_10:        'collection',
+  multi_caliber:       'collection',
+  nfa_owner:           'collection',
+  milsurp:             'collection',
+  optics_mounted:      'collection',
+  reloader:            'craft',
+};
+
+// ── Seen-milestone tracking ───────────────────────────────────────────────────
+
+const SEEN_KEY = 'lindcott_seen_milestones';
+
+export function getSeenMilestoneIds(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+
+export function markMilestoneSeen(id: string): void {
+  const seen = getSeenMilestoneIds();
+  seen.add(id);
+  localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+}
+
+export function getUnseenMilestones(earnedMilestones: ShooterMilestone[]): ShooterMilestone[] {
+  const seen = getSeenMilestoneIds();
+  return earnedMilestones.filter(m => !seen.has(m.id));
+}
+
 // ── Detection ─────────────────────────────────────────────────────────────────
 
 /**

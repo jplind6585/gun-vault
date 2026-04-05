@@ -7,6 +7,8 @@ import { theme } from './theme';
 import { useShooterProfile } from './useShooterProfile';
 import { getAllGuns } from './storage';
 import type { SkillDomain, SkillLevel, PersonaType, ShooterGoal } from './shooterProfile';
+import { MILESTONE_CATEGORY } from './milestones';
+import type { MilestoneCategory } from './milestones';
 
 interface Props {
   onSetupProfile?: () => void;   // triggers onboarding overlay
@@ -60,6 +62,13 @@ const DOMAIN_LABELS: Partial<Record<SkillDomain, string>> = {
 };
 
 const LEVEL_ORDER: Record<string, number> = { expert: 4, advanced: 3, intermediate: 2, beginner: 1, none: 0 };
+
+const CATEGORY_COLOR: Record<MilestoneCategory, string> = {
+  commitment: theme.accent,
+  range:      theme.blue,
+  collection: theme.green,
+  craft:      theme.orange,
+};
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -336,21 +345,27 @@ export function ShooterProfileCard({ onSetupProfile, onEditGoals }: Props) {
           }}>
             Milestones
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {recentMilestones.map(m => (
-              <span key={m.id} style={{
-                display: 'inline-block',
-                padding: '3px 8px',
-                backgroundColor: theme.bg,
-                border: `0.5px solid ${theme.border}`,
-                borderRadius: '3px',
-                fontFamily: 'monospace', fontSize: '10px',
-                color: theme.textSecondary,
-                letterSpacing: '0.3px',
-              }}>
-                {m.label}
-              </span>
-            ))}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {recentMilestones.map(m => {
+              const cat = MILESTONE_CATEGORY[m.id] ?? 'commitment';
+              const accentColor = CATEGORY_COLOR[cat];
+              return (
+                <span key={m.id} style={{
+                  display: 'inline-block',
+                  padding: '4px 8px 4px 7px',
+                  backgroundColor: theme.bg,
+                  border: `0.5px solid ${theme.border}`,
+                  borderLeft: `2px solid ${accentColor}`,
+                  borderRadius: '2px',
+                  fontFamily: 'monospace', fontSize: '9px', fontWeight: 700,
+                  color: theme.textSecondary,
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                }}>
+                  {m.label}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
