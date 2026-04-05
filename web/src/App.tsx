@@ -41,6 +41,7 @@ const OnboardingConversation = lazy(() => import('./OnboardingConversation').the
 
 import { useShooterProfile } from './useShooterProfile';
 import { shouldShowOnboarding } from './profileStorage';
+import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
 import './App.css';
 
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
@@ -75,6 +76,7 @@ function AppCore() {
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
 
   // Initialize seed data before first render
@@ -133,6 +135,10 @@ function AppCore() {
 
   if (!user) {
     return <LoginScreen />;
+  }
+
+  if (!goalAnswered) {
+    return <GoalQuestion onComplete={() => setGoalAnswered(true)} />;
   }
 
   if (!ready) {
