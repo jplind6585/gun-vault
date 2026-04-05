@@ -13,6 +13,7 @@ import type {
   SkillLevel,
   PersonaType,
 } from './shooterProfile';
+import { detectNewMilestones } from './milestones';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -349,12 +350,16 @@ export function inferProfileFromVault(
   // (preserve skills from non-vault sources, don't overwrite with lower-confidence vault inference)
   const mergedSkills = mergeSkills(skills, existing?.skills ?? []);
 
+  const existingMilestones = existing?.milestones ?? [];
+  const newMilestones = detectNewMilestones(guns, sessions, ammoLots, existingMilestones);
+  const allMilestones = [...existingMilestones, ...newMilestones];
+
   return {
     skills: mergedSkills,
     primaryPersonas,
     goals: existing?.goals ?? [],
     accuracyProfiles,
-    milestones: existing?.milestones ?? [],
+    milestones: allMilestones,
     totalSessions: sessions.length,
     totalRounds,
     daysSinceLastSession,

@@ -79,7 +79,9 @@ export function ArmoryAssistant() {
   const [vaultContext, setVaultContext] = useState<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { profile } = useShooterProfile();
+  const { profile, checkInTrigger } = useShooterProfile();
+  // Capture trigger at conversation open — only fire probe on the first user message
+  const pendingCheckIn = useRef(checkInTrigger);
 
   // Build full context (vault + shooter profile) whenever profile updates
   useEffect(() => {
@@ -106,7 +108,10 @@ export function ArmoryAssistant() {
     setError(null);
 
     try {
-      const reply = await callArmoryAssistant(vaultContext, nextMessages);
+      // Pass check-in trigger only on the first turn, then clear it
+      const trigger = messages.length === 0 ? pendingCheckIn.current : 'none';
+      if (messages.length === 0) pendingCheckIn.current = 'none';
+      const reply = await callArmoryAssistant(vaultContext, nextMessages, trigger);
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';

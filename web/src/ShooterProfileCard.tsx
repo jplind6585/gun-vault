@@ -199,6 +199,10 @@ export function ShooterProfileCard({ onSetupProfile, onEditGoals }: Props) {
 
   const activeGoals = profile.goals.filter(g => g.status === 'active').slice(0, 4);
 
+  const recentMilestones = [...profile.milestones]
+    .sort((a, b) => b.awardedAt.localeCompare(a.awardedAt))
+    .slice(0, 4);
+
   const accuracyHighlights = profile.accuracyProfiles
     .filter(p => (p.confidence === 'high' || p.confidence === 'medium') && p.medianMOA !== undefined)
     .sort((a, b) => {
@@ -294,7 +298,7 @@ export function ShooterProfileCard({ onSetupProfile, onEditGoals }: Props) {
 
       {/* Accuracy */}
       {accuracyHighlights.length > 0 && (
-        <div>
+        <div style={{ marginBottom: recentMilestones.length > 0 ? 14 : 0 }}>
           <div style={{
             fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted,
             letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8,
@@ -302,25 +306,51 @@ export function ShooterProfileCard({ onSetupProfile, onEditGoals }: Props) {
             Accuracy
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {accuracyHighlights.map(ap => {
-              return (
-                <div key={ap.gunId} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>
-                    {gunNameById.get(ap.gunId) ?? ap.gunId}
+            {accuracyHighlights.map(ap => (
+              <div key={ap.gunId} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>
+                  {gunNameById.get(ap.gunId) ?? ap.gunId}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>
+                    {ap.medianMOA?.toFixed(1)} MOA
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>
-                      {ap.medianMOA?.toFixed(1)} MOA
-                    </span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>
-                      ({ap.sessionCount} sessions)
-                    </span>
-                  </div>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>
+                    ({ap.sessionCount} sessions)
+                  </span>
                 </div>
-              );
-            })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Milestones */}
+      {recentMilestones.length > 0 && (
+        <div>
+          <div style={{
+            fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted,
+            letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8,
+          }}>
+            Milestones
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {recentMilestones.map(m => (
+              <span key={m.id} style={{
+                display: 'inline-block',
+                padding: '3px 8px',
+                backgroundColor: theme.bg,
+                border: `0.5px solid ${theme.border}`,
+                borderRadius: '3px',
+                fontFamily: 'monospace', fontSize: '10px',
+                color: theme.textSecondary,
+                letterSpacing: '0.3px',
+              }}>
+                {m.label}
+              </span>
+            ))}
           </div>
         </div>
       )}

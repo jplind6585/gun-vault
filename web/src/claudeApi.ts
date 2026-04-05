@@ -2,6 +2,7 @@
 // Your Anthropic key lives in Supabase secrets, never in the browser.
 import type { Session, Gun, AmmoLot, TargetPhotoAnalysis } from './types';
 import type { ShooterProfile } from './shooterProfile';
+import type { CheckInTrigger } from './profileInference';
 import { supabase, SUPABASE_URL } from './lib/supabase';
 
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/claude`;
@@ -381,6 +382,22 @@ export function buildVaultContext(guns: Gun[], sessions: Session[], ammoLots: Am
 
 // ── Full context (vault + shooter profile) ───────────────────────────────────
 
+// ── Check-in probe ────────────────────────────────────────────────────────────
+// Appended to the assistant system prompt when an active trigger is detected.
+// The AI weaves the question in naturally — no popup, no separate UI.
+
+const CHECK_IN_PROBE_INSTRUCTIONS: Record<Exclude<CheckInTrigger, 'none'>, string> = {
+  session_count_milestone: `CHECK-IN ACTIVE: The user just hit a session milestone. At a natural point in your response — not as your opener — ask ONE brief question about whether their current goals are still on track. Example: "Is [goal] still your main focus right now, or has your direction shifted?" Don't announce it as a check-in. One question only.`,
+  vault_growth: `CHECK-IN ACTIVE: The user has added several guns recently. At a natural point in your response, ask ONE question about where they're taking the collection or what role the new additions play. Keep it conversational. One question only.`,
+  first_reload: `CHECK-IN ACTIVE: The user just started reloading. At a natural point in your response, ask ONE question about what drew them to it — precision, economics, or something else. Keep it brief and genuine. One question only.`,
+  long_gap: `CHECK-IN ACTIVE: The user has had a significant gap since their last session. If it comes up naturally, briefly acknowledge it and ask one question about what's been happening — life stuff, shifted priorities, or just a busy stretch. Keep it light, not preachy. One question only.`,
+};
+
+export function buildCheckInProbe(trigger: CheckInTrigger): string {
+  if (trigger === 'none') return '';
+  return `\n\n${CHECK_IN_PROBE_INSTRUCTIONS[trigger]}`;
+}
+
 export function buildFullContext(
   guns: Gun[],
   sessions: Session[],
@@ -448,8 +465,10 @@ export function buildFullContext(
 export async function callArmoryAssistant(
   vaultContext: string,
   messages: { role: 'user' | 'assistant'; content: string }[],
+  checkInTrigger: CheckInTrigger = 'none',
 ): Promise<string> {
-  const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${vaultContext}`;
+  const probe = buildCheckInProbe(checkInTrigger);
+  const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${vaultContext}${probe}`;
   return callClaude(
     messages.map(m => ({ role: m.role, content: m.content })),
     systemPrompt,
