@@ -197,7 +197,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
           {guns.length > 0 && (() => {
             const totalFMV = filtered.reduce((sum, g) => sum + (g.estimatedFMV || 0), 0);
             return totalFMV > 0 ? (
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginTop: '3px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '3px' }}>
                 Est. Market Value ${totalFMV.toLocaleString()}
               </div>
             ) : null;
@@ -285,7 +285,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
       {/* ── TYPE CHIPS + FILTERS ROW ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         {/* Chips — scrollable, don't overflow into FILTERS */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, minWidth: 0, scrollbarWidth: 'none', paddingRight: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, minWidth: 0, scrollbarWidth: 'none' }}>
           {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
             .filter(t => typeCounts[t] > 0)
             .map(t => {
@@ -310,6 +310,8 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
                 </button>
               );
             })}
+          {/* Spacer so last chip border isn't clipped by overflow */}
+          <div style={{ flexShrink: 0, width: '4px' }} />
         </div>
         {/* FILTERS — pinned right, visually distinct */}
         <button
