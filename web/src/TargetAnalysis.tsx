@@ -880,7 +880,7 @@ export function TargetAnalysis() {
         } else {
           isLongPressLoupeRef.current = true; // precision placement mode
         }
-      }, 420);
+      }, 350);
     }
   };
 
@@ -920,7 +920,7 @@ export function TargetAnalysis() {
         drawLoupeAt(pt);
       } else {
         const start = touchStartRef.current.touches[0];
-        const moved = Math.abs(t.clientX - start.x) > 8 || Math.abs(t.clientY - start.y) > 8;
+        const moved = Math.abs(t.clientX - start.x) > 14 || Math.abs(t.clientY - start.y) > 14;
         if (moved) {
           clearTimeout(longPressTimerRef.current); // cancel long-press if panning
           touchMovedRef.current = true;
@@ -1240,9 +1240,20 @@ export function TargetAnalysis() {
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         {!imageUrl ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
-            {/* History section — above upload buttons */}
+            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 10 }}>🎯</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>Target Analysis</div>
+              <div style={{ fontSize: 13, color: theme.textSecondary }}>Upload a target photo to analyze your shot placement</div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.accent, color: '#000', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+              📷 Take Photo <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+              🖼 Choose from Library <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+            </label>
+            {/* History section — below upload buttons */}
             {step1History.length > 0 && (
-              <div style={{ marginBottom: 4 }}>
+              <div style={{ marginTop: 8 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>History</div>
                 {/* Smart filter chips */}
                 {(hasGunFilter || hasDistFilter || hasCaliberFilter) && (
@@ -1296,20 +1307,6 @@ export function TargetAnalysis() {
                 </div>
               </div>
             )}
-            {step1History.length === 0 && (
-              <div style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center', paddingBottom: 4 }}>Your analyses will appear here.</div>
-            )}
-            <div style={{ textAlign: 'center', marginBottom: 8 }}>
-              <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 10 }}>🎯</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>Target Analysis</div>
-              <div style={{ fontSize: 13, color: theme.textSecondary }}>Upload a target photo to analyze your shot placement</div>
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.accent, color: '#000', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-              📷 Take Photo <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              🖼 Choose from Library <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-            </label>
           </div>
         ) : (
           <>
@@ -1890,7 +1887,7 @@ export function TargetAnalysis() {
                   <div style={{ fontSize: 14, color: theme.textPrimary, fontWeight: 600 }}>{label}</div>
                   <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{desc}</div>
                 </div>
-                <button onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s' }}>
+                <button onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s', WebkitAppearance: 'none', padding: 0, overflow: 'hidden' } as React.CSSProperties}>
                   <div style={{ position: 'absolute', top: 3, left: taOptions[key] ? 26 : 3, width: 22, height: 22, borderRadius: '50%', background: taOptions[key] ? '#000' : theme.textMuted, transition: 'left 0.2s' }} />
                 </button>
               </div>

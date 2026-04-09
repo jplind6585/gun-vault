@@ -149,6 +149,7 @@ function ToggleRow({ label, sub, value, onChange }: { label: string; sub?: strin
           backgroundColor: value ? theme.accent : theme.border,
           position: 'relative', cursor: 'pointer', flexShrink: 0,
           transition: 'background-color 0.15s',
+          WebkitAppearance: 'none', padding: 0, overflow: 'hidden',
         }}
       >
         <div style={{
