@@ -8450,7 +8450,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
     description: "The original ultra-fast 7mm magnum — a long-case belted design pushing 140-grain bullets past 3,300 fps. The 'speed freak' cartridge of its era.",
     history: "Developed in 1979 by Layne Simpson, firearms editor at Shooting Times magazine, by necking down the 8mm Remington Magnum case to 7mm. Simpson nicknamed it the Shooting Times Westerner. It remained a wildcat for nearly two decades before Remington standardized it and began producing ammunition in 1996. At its introduction, it was the fastest production 7mm cartridge available, offering velocities that experienced hunters found genuinely useful at extreme range. Barrel life was the price — the large powder charge erodes throats quickly.",
     notableFirearms: ["Remington Model 700", "Weatherby Mark V", "Sako 85"],
-    trivia: "The 7mm STW was the cartridge that gun writers of the 1980s and 1990s obsessed over when discussing "maximum effective range" for deer and elk. It pushed the magnum arms race that eventually led to the .300 Ultra Mag, .300 Norma, and ultimately the modern PRC family. Layne Simpson's original project rifle was a custom Remington 700 — the same platform that eventually became the production chambering."
+    trivia: "The 7mm STW was the cartridge that gun writers of the 1980s and 1990s obsessed over when discussing 'maximum effective range' for deer and elk. It pushed the magnum arms race that eventually led to the .300 Ultra Mag, .300 Norma, and ultimately the modern PRC family. Layne Simpson's original project rifle was a custom Remington 700 — the same platform that eventually became the production chambering."
   },
 
   {
