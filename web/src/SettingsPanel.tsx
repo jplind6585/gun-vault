@@ -142,14 +142,15 @@ function ToggleRow({ label, sub, value, onChange }: { label: string; sub?: strin
         <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>{label}</div>
         {sub && <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '2px' }}>{sub}</div>}
       </div>
-      <button
+      <div
+        role="switch"
+        aria-checked={value}
         onClick={() => onChange(!value)}
         style={{
-          width: '40px', height: '22px', borderRadius: '11px', border: 'none',
+          width: '40px', height: '22px', borderRadius: '11px',
           backgroundColor: value ? theme.accent : theme.border,
           position: 'relative', cursor: 'pointer', flexShrink: 0,
-          transition: 'background-color 0.15s',
-          WebkitAppearance: 'none', padding: 0, overflow: 'hidden',
+          transition: 'background-color 0.15s', userSelect: 'none',
         }}
       >
         <div style={{
@@ -159,7 +160,7 @@ function ToggleRow({ label, sub, value, onChange }: { label: string; sub?: strin
           backgroundColor: value ? theme.bg : theme.textMuted,
           transition: 'left 0.15s',
         }} />
-      </button>
+      </div>
     </div>
   );
 }

@@ -1887,9 +1887,9 @@ export function TargetAnalysis() {
                   <div style={{ fontSize: 14, color: theme.textPrimary, fontWeight: 600 }}>{label}</div>
                   <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{desc}</div>
                 </div>
-                <button onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s', WebkitAppearance: 'none', padding: 0, overflow: 'hidden' } as React.CSSProperties}>
+                <div role="switch" aria-checked={taOptions[key]} onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s', userSelect: 'none' }}>
                   <div style={{ position: 'absolute', top: 3, left: taOptions[key] ? 26 : 3, width: 22, height: 22, borderRadius: '50%', background: taOptions[key] ? '#000' : theme.textMuted, transition: 'left 0.2s' }} />
-                </button>
+                </div>
               </div>
             ))}
           </div>
