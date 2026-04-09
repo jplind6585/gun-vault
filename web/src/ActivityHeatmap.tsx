@@ -1,5 +1,5 @@
 // GitHub-style contribution heatmap — range activity
-// Modes: '12W' = last 12 weeks (wide cells), '12M' = last 12 months (fit all in same grid)
+// Modes: '12W' = last 12 weeks heatmap, '12M' = rolling 12-month bar chart
 import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import type { Session } from './types';
@@ -17,13 +17,98 @@ function getRoundColor(rounds: number): string {
   return theme.accent;
 }
 
+// ── 12-MONTH BAR CHART ────────────────────────────────────────────────────────
+function MonthBarChart({ sessions }: { sessions: Session[] }) {
+  const [tooltip, setTooltip] = useState<{ label: string; sessions: number; rounds: number; index: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const CHART_HEIGHT = 80;
+
+  // Build 12 months rolling — oldest first, current month last
+  const now = new Date();
+  const months: Array<{ key: string; label: string; rounds: number; sessionCount: number; isFuture: boolean }> = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    months.push({ key, label, rounds: 0, sessionCount: 0, isFuture: false });
+  }
+
+  sessions.forEach(s => {
+    const monthKey = s.date.slice(0, 7);
+    const m = months.find(m => m.key === monthKey);
+    if (m) { m.rounds += s.roundsExpended; m.sessionCount += 1; }
+  });
+
+  const maxRounds = Math.max(...months.map(m => m.rounds), 1);
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: CHART_HEIGHT + 20, paddingBottom: '20px' }}>
+        {months.map((m, i) => {
+          const barH = m.rounds > 0 ? Math.max(4, (m.rounds / maxRounds) * (CHART_HEIGHT * 0.8)) : 2;
+          const hasData = m.rounds > 0;
+          return (
+            <div
+              key={m.key}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', cursor: hasData ? 'pointer' : 'default', position: 'relative' }}
+              onClick={() => hasData && setTooltip(tooltip?.index === i ? null : { label: m.label, sessions: m.sessionCount, rounds: m.rounds, index: i })}
+            >
+              {/* Value label above bar */}
+              {hasData && (
+                <span style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted, marginBottom: '2px', lineHeight: 1 }}>
+                  {m.rounds}
+                </span>
+              )}
+              {/* Bar */}
+              <div style={{
+                width: '100%',
+                height: barH,
+                backgroundColor: hasData ? theme.accent : 'rgba(255,255,255,0.12)',
+                borderRadius: '2px 2px 0 0',
+                opacity: tooltip && tooltip.index !== i ? 0.5 : 1,
+                transition: 'opacity 0.15s',
+              }} />
+              {/* Month label */}
+              <span style={{
+                position: 'absolute', bottom: 0,
+                fontFamily: 'monospace', fontSize: '7px',
+                color: theme.textMuted,
+                letterSpacing: '0.3px',
+                userSelect: 'none',
+              }}>
+                {m.label}
+              </span>
+              {/* Tooltip */}
+              {tooltip?.index === i && (
+                <div style={{
+                  position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                  backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+                  borderRadius: '4px', padding: '4px 8px',
+                  fontFamily: 'monospace', fontSize: '9px', color: theme.textPrimary,
+                  whiteSpace: 'nowrap', zIndex: 100, pointerEvents: 'none',
+                  marginBottom: '4px',
+                }}>
+                  {m.label} · {m.sessionCount} session{m.sessionCount !== 1 ? 's' : ''} · {m.rounds} rds
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── HEATMAP ────────────────────────────────────────────────────────────────────
 export function ActivityHeatmap({ sessions, mode = '12W' }: ActivityHeatmapProps) {
+  if (mode === '12M') return <MonthBarChart sessions={sessions} />;
+
   const [tooltip, setTooltip] = useState<{ date: string; rounds: number; x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState(10);
   const GAP = 2;
 
-  const weekCount = mode === '12W' ? 12 : 52;
+  const weekCount = 12;
 
   // Always fit to container width — no horizontal scroll
   useEffect(() => {
@@ -31,7 +116,7 @@ export function ActivityHeatmap({ sessions, mode = '12W' }: ActivityHeatmapProps
       if (!containerRef.current) return;
       const w = containerRef.current.clientWidth;
       const size = Math.floor((w - (weekCount - 1) * GAP) / weekCount);
-      setCellSize(Math.max(4, Math.min(size, 20)));
+      setCellSize(Math.max(32, Math.min(size, 44)));
     }
     measure();
     const ro = new ResizeObserver(measure);

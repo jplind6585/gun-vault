@@ -6,7 +6,7 @@ import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
 import { analyzeAmmoBox, hasClaudeApiKey } from './claudeApi';
 
 type ViewMode = 'calibers' | 'lots';
-type CategoryFilter = 'all' | 'Match' | 'Practice' | 'Self Defense' | 'Hunting';
+type CategoryFilter = 'all' | 'Match' | 'Training' | 'Carry' | 'Hunting';
 
 // Typical market price estimates per round (USD) — used as fallback when no price is recorded
 function estimatePricePerRound(caliber: string): number {
@@ -70,7 +70,6 @@ function sameCaliberGroup(a: string, b: string): boolean {
 // ============================================================================
 
 function getSmartThreshold(lot: AmmoLot): number {
-  if (lot.category === 'Test') return 0;
   if (lot.minStockAlert === 0) return 0;
   if (lot.minStockAlert != null && lot.minStockAlert > 0) return lot.minStockAlert;
 
@@ -80,10 +79,10 @@ function getSmartThreshold(lot: AmmoLot): number {
   const highVolumeCalibers = ['9mm Luger', '9mm', '.22 LR', '22 LR', '5.56x45mm', '5.56x45mm NATO', '.223 Remington', '.223 Rem', '5.56'];
 
   switch (lot.category) {
-    case 'Self Defense': return 100;
+    case 'Carry': return 100;
     case 'Hunting': return 50;
     case 'Match': return 200;
-    case 'Practice':
+    case 'Training':
       return highVolumeCalibers.includes(lot.caliber) ? 500 : 200;
     default: return 200;
   }
@@ -131,10 +130,9 @@ function getAmmoSeekUrl(lot: AmmoLot): string {
 function getCategoryColor(category: string): string {
   switch (category) {
     case 'Match': return theme.accent;
-    case 'Practice': return theme.blue;
-    case 'Self Defense': return theme.red;
+    case 'Training': return theme.blue;
+    case 'Carry': return theme.red;
     case 'Hunting': return theme.green;
-    case 'Test': return '#9775fa';
     default: return theme.textSecondary;
   }
 }
@@ -518,7 +516,7 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Filter by</div>
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-          {(['all', 'Match', 'Practice', 'Self Defense', 'Hunting'] as const).map(cat => (
+          {(['all', 'Match', 'Training', 'Carry', 'Hunting'] as const).map(cat => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
@@ -1175,7 +1173,7 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}>
-            {lot.category === 'Match' ? 'MATCH' : lot.category === 'Self Defense' ? 'SD' : lot.category === 'Practice' ? 'PRAC' : lot.category === 'Hunting' ? 'HUNT' : lot.category.toUpperCase()}
+            {lot.category === 'Match' ? 'MATCH' : lot.category === 'Carry' ? 'CARRY' : lot.category === 'Training' ? 'TRAIN' : lot.category === 'Hunting' ? 'HUNT' : lot.category.toUpperCase()}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(lot); }}
@@ -1360,7 +1358,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
   const [grainWeight, setGrainWeight] = useState('');
   const [quantity, setQuantity] = useState('');
   const [formError, setFormError] = useState('');
-  const [category, setCategory] = useState<AmmoLot['category']>('Practice');
+  const [category, setCategory] = useState<AmmoLot['category']>('Training');
   const [bulletType, setBulletType] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [costPerRound, setCostPerRound] = useState('');
@@ -1525,8 +1523,8 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
           <div><label style={labelStyle}>Quantity (rounds) *</label><input type="number" inputMode="numeric" placeholder="500" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} /></div>
           <div>
             <label style={labelStyle}>Category *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-              {(['Practice', 'Match', 'Self Defense', 'Hunting'] as const).map(cat => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+              {(['Training', 'Match', 'Carry', 'Hunting'] as const).map(cat => (
                 <button key={cat} onClick={() => setCategory(cat)} style={{
                   padding: '8px',
                   backgroundColor: category === cat ? theme.accent : 'transparent',

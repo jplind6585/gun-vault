@@ -550,7 +550,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
   {
     name: ".22 Long Rifle",
     alternateNames: [".22 LR", "5.6x15mmR"],
-    type: "Rifle",
+    type: "Rimfire",
     standardization: "SAAMI",
     productionStatus: "Active",
     availability: "Abundant",
@@ -1249,7 +1249,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
   {
     name: ".17 HMR",
     alternateNames: [".17 Hornady Magnum Rimfire"],
-    type: "Rifle",
+    type: "Rimfire",
     standardization: "SAAMI",
     productionStatus: "Active",
     availability: "Common",
@@ -1290,7 +1290,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
   {
     name: ".22 WMR",
     alternateNames: [".22 Magnum", ".22 Winchester Magnum Rimfire"],
-    type: "Rifle",
+    type: "Rimfire",
     standardization: "SAAMI",
     productionStatus: "Active",
     availability: "Common",
@@ -5891,7 +5891,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
 {
   name: ".56-50 Spencer",
   alternateNames: [".56-50 RF", "Spencer Carbine"],
-  type: "Rifle",
+  type: "Rimfire",
   standardization: "SAAMI",
   productionStatus: "Active",
   availability: "Common",
@@ -7601,7 +7601,7 @@ export const seedCartridges: Omit<Cartridge, 'id' | 'createdAt' | 'updatedAt' | 
 {
   name: "10.4x38mm Swiss Vetterli",
   alternateNames: ["10.4mm Vetterli", "10.4x38mmR", "Swiss M1867"],
-  type: "Rifle",
+  type: "Rimfire",
   standardization: "Obsolete / Non-standard",
   productionStatus: "Obsolete",
   availability: "Collector Only",

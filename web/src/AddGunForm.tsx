@@ -162,7 +162,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
             <Field label="Display Name (optional)">
               <input
                 style={styles.input}
-                placeholder="e.g. STC Glock 43 build (OD Green)"
+                placeholder="e.g. P365 Macro - Daily Carry"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 autoCapitalize="words"

@@ -282,10 +282,9 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
         </select>
       </div>
 
-      {/* ── TYPE CHIPS + FILTERS ROW ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        {/* Chips — scrollable, don't overflow into FILTERS */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1, minWidth: 0, scrollbarWidth: 'none' }}>
+      {/* ── TYPE CHIPS ROW ── */}
+      <div style={{ marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '2px' }}>
           {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
             .filter(t => typeCounts[t] > 0)
             .map(t => {
@@ -313,22 +312,6 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
           {/* Spacer so last chip border isn't clipped by overflow */}
           <div style={{ flexShrink: 0, width: '4px' }} />
         </div>
-        {/* FILTERS — pinned right, visually distinct */}
-        <button
-          onClick={() => setShowFilters(f => !f)}
-          style={{
-            flexShrink: 0,
-            padding: '6px 10px',
-            backgroundColor: activeFilterCount > 0 ? theme.accent : theme.surface,
-            border: `0.5px solid ${activeFilterCount > 0 ? theme.accent : theme.border}`,
-            borderRadius: '6px',
-            color: activeFilterCount > 0 ? theme.bg : theme.textSecondary,
-            fontFamily: 'monospace', fontSize: '10px', letterSpacing: '0.5px',
-            cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 600,
-          }}
-        >
-          ≡ {activeFilterCount > 0 ? activeFilterCount : ''}
-        </button>
       </div>
 
       {/* ── EXPANDED FILTERS ── */}

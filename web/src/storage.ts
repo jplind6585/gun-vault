@@ -310,7 +310,15 @@ export function getAllLocations(): string[] {
 
 export function getAllAmmo(): AmmoLot[] {
   const data = localStorage.getItem(AMMO_KEY);
-  return data ? JSON.parse(data) : [];
+  if (!data) return [];
+  const lots: AmmoLot[] = JSON.parse(data);
+  // One-time migration: rename old category values
+  return lots.map(lot => {
+    if ((lot.category as string) === 'Practice') return { ...lot, category: 'Training' as AmmoLot['category'] };
+    if ((lot.category as string) === 'Self Defense') return { ...lot, category: 'Carry' as AmmoLot['category'] };
+    if ((lot.category as string) === 'Test') return { ...lot, category: 'Training' as AmmoLot['category'] };
+    return lot;
+  });
 }
 
 export function getAmmoById(id: string): AmmoLot | null {

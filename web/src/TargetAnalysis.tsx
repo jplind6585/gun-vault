@@ -628,6 +628,19 @@ export function TargetAnalysis() {
       ctx.setLineDash([10 * displayRatio, 7 * displayRatio]); ctx.stroke(); ctx.setLineDash([]);
     }
 
+    // ── Center crosshair (geometric center of canvas / target) ────────────
+    {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const armLen = canvas.width * 0.09;
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = Math.max(1.5, displayRatio);
+      ctx.beginPath();
+      ctx.moveTo(cx - armLen, cy); ctx.lineTo(cx + armLen, cy);
+      ctx.moveTo(cx, cy - armLen); ctx.lineTo(cx, cy + armLen);
+      ctx.stroke();
+    }
+
     // ── Shot dots ─────────────────────────────────────────────────────────
     for (let i = 1; i < marks.length; i++) {
       const shot = marks[i];

@@ -178,7 +178,7 @@ export interface AmmoLot {
   averageCostPerRound?: number; // Calculated from all purchases
 
   // Organization
-  category: 'Match' | 'Practice' | 'Self Defense' | 'Hunting' | 'Test';
+  category: 'Match' | 'Training' | 'Carry' | 'Hunting';
   storageLocation?: string;
   lotNumber?: string;
 
