@@ -4,7 +4,7 @@
 // On login, Supabase data is pulled down and hydrates localStorage.
 
 import { supabase } from './supabase';
-import type { Gun, Session, AmmoLot, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero } from '../types';
+import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero } from '../types';
 
 // ── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -473,4 +473,80 @@ export async function deleteAccountData(): Promise<void> {
   await Promise.allSettled(
     tables.map(t => supabase.from(t).delete().eq('user_id', userId))
   );
+}
+
+// ── Cartridge encyclopedia — public read, no user_id ─────────────────────────
+
+function cartridgeFromDb(row: Record<string, unknown>): Cartridge {
+  const parseMilitaryAdoption = (raw: unknown) => {
+    if (!Array.isArray(raw)) return undefined;
+    const parsed = raw
+      .map((s: unknown) => { try { return JSON.parse(s as string); } catch { return null; } })
+      .filter(Boolean);
+    return parsed.length > 0 ? parsed : undefined;
+  };
+
+  return {
+    id:                 row.id as string,
+    name:               row.name as string,
+    alternateNames:     (row.alternate_names as string[] | null) ?? undefined,
+    type:               row.type as Cartridge['type'],
+    standardization:    row.standardization as Cartridge['standardization'],
+    productionStatus:   row.production_status as Cartridge['productionStatus'],
+    availability:       row.availability as Cartridge['availability'],
+    yearIntroduced:     row.year_introduced as number,
+    inventor:           (row.inventor as string | null) ?? undefined,
+    manufacturer:       (row.manufacturer as string | null) ?? undefined,
+    countryOfOrigin:    row.country_of_origin as string,
+    parentCase:         (row.parent_case as string | null) ?? undefined,
+    derivedFrom:        (row.derived_from as string | null) ?? undefined,
+
+    bulletDiameterInch: Number(row.bullet_diameter_inch),
+    bulletDiameterMM:   Number(row.bullet_diameter_mm),
+    baseDiameterInch:   Number(row.base_diameter_inch),
+    baseDiameterMM:     Number(row.base_diameter_mm),
+    rimDiameterInch:    Number(row.rim_diameter_inch),
+    rimDiameterMM:      Number(row.rim_diameter_mm),
+    caseLengthInch:     Number(row.case_length_inch),
+    caseLengthMM:       Number(row.case_length_mm),
+    overallLengthInch:  Number(row.overall_length_inch),
+    overallLengthMM:    Number(row.overall_length_mm),
+    caseCapacityGrains: row.case_capacity_grains != null ? Number(row.case_capacity_grains) : undefined,
+    maxPressurePSI:     (row.max_pressure_psi as number | null) ?? undefined,
+    rimType:            (row.rim_type as Cartridge['rimType'] | null) ?? undefined,
+    primerType:         (row.primer_type as string | null) ?? undefined,
+    typicalTwistRate:   (row.typical_twist_rate as string | null) ?? undefined,
+
+    commonBulletWeights: ((row.common_bullet_weights as unknown[] | null) ?? []).map(Number),
+    velocityRangeFPS:    { min: (row.velocity_min_fps as number) ?? 0, max: (row.velocity_max_fps as number) ?? 0 },
+    energyRangeFTLBS:    { min: (row.energy_min_ftlbs as number) ?? 0, max: (row.energy_max_ftlbs as number) ?? 0 },
+    effectiveRangeYards: (row.effective_range_yards as number | null) ?? undefined,
+    maxRangeYards:       (row.max_range_yards as number | null) ?? undefined,
+
+    primaryUse:          (row.primary_use as Cartridge['primaryUse'] | null) ?? [],
+    huntingGameSize:     (row.hunting_game_size as Cartridge['huntingGameSize'] | null) ?? undefined,
+    militaryAdoption:    parseMilitaryAdoption(row.military_adoption),
+    currentMilitaryUse:  (row.current_military_use as string[] | null) ?? undefined,
+    lawEnforcementUse:   (row.law_enforcement_use as boolean | null) ?? undefined,
+    similarCartridges:   (row.similar_cartridges as string[] | null) ?? undefined,
+
+    description:         (row.description as string | null) ?? undefined,
+    history:             (row.history as string | null) ?? undefined,
+    notableFirearms:     (row.notable_firearms as string[] | null) ?? undefined,
+    trivia:              (row.trivia as string | null) ?? undefined,
+
+    // Personal tracking — filled in by storage layer from local state
+    ownGunForThis:  false,
+    ownAmmoForThis: false,
+    onWishlist:     false,
+  };
+}
+
+export async function fetchCartridgesFromSupabase(): Promise<Cartridge[]> {
+  const { data, error } = await supabase
+    .from('cartridges')
+    .select('*')
+    .order('name');
+  if (error || !data || data.length === 0) return [];
+  return data.map(cartridgeFromDb);
 }

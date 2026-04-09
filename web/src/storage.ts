@@ -6,6 +6,7 @@ import {
   syncAmmo, deleteAmmoFromSupabase,
   syncAnalysis, deleteAnalysisFromSupabase,
   syncOptic, syncMount, syncAssignment, syncZero,
+  fetchCartridgesFromSupabase,
 } from './lib/sync';
 // Seed imports are now dynamic — loaded only on first launch, never after.
 
@@ -27,8 +28,51 @@ let _initPromise: Promise<void> | null = null;
 /** Call once before rendering. Subsequent calls return the cached promise. */
 export function ensureInitialized(): Promise<void> {
   if (_initPromise) return _initPromise;
-  _initPromise = initializeSeedData();
+  _initPromise = initializeSeedData().then(() => {
+    // Refresh cartridge encyclopedia from Supabase in the background on every launch.
+    // Fast reads still come from localStorage; this keeps the data current without
+    // blocking app startup.
+    refreshCartridgesFromSupabase();
+  });
   return _initPromise;
+}
+
+/**
+ * Fetches all cartridges from the Supabase public table and writes them to
+ * localStorage, preserving per-user state (onWishlist, userNotes) and
+ * recomputing ownGunForThis / ownAmmoForThis from local guns and ammo.
+ * Fire-and-forget — never throws.
+ */
+async function refreshCartridgesFromSupabase(): Promise<void> {
+  try {
+    const fresh = await fetchCartridgesFromSupabase();
+    if (fresh.length === 0) return; // network failure or empty — keep existing cache
+
+    // Preserve user-specific state from the current cache
+    const existing = getAllCartridges();
+    const existingById = new Map(existing.map(c => [c.id, c]));
+
+    // Recompute ownership flags from local data
+    const userCalibers     = new Set(getAllGuns().map(g => g.caliber));
+    const userAmmoCalibers = new Set(getAllAmmo().map(a => a.caliber));
+
+    const merged = fresh.map(cart => {
+      const prev = existingById.get(cart.id);
+      const nameMatch = (set: Set<string>) =>
+        set.has(cart.name) || (cart.alternateNames?.some(n => set.has(n)) ?? false);
+      return {
+        ...cart,
+        ownGunForThis:  nameMatch(userCalibers),
+        ownAmmoForThis: nameMatch(userAmmoCalibers),
+        onWishlist:     prev?.onWishlist  ?? false,
+        userNotes:      prev?.userNotes   ?? undefined,
+      };
+    });
+
+    localStorage.setItem(CARTRIDGES_KEY, JSON.stringify(merged));
+  } catch {
+    // Silent — app continues with cached seed data
+  }
 }
 
 async function initializeSeedData(): Promise<void> {
