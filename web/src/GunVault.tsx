@@ -35,7 +35,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
   const [actionFilter, setActionFilter]   = useState<string>('');
   const [statusFilter, setStatusFilter]   = useState<GunStatus | ''>('');
   const [purposeFilter, setPurposeFilter] = useState<GunPurpose | ''>('');
-  const [sortBy, setSortBy]       = useState<SortOption>('lastShot'); // TEMP: screenshot
+  const [sortBy, setSortBy]       = useState<SortOption>('make');
   const [showFilters, setShowFilters] = useState(false);
   const [quickLogGun, setQuickLogGun] = useState<Gun | null>(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
@@ -472,10 +472,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filtered.filter(g => { // TEMP: screenshot — show specific guns only
-            const n = `${g.make} ${g.model}`.toLowerCase();
-            return n.includes('glock 19') || n.includes('howa 1500') || n.includes('benelli m2') || n.includes('springfield m1a') || n.includes('aero ar');
-          }).map(gun => (
+          {filtered.map(gun => (
             <GunListRow
               key={gun.id}
               gun={gun}
