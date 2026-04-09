@@ -616,17 +616,21 @@ export function TargetAnalysis() {
       });
     }
 
-    // ── Live CEP circle ───────────────────────────────────────────────────
+    // ── CEP ring (centered on shot group mean) ────────────────────────────
     if (marks.length >= 2 && pixelsPerInch) {
       const poa = marks[0];
       const shots = marks.slice(1);
+      const meanX = shots.reduce((a, s) => a + s.x, 0) / shots.length;
+      const meanY = shots.reduce((a, s) => a + s.y, 0) / shots.length;
       const radials = shots.map(s => Math.sqrt(((s.x - poa.x) / pixelsPerInch) ** 2 + ((s.y - poa.y) / pixelsPerInch) ** 2));
       const cepPx = median(radials) * pixelsPerInch;
       ctx.beginPath();
-      ctx.arc(poa.x, poa.y, cepPx, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,212,59,0.5)';
-      ctx.lineWidth = Math.max(2, displayRatio * 1.5);
-      ctx.setLineDash([10 * displayRatio, 7 * displayRatio]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.arc(meanX, meanY, cepPx, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,212,59,0.15)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,212,59,0.4)';
+      ctx.lineWidth = Math.max(1, displayRatio);
+      ctx.stroke();
     }
 
     // ── Center crosshair (geometric center of canvas / target) ────────────
