@@ -10,6 +10,7 @@ import type { Session, Gun, AmmoLot, SessionPurpose, IssueType } from './types';
 
 interface SessionRecapsProps {
   onLogSession: (gun?: Gun) => void;
+  initialFilterGunId?: string;
 }
 
 const PURPOSE_COLORS: Record<string, string> = {
@@ -22,11 +23,11 @@ const PURPOSE_COLORS: Record<string, string> = {
   Fun: theme.accent,
 };
 
-export function SessionRecaps({ onLogSession }: SessionRecapsProps) {
+export function SessionRecaps({ onLogSession, initialFilterGunId }: SessionRecapsProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [guns, setGuns] = useState<Gun[]>([]);
   const [ammoLots, setAmmoLots] = useState<AmmoLot[]>([]);
-  const [filterGunId, setFilterGunId] = useState('all');
+  const [filterGunId, setFilterGunId] = useState(initialFilterGunId || 'all');
   const [filterPurpose, setFilterPurpose] = useState<SessionPurpose | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);

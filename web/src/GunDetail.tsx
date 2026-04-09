@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './theme';
-import type { Gun, Session, GunAccessories } from './types';
-import { getSessionsForGun, getAllAmmo, updateGun } from './storage';
+import type { Gun, Session, GunAccessories, TargetAnalysisRecord } from './types';
+import { getSessionsForGun, getAllAmmo, updateGun, getAnalysesForGun } from './storage';
 import { SessionLoggingModal } from './SessionLoggingModal';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
 import { typeAccent } from './GunVault';
 import { getGunBlurb } from './gunDescriptions';
+import { callGunPrecisionCoach } from './claudeApi';
 
 interface GunDetailProps {
   gun: Gun;
   onBack: () => void;
   onGunUpdated: () => void;
   onLogSession?: (gun: Gun) => void;
+  onViewSessions?: (gunId: string) => void;
 }
 
 type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline';
@@ -19,7 +21,13 @@ type Period = 'week' | 'month' | 'year';
 
 const PURPOSE_LABELS = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'] as const;
 
-export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession }: GunDetailProps) {
+function sdOf(vals: number[]): number {
+  if (vals.length < 2) return 0;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / (vals.length - 1));
+}
+
+export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession, onViewSessions }: GunDetailProps) {
   const [gun, setGun]                 = useState(initialGun);
   const [sessions, setSessions]       = useState<Session[]>([]);
   const [tab, setTab]                 = useState<DetailTab>('overview');
@@ -38,6 +46,57 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
   const [editingIssues, setEditingIssues]   = useState(false);
   const [issuesDraft, setIssuesDraft]       = useState(gun.openIssues || '');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [aiPrecisionResult, setAiPrecisionResult] = useState<string | null>(null);
+  const [aiPrecisionLoading, setAiPrecisionLoading] = useState(false);
+
+  // ── Precision metrics (computed from target analyses) ─────────────────────
+  const [analyses, setAnalyses] = useState<TargetAnalysisRecord[]>([]);
+  useEffect(() => {
+    setAnalyses(getAnalysesForGun(gun.id).sort((a, b) => a.date.localeCompare(b.date)));
+  }, [gun.id]);
+
+  const precisionMetrics = (() => {
+    if (analyses.length === 0) return null;
+    const moas = analyses.map(a => a.stats.extremeSpreadMoa);
+    const last3 = moas.slice(-3);
+    const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const oldMoas = analyses.filter(a => new Date(a.date + 'T12:00:00') < ninetyDaysAgo).map(a => a.stats.extremeSpreadMoa);
+    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const last3Avg = avg(last3);
+    const oldAvg = avg(oldMoas);
+    const bestIn = Math.min(...analyses.map(a => a.stats.extremeSpreadIn));
+    const bestMoa = Math.min(...moas);
+    const consistency = sdOf(moas);
+    let trend: 'improving' | 'degrading' | 'stable' | null = null;
+    if (last3Avg !== null && oldAvg !== null) {
+      const delta = last3Avg - oldAvg;
+      trend = delta < -0.15 ? 'improving' : delta > 0.15 ? 'degrading' : 'stable';
+    }
+    return { count: analyses.length, last3Avg, oldAvg, bestIn, bestMoa, consistency, trend };
+  })();
+
+  async function runAiPrecisionAnalysis() {
+    if (!precisionMetrics) return;
+    setAiPrecisionLoading(true);
+    setAiPrecisionResult(null);
+    const lines = [
+      `Total analyses: ${precisionMetrics.count}`,
+      `All-time best group: ${precisionMetrics.bestIn.toFixed(3)}" (${precisionMetrics.bestMoa.toFixed(2)} MOA)`,
+      precisionMetrics.last3Avg !== null ? `Last 3 sessions avg ES: ${precisionMetrics.last3Avg.toFixed(2)} MOA` : '',
+      precisionMetrics.oldAvg !== null ? `90+ days ago avg ES: ${precisionMetrics.oldAvg.toFixed(2)} MOA` : '',
+      `Group size consistency (SD): ${precisionMetrics.consistency.toFixed(2)} MOA`,
+      '',
+      'Individual analyses (oldest → newest):',
+      ...analyses.map(a => `  ${a.date} · ${a.distanceYds}yd · ${a.stats.shotCount} shots · ES ${a.stats.extremeSpreadMoa.toFixed(2)} MOA`),
+    ].filter(Boolean);
+    try {
+      const result = await callGunPrecisionCoach(`${gun.make} ${gun.model} (${gun.caliber})`, lines.join('\n'));
+      setAiPrecisionResult(result);
+    } catch {
+      setAiPrecisionResult('Analysis unavailable. Check your API key in Settings.');
+    }
+    setAiPrecisionLoading(false);
+  }
 
   const blurb   = getGunBlurb(gun);
   const accent  = typeAccent[gun.type] || theme.textMuted;
@@ -372,7 +431,14 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
             {/* ── PERIOD STATS ── */}
             <div style={card}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={sectionLabel}>ACTIVITY</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={sectionLabel}>ACTIVITY</div>
+                  {onViewSessions && sessions.length > 0 && (
+                    <button onClick={() => onViewSessions(gun.id)} style={{ padding: '2px 8px', background: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: 3, fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, cursor: 'pointer', letterSpacing: '0.5px' }}>
+                      ALL SESSIONS →
+                    </button>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   {(['week', 'month', 'year'] as Period[]).map(p => (
                     <button key={p} style={periodBtn(period === p)} onClick={() => setPeriod(p)}>
@@ -725,6 +791,72 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession 
                 )}
               </div>
             )}
+
+            {/* ── PRECISION ── */}
+            <div style={card}>
+              <div style={sectionLabel}>PRECISION</div>
+              {precisionMetrics === null ? (
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, lineHeight: 1.6 }}>
+                  No target analyses linked to this gun yet.{'\n'}Select this gun in Target Analysis to start tracking precision over time.
+                </div>
+              ) : (
+                <>
+                  {/* Stat grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', marginBottom: 12 }}>
+                    <div>
+                      <div style={labelStyle}>Analyses</div>
+                      <div style={valStyle}>{precisionMetrics.count}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Best Group</div>
+                      <div style={{ ...valStyle, color: theme.accent }}>{precisionMetrics.bestIn.toFixed(3)}" · {precisionMetrics.bestMoa.toFixed(2)} MOA</div>
+                    </div>
+                    {precisionMetrics.last3Avg !== null && (
+                      <div>
+                        <div style={labelStyle}>Last 3 Avg ES</div>
+                        <div style={valStyle}>{precisionMetrics.last3Avg.toFixed(2)} MOA</div>
+                      </div>
+                    )}
+                    {precisionMetrics.oldAvg !== null && (
+                      <div>
+                        <div style={labelStyle}>90-Day Ago Avg</div>
+                        <div style={valStyle}>{precisionMetrics.oldAvg.toFixed(2)} MOA</div>
+                      </div>
+                    )}
+                    {precisionMetrics.count >= 3 && (
+                      <div>
+                        <div style={labelStyle}>Consistency (SD)</div>
+                        <div style={valStyle}>{precisionMetrics.consistency.toFixed(2)} MOA</div>
+                      </div>
+                    )}
+                    {precisionMetrics.trend && (
+                      <div>
+                        <div style={labelStyle}>Trend</div>
+                        <div style={{ ...valStyle, color: precisionMetrics.trend === 'improving' ? theme.green : precisionMetrics.trend === 'degrading' ? theme.red : theme.textMuted }}>
+                          {precisionMetrics.trend === 'improving' ? '↓ Improving' : precisionMetrics.trend === 'degrading' ? '↑ Degrading' : '→ Stable'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI analysis */}
+                  {aiPrecisionResult ? (
+                    <div style={{ padding: '10px 12px', borderRadius: 6, background: theme.bg, border: `0.5px solid ${theme.accent}`, marginBottom: 8 }}>
+                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.accent, letterSpacing: '1px', marginBottom: 6 }}>AI ANALYSIS</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.6 }}>{aiPrecisionResult}</div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={runAiPrecisionAnalysis}
+                      disabled={aiPrecisionLoading}
+                      style={{ width: '100%', padding: '9px', backgroundColor: 'transparent', border: `0.5px solid ${theme.accent}`, borderRadius: 6, color: theme.accent, fontFamily: 'monospace', fontSize: '10px', letterSpacing: '0.5px', fontWeight: 600, cursor: aiPrecisionLoading ? 'default' : 'pointer', opacity: aiPrecisionLoading ? 0.6 : 1 }}
+                    >
+                      {aiPrecisionLoading ? 'ANALYZING...' : 'GET AI ANALYSIS'}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
 
             {/* ── NOTES ── */}
             <div style={card}>

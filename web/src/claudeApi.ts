@@ -322,6 +322,19 @@ Format: zero correction first, then group diagnosis, then one next step.`;
   return callClaude(anthropicMessages, systemPrompt, 'target_coach', 512);
 }
 
+export async function callGunPrecisionCoach(
+  gunName: string,
+  analysesContext: string
+): Promise<string> {
+  const systemPrompt = `You are an expert precision shooting coach analyzing long-term accuracy trends for a specific firearm. \
+Review the shot group history and give a concise, specific assessment in 3-5 sentences. \
+Cover: whether the gun is improving or degrading, what might explain the trend (fundamentals, hardware, ammo, maintenance), \
+and one concrete action the shooter should take. Compare to typical patterns when relevant. Be direct — no filler.`;
+
+  const messages = [{ role: 'user' as const, content: `Firearm: ${gunName}\n\n${analysesContext}\n\nProvide your precision trend analysis.` }];
+  return callClaude(messages, systemPrompt, 'gun_precision_coach', 400);
+}
+
 // ── Armory Assistant ─────────────────────────────────────────────────────────
 
 const ASSISTANT_SYSTEM_PROMPT = `You are the Lindcott Armory AI — a knowledgeable, straight-talking firearms assistant with full access to this user's personal vault data.

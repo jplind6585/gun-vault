@@ -78,6 +78,7 @@ function AppCore() {
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
 
@@ -309,9 +310,10 @@ function AppCore() {
         onBack={() => { setSelectedGun(null); setCurrentView('vault'); }}
         onGunUpdated={loadGuns}
         onLogSession={(gun) => openSessionLog(gun)}
+        onViewSessions={(gunId) => { setSessionFilterGunId(gunId); setCurrentView('sessions'); }}
       />
     );
-    if (currentView === 'sessions')    return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} />;
+    if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} />;
     if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
