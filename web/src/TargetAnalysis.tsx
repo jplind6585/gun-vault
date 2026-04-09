@@ -1199,16 +1199,16 @@ export function TargetAnalysis() {
   };
 
   // ── STEP 4: Results ───────────────────────────────────────────────────────
-  const StatRow = ({ label, val, moa }: { label: string; val: string; moa: string }) => {
+  const StatRow = ({ label, val, moa, primary }: { label: string; val: string; moa: string; primary?: boolean }) => {
     const hasTooltip = label in TOOLTIPS;
     const isOpen = openTooltip === label;
     return (
       <div style={{ borderBottom: `1px solid ${theme.border}` }}>
         <div onClick={() => hasTooltip ? setOpenTooltip(isOpen ? null : label) : undefined} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', cursor: hasTooltip ? 'pointer' : 'default' }}>
-          <span style={{ fontSize: 14, color: theme.textSecondary, userSelect: 'none' }}>{label}</span>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{val}</span>
-            <span style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'monospace', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setOpenTooltip(openTooltip === 'MOA' ? null : 'MOA'); }}>{moa}</span>
+          <span style={{ fontSize: 14, color: theme.textSecondary, userSelect: 'none', flexShrink: 1 }}>{label}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginLeft: 8 }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: primary ? '#ffd43b' : theme.textPrimary, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{val}</span>
+            <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'monospace', cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={e => { e.stopPropagation(); setOpenTooltip(openTooltip === 'MOA' ? null : 'MOA'); }}>{moa}</span>
           </div>
         </div>
         {isOpen && <div style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 1.5, paddingBottom: 10 }}>{TOOLTIPS[label]}</div>}
@@ -1251,8 +1251,8 @@ export function TargetAnalysis() {
             {/* GROUP SIZE */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</div>
-              <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} />
-              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
+              <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} primary />
+              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} primary />
               <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
               <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
             </div>
@@ -1265,7 +1265,7 @@ export function TargetAnalysis() {
             {/* PRECISION DETAIL */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Precision Detail</div>
-              <StatRow label="CEP"           val={`${stats.cepIn.toFixed(3)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} />
+              <StatRow label="CEP"           val={`${stats.cepIn.toFixed(3)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
               <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}      moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
               <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}    moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
               <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`}  moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
