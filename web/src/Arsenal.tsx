@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { theme } from './theme';
-import { getAllAmmo, getAmmoSummaryByCaliber, updateAmmo, addAmmo, getAllGuns, getAllSessions, getAllCartridges } from './storage';
+import { getAllAmmo, getAmmoSummaryByCaliber, updateAmmo, addAmmo, getAllGuns, getAllSessions, getAllCartridges, getAnalysesForAmmoLot } from './storage';
 import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
 import { analyzeAmmoBox, hasClaudeApiKey } from './claudeApi';
@@ -2590,6 +2590,44 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
             ))}
           </div>
         )}
+
+        {/* PRECISION DATA */}
+        {(() => {
+          const analyses = getAnalysesForAmmoLot(lot.id);
+          if (analyses.length === 0) return null;
+          const esMoas = analyses.map(a => a.stats.extremeSpreadMoa);
+          const avgEs = esMoas.reduce((s, v) => s + v, 0) / esMoas.length;
+          const bestEs = Math.min(...esMoas);
+          const worstEs = Math.max(...esMoas);
+          const guns = getAllGuns();
+          return (
+            <div style={{ marginTop: '12px', padding: '10px', backgroundColor: theme.surface, borderRadius: '4px', border: `0.5px solid ${theme.border}` }}>
+              <div style={{ fontSize: '9px', color: theme.accent, fontFamily: 'monospace', letterSpacing: '0.8px', fontWeight: 600, marginBottom: '10px' }}>PRECISION DATA ({analyses.length} SESSION{analyses.length !== 1 ? 'S' : ''})</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                {[
+                  { label: 'AVG GROUP', value: `${avgEs.toFixed(2)} MOA` },
+                  { label: 'BEST GROUP', value: `${bestEs.toFixed(2)} MOA` },
+                  { label: 'WORST GROUP', value: `${worstEs.toFixed(2)} MOA` },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div style={{ fontSize: '8px', color: theme.textMuted, fontFamily: 'monospace', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontSize: '11px', color: theme.accent, fontFamily: 'monospace', fontWeight: 600 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+              {analyses.slice(0, 5).map(a => {
+                const gun = a.gunId ? guns.find(g => g.id === a.gunId) : null;
+                const date = new Date(a.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                return (
+                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderTop: `0.5px solid ${theme.border}` }}>
+                    <span style={{ fontSize: '10px', color: theme.textMuted, fontFamily: 'monospace' }}>{date} · {a.distanceYds}yd{gun ? ` · ${gun.make} ${gun.model}` : ''}</span>
+                    <span style={{ fontSize: '11px', color: theme.textSecondary, fontFamily: 'monospace', fontWeight: 600 }}>{a.stats.extremeSpreadMoa.toFixed(2)} MOA</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Done button */}
         <button

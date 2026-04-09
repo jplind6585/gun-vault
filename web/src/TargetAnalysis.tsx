@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { theme } from './theme';
-import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from './storage';
+import { getTargetAnalyses, saveTargetAnalysis, updateTargetAnalysis, deleteTargetAnalysis, getAllGuns, getAllAmmo, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from './storage';
 import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
@@ -471,6 +471,23 @@ export function TargetAnalysis() {
   const [coachInput, setCoachInput] = useState('');
   const [coachLoading, setCoachLoading] = useState(false);
 
+  // 8H — ammo lot linking
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [ammoLots, setAmmoLots] = useState<ReturnType<typeof getAllAmmo>>([]);
+  const [linkedAmmoLotId, setLinkedAmmoLotId] = useState<string | null>(null);
+
+  // 8I — called shot
+  const [awaitingCalledShot, setAwaitingCalledShot] = useState(false);
+  const calledShotRef = useRef<{ x: number; y: number } | null>(null);
+  const [calledShotDisplay, setCalledShotDisplay] = useState<{ x: number; y: number } | null>(null);
+
+  // 8J — environmental conditions
+  const [showEnvPanel, setShowEnvPanel] = useState(false);
+  const [envTemp, setEnvTemp] = useState('');
+  const [envWindSpeed, setEnvWindSpeed] = useState('');
+  const [envWindDir, setEnvWindDir] = useState('');
+  const [envLighting, setEnvLighting] = useState('');
+
   // Loupe magnifier shown during drag
   const [showLoupe, setShowLoupe] = useState(false);
   const [loupeScreenPos, setLoupeScreenPos] = useState<{ x: number; y: number } | null>(null);
@@ -741,6 +758,19 @@ export function TargetAnalysis() {
   // ── Canvas tap ────────────────────────────────────────────────────────────
   const handleCanvasTap = useCallback((x: number, y: number) => {
     haptic();
+    // 8I: called shot mode — record where user called their shot relative to POA
+    if (awaitingCalledShot) {
+      const poa = marks[0];
+      if (poa && pixelsPerInch) {
+        const offX = (x - poa.x) / pixelsPerInch;   // positive = right
+        const offY = -((y - poa.y) / pixelsPerInch); // positive = up (canvas Y inverted)
+        calledShotRef.current = { x: offX, y: offY };
+        setCalledShotDisplay({ x: offX, y: offY });
+      }
+      setAwaitingCalledShot(false);
+      goToResultsInner();
+      return;
+    }
     if (markMode === 'calib') {
       const newPts = [...calibPts, { x, y }];
       setCalibPts(newPts);
@@ -757,7 +787,7 @@ export function TargetAnalysis() {
     } else {
       setMarks(prev => [...prev, { x, y }]);
     }
-  }, [markMode, calibPts, refIn]);
+  }, [markMode, calibPts, refIn, awaitingCalledShot, marks, pixelsPerInch]);
 
   // ── Touch handlers ────────────────────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -951,9 +981,8 @@ export function TargetAnalysis() {
     };
   };
 
-  // ── Go to results — captures overlay with stats panel baked in ────────────
-  const goToResults = () => {
-    haptic();
+  // ── Go to results — inner: captures overlay, jumps to step 4 ─────────────
+  const goToResultsInner = () => {
     const s = computeStats();
     setStats(s);
 
@@ -970,15 +999,31 @@ export function TargetAnalysis() {
     setStep(4); setResultTab('stats');
   };
 
+  // ── Go to results — enters called shot mode first (8I) ───────────────────
+  const goToResults = () => {
+    haptic();
+    // Enter called shot mode — user taps where they called the shot
+    setAwaitingCalledShot(true);
+  };
+
   useEffect(() => {
     if (step === 4 && stats && !savedRef.current) {
       savedRef.current = true;
-      saveTargetAnalysis({ distanceYds, bulletDiaIn, stats, sessionId: undefined, gunId: selectedGunId ?? undefined, ammoLotId: undefined });
+      const called = calledShotRef.current;
+      const id = saveTargetAnalysis({
+        distanceYds, bulletDiaIn, stats,
+        sessionId: undefined,
+        gunId: selectedGunId ?? undefined,
+        ammoLotId: undefined,
+        calledShotOffsetX: called?.x,
+        calledShotOffsetY: called?.y,
+      });
+      setSavedRecordId(id);
       setSavedMsg(true); setTimeout(() => setSavedMsg(false), 2500);
-      setHistory(getTargetAnalyses()); setGuns(getAllGuns());
+      setHistory(getTargetAnalyses()); setGuns(getAllGuns()); setAmmoLots(getAllAmmo());
     }
   }, [step, stats, distanceYds, bulletDiaIn]);
-  useEffect(() => { if (step === 4) { setHistory(getTargetAnalyses()); setGuns(getAllGuns()); } }, [step]);
+  useEffect(() => { if (step === 4) { setHistory(getTargetAnalyses()); setGuns(getAllGuns()); setAmmoLots(getAllAmmo()); } }, [step]);
 
   // ── Export — share / download the pre-rendered overlay ───────────────────
   const exportOverlay = async () => {
@@ -1006,9 +1051,34 @@ export function TargetAnalysis() {
     setMarks([]); setMarkMode('calib'); setStats(null); setScale(1);
     setOffset({ x: 0, y: 0 }); setCalibBannerMsg(null); setSavedMsg(false);
     setOverlayDataUrl(null); setCoachMessages([]); setShowCoach(false);
+    setSavedRecordId(null); setLinkedAmmoLotId(null);
+    setAwaitingCalledShot(false); calledShotRef.current = null; setCalledShotDisplay(null);
+    setEnvTemp(''); setEnvWindSpeed(''); setEnvWindDir(''); setEnvLighting(''); setShowEnvPanel(false);
     clearLoupe();
   };
   const deleteHistoryEntry = (id: string) => { deleteTargetAnalysis(id); setHistory(getTargetAnalyses()); };
+
+  // 8H — link ammo lot to saved record
+  const linkAmmoLot = (lotId: string | null) => {
+    setLinkedAmmoLotId(lotId);
+    if (savedRecordId) updateTargetAnalysis(savedRecordId, { ammoLotId: lotId ?? undefined });
+  };
+
+  // 8J — update env conditions on saved record
+  const updateEnv = (patch: { temp?: string; windSpeed?: string; windDir?: string; lighting?: string }) => {
+    const t = patch.temp ?? envTemp;
+    const ws = patch.windSpeed ?? envWindSpeed;
+    const wd = patch.windDir ?? envWindDir;
+    const lt = patch.lighting ?? envLighting;
+    if (savedRecordId) {
+      updateTargetAnalysis(savedRecordId, {
+        envTemp: t ? parseFloat(t) : undefined,
+        envWindSpeed: ws ? parseFloat(ws) : undefined,
+        envWindDir: wd || undefined,
+        envLighting: lt || undefined,
+      });
+    }
+  };
 
   // ── AI Coach ──────────────────────────────────────────────────────────────
   const statsContext = stats ? [
@@ -1192,20 +1262,24 @@ export function TargetAnalysis() {
   // ── STEP 3: Canvas mark ───────────────────────────────────────────────────
   const renderStep3 = () => {
     let instruction = '';
-    if (calibBannerMsg) instruction = calibBannerMsg;
+    if (awaitingCalledShot) instruction = 'Tap where you called your shot';
+    else if (calibBannerMsg) instruction = calibBannerMsg;
     else if (markMode === 'calib') instruction = calibPts.length === 0 ? `Tap point A on your ${refIn}" reference` : 'Tap point B — drag A or B to fine-tune';
     else if (markMode === 'poa') instruction = 'Tap your Point of Aim (center of target)';
     else { const n = marks.length - 1; instruction = `Tap each shot hole  •  ${n} shot${n !== 1 ? 's' : ''}  •  drag to reposition`; }
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-        <div style={{ padding: '8px 12px', background: calibBannerMsg ? 'rgba(60,180,60,0.15)' : theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, color: calibBannerMsg ? '#4caf50' : theme.textPrimary, fontWeight: calibBannerMsg ? 700 : 500, flex: 1 }}>{instruction}</span>
+        <div style={{ padding: '8px 12px', background: awaitingCalledShot ? 'rgba(255,212,59,0.12)' : calibBannerMsg ? 'rgba(60,180,60,0.15)' : theme.surfaceAlt, borderBottom: `1px solid ${awaitingCalledShot ? 'rgba(255,212,59,0.3)' : theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: awaitingCalledShot ? theme.accent : calibBannerMsg ? '#4caf50' : theme.textPrimary, fontWeight: awaitingCalledShot || calibBannerMsg ? 700 : 500, flex: 1 }}>{instruction}</span>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            {scale > 1 && <button onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, cursor: 'pointer' }}>Reset Zoom</button>}
-            {(markMode === 'poa' || markMode === 'shots') && <button onClick={resetCalibration} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Recal.</button>}
-            <button onClick={undoLast} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 12, cursor: 'pointer' }}>Undo</button>
-            {markMode === 'shots' && marks.length >= 2 && <button onClick={goToResults} style={{ padding: '5px 12px', borderRadius: 7, background: theme.accent, color: '#000', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Results →</button>}
+            {awaitingCalledShot && (
+              <button onClick={() => { setAwaitingCalledShot(false); goToResultsInner(); }} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Skip</button>
+            )}
+            {!awaitingCalledShot && scale > 1 && <button onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, cursor: 'pointer' }}>Reset Zoom</button>}
+            {!awaitingCalledShot && (markMode === 'poa' || markMode === 'shots') && <button onClick={resetCalibration} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Recal.</button>}
+            {!awaitingCalledShot && <button onClick={undoLast} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 12, cursor: 'pointer' }}>Undo</button>}
+            {!awaitingCalledShot && markMode === 'shots' && marks.length >= 2 && <button onClick={goToResults} style={{ padding: '5px 12px', borderRadius: 7, background: theme.accent, color: '#000', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Results →</button>}
           </div>
         </div>
 
@@ -1326,6 +1400,72 @@ export function TargetAnalysis() {
               <div style={{ fontSize: 12, color: theme.textMuted }}>{stats.shotCount} shots • {distanceYds}yd</div>
             </div>
             {savedMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Saved to history ✓</div>}
+
+            {/* 8I — Called shot offset display */}
+            {calledShotDisplay && (
+              <div style={{ background: 'rgba(255,212,59,0.06)', borderRadius: 10, padding: '8px 14px', border: `1px solid rgba(255,212,59,0.2)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: theme.accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 2 }}>Called Shot</div>
+                  <div style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'monospace' }}>
+                    {calledShotDisplay.x >= 0 ? 'R' : 'L'} {Math.abs(calledShotDisplay.x).toFixed(2)}" &nbsp;·&nbsp; {calledShotDisplay.y >= 0 ? 'U' : 'D'} {Math.abs(calledShotDisplay.y).toFixed(2)}"
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: theme.textMuted, textAlign: 'right', fontFamily: 'monospace' }}>offset from POA</div>
+              </div>
+            )}
+
+            {/* 8H — Ammo lot picker */}
+            {ammoLots.length > 0 && (
+              <div style={{ background: theme.surface, borderRadius: 12, padding: '10px 14px', border: `1px solid ${theme.border}` }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Link Ammo</div>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: 6, paddingBottom: 2, scrollbarWidth: 'none' }}>
+                  <button onClick={() => linkAmmoLot(null)} style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 20, border: `1px solid ${!linkedAmmoLotId ? theme.accent : theme.border}`, background: !linkedAmmoLotId ? theme.accentDim : 'transparent', color: !linkedAmmoLotId ? theme.accent : theme.textMuted, fontSize: 11, cursor: 'pointer' }}>None</button>
+                  {ammoLots.map(lot => (
+                    <button key={lot.id} onClick={() => linkAmmoLot(lot.id)} style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 20, border: `1px solid ${linkedAmmoLotId === lot.id ? theme.accent : theme.border}`, background: linkedAmmoLotId === lot.id ? theme.accentDim : 'transparent', color: linkedAmmoLotId === lot.id ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>
+                      {lot.brand} {lot.grainWeight}gr {lot.bulletType}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 8J — Environmental conditions */}
+            <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
+              <button onClick={() => setShowEnvPanel(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Log Conditions</span>
+                <span style={{ fontSize: 13, color: theme.textMuted }}>{showEnvPanel ? '▲' : '▼'}</span>
+              </button>
+              {showEnvPanel && (
+                <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Temp (°F)</div>
+                      <input type="number" placeholder="e.g. 72" value={envTemp} onChange={e => { setEnvTemp(e.target.value); updateEnv({ temp: e.target.value }); }} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 13, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Wind (mph)</div>
+                      <input type="number" placeholder="e.g. 5" value={envWindSpeed} onChange={e => { setEnvWindSpeed(e.target.value); updateEnv({ windSpeed: e.target.value }); }} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 13, boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Wind Direction</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {(['Calm', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const).map(dir => (
+                        <button key={dir} onClick={() => { setEnvWindDir(dir); updateEnv({ windDir: dir }); }} style={{ padding: '4px 9px', borderRadius: 16, border: `1px solid ${envWindDir === dir ? theme.accent : theme.border}`, background: envWindDir === dir ? theme.accentDim : 'transparent', color: envWindDir === dir ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>{dir}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lighting</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {(['Indoor', 'Outdoor', 'Overcast', 'Bright Sun'] as const).map(lt => (
+                        <button key={lt} onClick={() => { setEnvLighting(lt); updateEnv({ lighting: lt }); }} style={{ padding: '4px 9px', borderRadius: 16, border: `1px solid ${envLighting === lt ? theme.accent : theme.border}`, background: envLighting === lt ? theme.accentDim : 'transparent', color: envLighting === lt ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>{lt}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* PRIMARY — Group Size + CEP */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>

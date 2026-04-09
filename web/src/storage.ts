@@ -498,6 +498,20 @@ export function getAnalysesForSession(sessionId: string): TargetAnalysisRecord[]
   return getTargetAnalyses().filter(a => a.sessionId === sessionId);
 }
 
+export function updateTargetAnalysis(id: string, updates: Partial<TargetAnalysisRecord>): void {
+  const all = getTargetAnalyses();
+  const idx = all.findIndex(r => r.id === id);
+  if (idx >= 0) {
+    all[idx] = { ...all[idx], ...updates };
+    localStorage.setItem(ANALYSES_KEY, JSON.stringify(all));
+    syncAnalysis(all[idx]);
+  }
+}
+
+export function getAnalysesForAmmoLot(ammoLotId: string): TargetAnalysisRecord[] {
+  return getTargetAnalyses().filter(a => a.ammoLotId === ammoLotId);
+}
+
 // ============================================================================
 // UTILITIES
 // ============================================================================
