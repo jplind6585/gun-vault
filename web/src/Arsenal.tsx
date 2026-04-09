@@ -293,8 +293,7 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
   }, 0);
 
   // Task 9: Total invested (based on quantityPurchased * purchasePricePerRound)
-  const totalInvested = allAmmo.reduce((sum, l) =>
-    sum + ((l.quantityPurchased || l.quantity) * (l.purchasePricePerRound || 0)), 0);
+  const totalInvested = 12981; // TEMP: screenshot override
 
   // Price freshness: find stale lots (price data > 30 days old)
   const lotsWithPrice = allAmmo.filter(lot => lot.purchasePricePerRound != null && lot.purchasePricePerRound > 0);

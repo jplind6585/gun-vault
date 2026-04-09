@@ -35,7 +35,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
   const [actionFilter, setActionFilter]   = useState<string>('');
   const [statusFilter, setStatusFilter]   = useState<GunStatus | ''>('');
   const [purposeFilter, setPurposeFilter] = useState<GunPurpose | ''>('');
-  const [sortBy, setSortBy]       = useState<SortOption>('make');
+  const [sortBy, setSortBy]       = useState<SortOption>('lastShot'); // TEMP: screenshot
   const [showFilters, setShowFilters] = useState(false);
   const [quickLogGun, setQuickLogGun] = useState<Gun | null>(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
@@ -472,7 +472,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filtered.map(gun => (
+          {filtered.slice(0, 6).map(gun => ( // TEMP: screenshot — slice to 6
             <GunListRow
               key={gun.id}
               gun={gun}

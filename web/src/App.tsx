@@ -392,7 +392,7 @@ function AppCore() {
       )}
 
       {/* ── GLOBAL FAB ── shown on main views only, hidden when modals are open */}
-      {(['home','vault','sessions'] as AppView[]).includes(currentView) && !showAddForm && !showSettings && (
+      {(['home','vault','sessions'] as AppView[]).includes(currentView) && !showAddForm && !showSettings && false && (
         <>
           {showFab && (
             <div

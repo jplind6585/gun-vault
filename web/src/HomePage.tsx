@@ -103,14 +103,11 @@ export function HomePage({
   const sessionsPerMonth  = (sessions.length / monthsActive).toFixed(1);
 
   // ── Top 3 guns (period-filtered) ─────────────────────────────────────────
-  const roundsByGun = periodSessions.reduce((acc, s) => {
-    acc[s.gunId] = (acc[s.gunId] || 0) + s.roundsExpended;
-    return acc;
-  }, {} as Record<string, number>);
-  const top3 = Object.entries(roundsByGun)
-    .sort(([,a],[,b]) => b - a).slice(0, 3)
-    .map(([id, rounds]) => ({ gun: guns.find(g => g.id === id), rounds }))
-    .filter(x => x.gun);
+  // TEMP: screenshot override — restore after screenshots
+  const top3 = [
+    { gun: { id: '__tmp1__', make: 'Glock', model: '19', caliber: '9mm', type: 'Pistol' as const, action: 'Semi-Auto' as const, status: 'Active' as const, displayName: 'Glock 19', roundCount: 860 }, rounds: 860 },
+    { gun: { id: '__tmp2__', make: 'Sig Sauer', model: 'P365 Macro', caliber: '9mm', type: 'Pistol' as const, action: 'Semi-Auto' as const, status: 'Active' as const, displayName: 'P365 Macro', roundCount: 335 }, rounds: 335 },
+  ];
 
   // ── Top caliber ───────────────────────────────────────────────────────────
   const roundsByCal = sessions.reduce((acc, s) => {
@@ -560,11 +557,9 @@ export function HomePage({
         ))}
       </div>
 
-      {/* ── MILESTONE NOTIFICATION ── */}
-      <MilestoneNotification />
-
-      {/* ── SHOOTER PROFILE ── */}
-      <ShooterProfileCard onSetupProfile={onSetupProfile} onEditGoals={onEditGoals} />
+      {/* TEMP: hidden for screenshots */}
+      {/* <MilestoneNotification /> */}
+      {/* <ShooterProfileCard onSetupProfile={onSetupProfile} onEditGoals={onEditGoals} /> */}
 
       {/* Version tap target — 7 taps unlocks dev tools */}
       <div style={{ paddingBottom: '8px', textAlign: 'center' }}>
