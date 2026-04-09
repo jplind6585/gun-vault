@@ -440,6 +440,7 @@ export function TargetAnalysis() {
   const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showCoach, setShowCoach] = useState(false);
   const [coachTier, setCoachTier] = useState<1 | 2 | 3>(1);
   const [coachMessages, setCoachMessages] = useState<{ role: string; content: string }[]>([]);
@@ -1248,27 +1249,34 @@ export function TargetAnalysis() {
             </div>
             {savedMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Saved to history ✓</div>}
 
-            {/* GROUP SIZE */}
+            {/* PRIMARY — Group Size + CEP */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</div>
               <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} primary />
-              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} primary />
-              <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
-              <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
+              <StatRow label="CEP"            val={`${stats.cepIn.toFixed(3)}"`}            moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
+              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}     moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} primary />
             </div>
-            {/* POA OFFSET */}
+            {/* SECONDARY — POA Offset */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>POA Offset</div>
               <StatRow label="Elevation" val={`${stats.elevationIn >= 0 ? 'UP' : 'DOWN'} ${Math.abs(stats.elevationIn).toFixed(3)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
-              <StatRow label="Windage"   val={`${stats.windageIn >= 0 ? 'RIGHT' : 'LEFT'} ${Math.abs(stats.windageIn).toFixed(3)}"`}   moa={`${stats.windageMoa.toFixed(2)} MOA`} />
+              <StatRow label="Windage"   val={`${stats.windageIn >= 0 ? 'RIGHT' : 'LEFT'} ${Math.abs(stats.windageIn).toFixed(3)}"`}  moa={`${stats.windageMoa.toFixed(2)} MOA`} />
             </div>
-            {/* PRECISION DETAIL */}
-            <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
-              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Precision Detail</div>
-              <StatRow label="CEP"           val={`${stats.cepIn.toFixed(3)}"`}           moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
-              <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}      moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
-              <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}    moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
-              <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`}  moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
+            {/* ADVANCED — collapsed by default */}
+            <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
+              <button onClick={() => setShowAdvanced(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Advanced</span>
+                <span style={{ fontSize: 13, color: theme.textMuted }}>{showAdvanced ? '▲' : '▼'}</span>
+              </button>
+              {showAdvanced && (
+                <div style={{ padding: '0 16px' }}>
+                  <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}     moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}   moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`} moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
