@@ -88,17 +88,45 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
     [...new Set(statusFiltered.flatMap(g => g.purpose || []))].sort() as GunPurpose[],
   [statusFiltered]);
 
+  // ── Search normalization ──────────────────────────────────────────────────
+  function normalizeSearch(s: string): string {
+    return s
+      .toLowerCase()
+      .replace(/[-_\s/]+/g, '')  // remove hyphens, underscores, spaces, slashes
+      .replace(/\./g, '');        // remove dots
+  }
+
+  const ALIASES: Record<string, string[]> = {
+    'ar15': ['m16', 'm4', 'ar15'],
+    '9mm': ['9x19', 'parabellum', '9mm'],
+    '223': ['556', '556nato', '223remington'],
+  };
+
+  function getAliasGroup(normQuery: string): string[] | null {
+    for (const [key, group] of Object.entries(ALIASES)) {
+      if (normQuery === key || group.includes(normQuery)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
   // ── Step 3: search + purpose filter ──────────────────────────────────────
   const filtered = useMemo(() => {
     let list = statusFiltered;
     if (purposeFilter) list = list.filter(g => g.purpose?.includes(purposeFilter));
     if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(g =>
-        g.make.toLowerCase().includes(s) ||
-        g.model.toLowerCase().includes(s) ||
-        g.caliber.toLowerCase().includes(s)
-      );
+      const normQuery = normalizeSearch(search);
+      const aliasGroup = getAliasGroup(normQuery);
+      list = list.filter(g => {
+        const fields = [g.make, g.model, g.caliber, g.displayName || ''].map(normalizeSearch);
+        const directMatch = fields.some(f => f.includes(normQuery));
+        if (directMatch) return true;
+        if (aliasGroup) {
+          return fields.some(f => aliasGroup.some(alias => f.includes(alias)));
+        }
+        return false;
+      });
     }
     return [...list].sort((a, b) => {
       switch (sortBy) {

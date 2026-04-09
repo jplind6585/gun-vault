@@ -4,6 +4,7 @@ import { getAllAmmo, getAmmoSummaryByCaliber, updateAmmo, addAmmo, getAllGuns, g
 import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
 import { analyzeAmmoBox, hasClaudeApiKey } from './claudeApi';
+import { getSettings } from './SettingsPanel';
 
 type ViewMode = 'calibers' | 'lots';
 type CategoryFilter = 'all' | 'Match' | 'Training' | 'Carry' | 'Hunting';
@@ -70,22 +71,18 @@ function sameCaliberGroup(a: string, b: string): boolean {
 // ============================================================================
 
 function getSmartThreshold(lot: AmmoLot): number {
+  // Per-lot override takes priority
   if (lot.minStockAlert === 0) return 0;
   if (lot.minStockAlert != null && lot.minStockAlert > 0) return lot.minStockAlert;
 
-  const purchased = lot.quantityPurchased ?? lot.quantity;
-  if (purchased < 100) return 0;
-
-  const highVolumeCalibers = ['9mm Luger', '9mm', '.22 LR', '22 LR', '5.56x45mm', '5.56x45mm NATO', '.223 Remington', '.223 Rem', '5.56'];
-
-  switch (lot.category) {
-    case 'Carry': return 100;
-    case 'Hunting': return 50;
-    case 'Match': return 200;
-    case 'Training':
-      return highVolumeCalibers.includes(lot.caliber) ? 500 : 200;
-    default: return 200;
+  // Fall back to global setting from Settings panel, then hardcoded 50
+  try {
+    const globalDefault = getSettings().ammoLowThreshold;
+    if (globalDefault != null && globalDefault > 0) return globalDefault;
+  } catch {
+    // ignore
   }
+  return 50;
 }
 
 // ============================================================================
@@ -1593,6 +1590,71 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
 // LOW STOCK MODAL
 // ============================================================================
 
+function FindAmmoPopup({ lot, onClose }: { lot: AmmoLot; onClose: () => void }) {
+  const retailers = [
+    { name: 'AmmoSeek', url: getAmmoSeekUrl(lot) },
+    { name: 'GunBroker', url: `https://www.gunbroker.com/Ammo/search?Keywords=${encodeURIComponent(lot.caliber + ' ' + lot.brand)}` },
+    { name: 'Cheaper Than Dirt', url: `https://www.cheaperthandirt.com/category/ammunition?q=${encodeURIComponent(lot.caliber)}` },
+    { name: 'Sportsman\'s Guide', url: `https://www.sportsmansguide.com/productlist/Ammo?q=${encodeURIComponent(lot.caliber)}` },
+    { name: 'Lucky Gunner', url: `https://www.luckygunner.com/ammo?q=${encodeURIComponent(lot.caliber)}` },
+  ];
+
+  return (
+    <>
+      <div
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 3000 }}
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: '90%', maxWidth: '340px', backgroundColor: theme.surface,
+          borderRadius: '8px', padding: '16px', zIndex: 3001,
+          border: `0.5px solid ${theme.border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+        }}
+      >
+        {/* Header row with close button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', color: theme.textMuted }}>
+            FIND AMMO
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', color: theme.textSecondary,
+              fontSize: '16px', cursor: 'pointer', lineHeight: 1, padding: '0 2px',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, marginBottom: '12px' }}>
+          {lot.caliber} · {lot.brand} {lot.productLine}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {retailers.map(({ name, url }) => (
+            <button
+              key={name}
+              onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '9px 12px', backgroundColor: theme.bg,
+                border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+                fontFamily: 'monospace', fontSize: '11px', color: theme.textPrimary,
+                cursor: 'pointer', textAlign: 'left', width: '100%',
+              }}
+            >
+              <span>{name}</span>
+              <span style={{ color: theme.textMuted, fontSize: '10px' }}>↗</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function LowStockModal({
   lowStockLots,
   getSmartThreshold,
@@ -1608,6 +1670,8 @@ function LowStockModal({
   onIgnore: (lotId: string) => void;
   onSnooze: (lotId: string) => void;
 }) {
+  const [findAmmoLot, setFindAmmoLot] = useState<AmmoLot | null>(null);
+
   return (
     <div
       style={{
@@ -1677,13 +1741,14 @@ function LowStockModal({
 
                 {/* Action buttons row */}
                 <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
-                  <a
-                    href={getAmmoSeekUrl(lot)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFindAmmoLot(lot); }}
                     style={{
                       flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
                       padding: '6px 8px',
                       backgroundColor: theme.accent,
                       color: theme.bg,
@@ -1694,13 +1759,11 @@ function LowStockModal({
                       letterSpacing: '0.5px',
                       cursor: 'pointer',
                       fontWeight: 600,
-                      textDecoration: 'none',
-                      textAlign: 'center',
-                      display: 'block',
                     }}
                   >
-                    FIND AMMO ↗
-                  </a>
+                    <span>FIND AMMO</span>
+                    <span>↗</span>
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onSnooze(lot.id); }}
                     style={{
@@ -1751,6 +1814,7 @@ function LowStockModal({
           CLOSE
         </button>
       </div>
+      {findAmmoLot && <FindAmmoPopup lot={findAmmoLot} onClose={() => setFindAmmoLot(null)} />}
     </div>
   );
 }
@@ -1777,6 +1841,8 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
   const [editingChrono, setEditingChrono] = useState(false);
   const [chronoFpsInput, setChronoFpsInput] = useState('');
   const [chronoSdInput, setChronoSdInput] = useState('');
+  const [editingMinStock, setEditingMinStock] = useState(false);
+  const [minStockInput, setMinStockInput] = useState('');
 
   // Task 11: purchase history state
   const [showAddPurchase, setShowAddPurchase] = useState(false);
@@ -1852,6 +1918,25 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
       updateAmmo(currentLot.id, { minStockAlert: n });
       reloadLot();
       setEditingTarget(false);
+    }
+  }
+
+  function handleSaveMinStock() {
+    const raw = minStockInput.trim();
+    if (raw === '') {
+      // Clear the per-lot override — fall back to global default
+      updateAmmo(currentLot.id, { minStockAlert: undefined });
+      reloadLot();
+      setEditingMinStock(false);
+      setMinStockInput('');
+      return;
+    }
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= 0) {
+      updateAmmo(currentLot.id, { minStockAlert: n });
+      reloadLot();
+      setEditingMinStock(false);
+      setMinStockInput('');
     }
   }
 
@@ -2294,6 +2379,67 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
                   ✕
                 </button>
               </>
+            )}
+          </div>
+
+          {/* Min Stock Alert row */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.6px', marginBottom: '6px' }}>
+              MIN STOCK ALERT (ROUNDS)
+            </div>
+            {!editingMinStock ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: theme.textPrimary, fontFamily: 'monospace' }}>
+                  {currentLot.minStockAlert != null
+                    ? `${currentLot.minStockAlert} rounds (per-lot override)`
+                    : `Using global default (${getSettings().ammoLowThreshold ?? 50} rounds)`}
+                </span>
+                <button
+                  onClick={() => {
+                    setEditingMinStock(true);
+                    setMinStockInput(currentLot.minStockAlert != null ? currentLot.minStockAlert.toString() : '');
+                  }}
+                  style={{
+                    background: 'none', border: 'none', color: theme.accent,
+                    fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline'
+                  }}
+                >
+                  EDIT
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="number"
+                    value={minStockInput}
+                    onChange={(e) => setMinStockInput(e.target.value)}
+                    placeholder="Use global default"
+                    style={{ ...inputStyle, width: '140px' }}
+                  />
+                  <button
+                    onClick={handleSaveMinStock}
+                    style={{
+                      padding: '5px 12px', backgroundColor: theme.accent, color: theme.bg, border: 'none',
+                      borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 600
+                    }}
+                  >
+                    SAVE
+                  </button>
+                  <button
+                    onClick={() => { setEditingMinStock(false); setMinStockInput(''); }}
+                    style={{
+                      background: 'none', border: 'none', color: theme.textSecondary,
+                      fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div style={{ fontSize: '9px', color: theme.textMuted, fontFamily: 'monospace' }}>
+                  Leave blank to use global default (set in Settings)
+                </div>
+              </div>
             )}
           </div>
 

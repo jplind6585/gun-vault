@@ -375,7 +375,7 @@ function AppCore() {
       {showSettings && (
         <SettingsPanel
           onClose={() => setShowSettings(false)}
-          onImport={() => { setShowSettings(false); setShowCSVImport(true); setCurrentView('vault'); setVaultSection('guns'); }}
+          onImport={() => { setShowSettings(false); setShowCSVImport(true); }}
           onExport={() => { setShowSettings(false); exportInsuranceClaim(allGuns); }}
           onNavigateToLegal={() => { setShowSettings(false); setCurrentView('legal'); }}
           onFeedbackOpen={() => { setShowSettings(false); setShowFeedback(true); }}

@@ -148,10 +148,18 @@ export interface TargetAnalysisRecord {
   distanceYds: number;
   bulletDiaIn: number;
   stats: TargetAnalysisStats;
-  sessionId?: string;   // linked session
-  gunId?: string;       // linked gun
-  ammoLotId?: string;   // linked ammo lot
+  sessionId?: string;         // linked session
+  gunId?: string;             // linked gun
+  ammoLotId?: string;         // linked ammo lot
   notes?: string;
+  // 8I — called shot
+  calledShotOffsetX?: number; // inches from POA (positive = right)
+  calledShotOffsetY?: number; // inches from POA (positive = up)
+  // 8J — environmental conditions
+  envTemp?: number;           // °F
+  envWindSpeed?: number;      // mph
+  envWindDir?: string;        // 'Calm' | 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
+  envLighting?: string;       // 'Indoor' | 'Outdoor' | 'Overcast' | 'Bright Sun'
 }
 
 export interface AmmoLot {

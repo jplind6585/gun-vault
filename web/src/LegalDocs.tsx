@@ -163,6 +163,8 @@ function PrivacyContent() {
         <li>Ammo inventory and range session logs</li>
         <li>Optics and accessory information</li>
         <li>Photos you choose to attach to records</li>
+        <li>Target analysis data: photos you submit for analysis, shot coordinates, and computed ballistic statistics stored locally and optionally synced to our servers.</li>
+        <li>Insurance export data: when you use the insurance claim export feature, gun details including serial numbers are included in the exported file. This file is saved locally to your device.</li>
       </ul>
 
       <h2 style={heading2}>2. How Data Is Stored</h2>

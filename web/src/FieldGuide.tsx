@@ -1601,11 +1601,11 @@ export function FieldGuide() {
     );
 
     const homeCards = [
-      { icon: <IcnCartridges/>, title: 'Cartridges',      subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
-      { icon: <IcnPlatforms/>,  title: 'Gun History',     subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
-      { icon: <IcnBallistics/>, title: 'Ballistics',      subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
-      { icon: <IcnGlossary/>,   title: 'Glossary',        subtitle: 'Acronyms & terms decoded',     action: () => setSection('glossary') },
-      { icon: <IcnOptics/>,     title: 'Optics Overview', subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
+      { title: 'Cartridges',  subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
+      { title: 'Gun History', subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
+      // { title: 'Ballistics',      subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
+      { title: 'Glossary',    subtitle: 'Acronyms & terms decoded',    action: () => setSection('glossary') },
+      // { title: 'Optics Overview', subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
     ];
 
     return (
@@ -1648,7 +1648,6 @@ export function FieldGuide() {
                 gap: '6px',
               }}
             >
-              <div style={{ lineHeight: 0 }}>{card.icon}</div>
               <span
                 style={{
                   fontSize: '13px',
@@ -2341,9 +2340,9 @@ export function FieldGuide() {
     );
   }
 
-  // ── BALLISTICS ──────────────────────────────────────────────────────────────
+  // ── BALLISTICS (hidden — re-enable by removing the false guard) ─────────────
 
-  if (section === 'ballistics') {
+  if (false && section === 'ballistics') {
     const ballisticsCategories = Array.from(new Set(BALLISTIC_CONCEPTS.map((b) => b.category)));
 
     return (
@@ -2534,7 +2533,8 @@ export function FieldGuide() {
     );
   }
 
-  if (section === 'optics') {
+  // ── OPTICS OVERVIEW (hidden — re-enable by removing the false guard) ────────
+  if (false && section === 'optics') {
     return <FieldGuideOptics onBack={() => setSection('home')} />;
   }
 

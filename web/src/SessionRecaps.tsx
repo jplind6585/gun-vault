@@ -1425,14 +1425,14 @@ function AnalyticsPanel({
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
                 {g.rounds.toLocaleString()} rds
-                {g.issues > 0 && <span style={{ color: theme.red, marginLeft: '6px', fontWeight: 700 }}>{g.issues} ISS</span>}
+                {g.issues > 0 && <span style={{ color: theme.textMuted, marginLeft: '6px', fontWeight: 700 }}>{g.issues} ISS</span>}
               </div>
             </div>
             <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
               <div style={{
                 height: '100%',
                 width: `${Math.round((g.rounds / maxGunRounds) * 100)}%`,
-                backgroundColor: g.issues / g.sessions > 0.2 ? theme.red : theme.accent,
+                backgroundColor: theme.accent,
                 borderRadius: '2px',
                 transition: 'width 0.3s',
               }} />
@@ -1491,6 +1491,7 @@ function AnalyticsPanel({
         {locations.length > 0 && (
           <div style={{ ...card, flex: 1, marginBottom: 0 }}>
             <div style={sectionLabel}>TOP RANGES</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginBottom: '8px', letterSpacing: '0.3px' }}>counted by number of sessions</div>
             {locations.map(([loc, count]) => (
               <div key={loc} style={{ marginBottom: '7px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
@@ -1508,18 +1509,24 @@ function AnalyticsPanel({
 
       {/* ── Summary row ────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '8px' }}>
-        {ioTotal > 0 && (
-          <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>INDOOR / OUTDOOR</div>
-            <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary }}>
-              {Math.round((outdoor / ioTotal) * 100)}%
+        {ioTotal > 0 && (() => {
+          const primaryIsOutdoor = outdoor >= indoor;
+          const primaryCount = primaryIsOutdoor ? outdoor : indoor;
+          const primaryLabel = primaryIsOutdoor ? 'outdoor' : 'indoor';
+          const primaryPct = Math.round((primaryCount / ioTotal) * 100);
+          return (
+            <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>INDOOR / OUTDOOR</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary }}>
+                {primaryPct}%
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{primaryLabel}</div>
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>outdoor</div>
-          </div>
-        )}
+          );
+        })()}
         <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
           <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>ISSUE RATE</div>
-          <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: issueRate > 20 ? '#ff6b6b' : theme.green }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textSecondary }}>
             {issueRate}%
           </div>
           <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>of sessions</div>

@@ -2,6 +2,38 @@ import React, { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import type { Gun } from './types';
 import { lookupGunSpec, getSenseCheck, suggestMakes, suggestModels } from './gunDatabase';
+import { getSettings } from './SettingsPanel';
+
+const LRU_KEY = 'lru_calibers';
+const DEFAULT_LRU = ['9mm', '5.56 NATO', '.308 Win', '.22 LR'];
+
+function getLruCalibers(): string[] {
+  try {
+    const raw = localStorage.getItem(LRU_KEY);
+    if (!raw) return DEFAULT_LRU;
+    const parsed: string[] = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_LRU;
+    // Pad with defaults if fewer than 4
+    const merged = [...parsed];
+    for (const d of DEFAULT_LRU) {
+      if (merged.length >= 4) break;
+      if (!merged.includes(d)) merged.push(d);
+    }
+    return merged;
+  } catch {
+    return DEFAULT_LRU;
+  }
+}
+
+function saveLruCaliber(caliber: string): void {
+  try {
+    const current = getLruCalibers();
+    const deduped = [caliber, ...current.filter(c => c !== caliber)].slice(0, 10);
+    localStorage.setItem(LRU_KEY, JSON.stringify(deduped));
+  } catch {
+    // ignore localStorage errors
+  }
+}
 
 interface AddGunFormProps {
   onSave: (gunData: Partial<Gun>) => void;
@@ -11,11 +43,7 @@ interface AddGunFormProps {
 const TYPES: Gun['type'][] = ['Pistol', 'Rifle', 'Shotgun', 'Suppressor', 'NFA'];
 const ACTIONS: Gun['action'][] = ['Semi-Auto', 'Bolt', 'Lever', 'Pump', 'Revolver', 'Break', 'Single Shot'];
 
-const CALIBER_SUGGESTIONS: Record<string, string[]> = {
-  Pistol:  ['9mm', '.45 ACP', '.40 S&W', '10mm', '.380 ACP'],
-  Rifle:   ['5.56mm', '.308 Win', '6.5 Creedmoor', '.223 Rem', '.300 Win Mag'],
-  Shotgun: ['12 Gauge', '20 Gauge', '.410 Bore'],
-};
+
 const CONDITIONS: NonNullable<Gun['condition']>[] = ['New', 'Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 const STATUSES: Gun['status'][] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold'];
 
@@ -28,6 +56,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [type, setType]       = useState<Gun['type'] | null>(null);
   const [action, setAction]   = useState<Gun['action'] | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [lruCalibers, setLruCalibers] = useState<string[]>(() => getLruCalibers());
 
   // Autocomplete state
   const [makeSuggestions, setMakeSuggestions] = useState<string[]>([]);
@@ -120,6 +149,12 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
         setSenseCheckMsg(msg);
         return; // pause for user to review
       }
+    }
+
+    // Update LRU calibers
+    if (caliber.trim()) {
+      saveLruCaliber(caliber.trim());
+      setLruCalibers(getLruCalibers());
     }
 
     onSave({
@@ -250,23 +285,21 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AUTO</span>
                 )}
               </div>
-              {/* Contextual caliber suggestions based on selected type */}
-              {!caliber && (() => {
-                const suggestions: string[] = (type && CALIBER_SUGGESTIONS[type]) || ['9mm', '5.56mm', '.308 Win', '12 Gauge', '.22 LR'];
-                return (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '6px' }}>
-                    {suggestions.map(s => (
-                      <button key={s} type="button" onClick={() => { setCaliber(s); setAutoFilled(false); }} style={{
-                        padding: '5px 10px', borderRadius: '3px', border: '0.5px solid ' + theme.border,
-                        backgroundColor: theme.surface, color: theme.textSecondary,
-                        fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
-                      }}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
+              {/* LRU caliber quick-pick buttons — 4 equal-width */}
+              {!caliber && (
+                <div style={{ display: 'flex', gap: '5px', marginTop: '6px' }}>
+                  {lruCalibers.slice(0, 4).map(s => (
+                    <button key={s} type="button" onClick={() => { setCaliber(s); setAutoFilled(false); }} style={{
+                      flex: 1, padding: '7px 4px', borderRadius: '3px', border: '0.5px solid ' + theme.border,
+                      backgroundColor: theme.surface, color: theme.textSecondary,
+                      fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                      textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </Field>
 
             <Field label="Type *">
@@ -404,7 +437,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   autoComplete="off"
                 />
               </Field>
-              <Field label='Barrel Length (")'>
+              <Field label={getSettings().units === 'metric' ? 'Barrel Length (cm)' : 'Barrel Length (in)'}>
                 <input
                   style={{ ...styles.input, fontFamily: 'monospace' }}
                   placeholder='e.g. 4.49'
@@ -427,21 +460,20 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               />
             </Field>
 
-            {/* ── NFA ── */}
-            <SectionHeader title="NFA" />
-
-            <ToggleRow
+            {/* NFA/Suppressor — deferred, see roadmap */}
+            {/* <SectionHeader title="NFA" /> */}
+            {/* <ToggleRow
               label="NFA Item"
               sublabel="Suppressor, SBR, SBS, Machine Gun, AOW"
               value={nfaItem}
               onToggle={setNfaItem}
-            />
-            <ToggleRow
+            /> */}
+            {/* <ToggleRow
               label="Suppressor Host"
               sublabel="Threaded barrel / suppressor-ready"
               value={suppressorHost}
               onToggle={setSuppressorHost}
-            />
+            /> */}
 
             </>
             )} {/* end showAdvanced */}

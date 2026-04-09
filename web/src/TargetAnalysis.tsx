@@ -488,6 +488,27 @@ export function TargetAnalysis() {
   const [envWindDir, setEnvWindDir] = useState('');
   const [envLighting, setEnvLighting] = useState('');
 
+  // Options (Change 1)
+  interface TaOptions { calledShot: boolean; shotTimeline: boolean; cepRing: boolean; autoLinkGun: boolean; }
+  const loadOptions = (): TaOptions => {
+    try { const s = localStorage.getItem('ta_options'); if (s) return { calledShot: true, shotTimeline: true, cepRing: true, autoLinkGun: true, ...JSON.parse(s) }; } catch { /* ignore */ }
+    return { calledShot: true, shotTimeline: true, cepRing: true, autoLinkGun: true };
+  };
+  const [taOptions, setTaOptions] = useState<TaOptions>(loadOptions);
+  const [showOptions, setShowOptions] = useState(false);
+  const updateOption = <K extends keyof TaOptions>(key: K, val: TaOptions[K]) => {
+    setTaOptions(prev => { const next = { ...prev, [key]: val }; localStorage.setItem('ta_options', JSON.stringify(next)); return next; });
+  };
+
+  // History filters (Change 2)
+  const [histFilterGun, setHistFilterGun] = useState<string>('all');
+  const [histFilterDist, setHistFilterDist] = useState<string>('all');
+  const [histFilterCaliber, setHistFilterCaliber] = useState<string>('all');
+  const [selectedHistoryRecord, setSelectedHistoryRecord] = useState<TargetAnalysisRecord | null>(null);
+
+  // Ammo search (Change 6)
+  const [ammoSearch, setAmmoSearch] = useState('');
+
   // Loupe magnifier shown during drag
   const [showLoupe, setShowLoupe] = useState(false);
   const [loupeScreenPos, setLoupeScreenPos] = useState<{ x: number; y: number } | null>(null);
@@ -497,6 +518,7 @@ export function TargetAnalysis() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const goToResultsInnerRef = useRef<() => void>(() => {});
 
   const touchStartRef = useRef<{ touches: { id: number; x: number; y: number }[]; scale: number; offset: { x: number; y: number }; canvasRectLeft?: number; canvasRectTop?: number } | null>(null);
   const touchMovedRef = useRef(false);
@@ -604,19 +626,26 @@ export function TargetAnalysis() {
 
     // ── Calibration endpoints + connecting line ───────────────────────────
     calibPts.forEach((pt, _i) => {
-      // Circle — no border so it blends with the target
+      const arm = 18 * displayRatio;
+      // Dark shadow lines for contrast
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 3 * displayRatio;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, calibR, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,50,50,0.82)';
-      ctx.fill();
-
-      // Semi-transparent red crosshair — visible but not distracting
-      const arm = Math.max(6, calibR * 0.42);
-      ctx.strokeStyle = 'rgba(255,50,50,0.35)';
-      ctx.lineWidth = Math.max(1.5, displayRatio * 1.2);
-      ctx.beginPath();
-      ctx.moveTo(pt.x - arm, pt.y); ctx.lineTo(pt.x + arm, pt.y);
       ctx.moveTo(pt.x, pt.y - arm); ctx.lineTo(pt.x, pt.y + arm);
+      ctx.moveTo(pt.x - arm, pt.y); ctx.lineTo(pt.x + arm, pt.y);
+      ctx.stroke();
+      // Yellow crosshair lines
+      ctx.strokeStyle = '#ffd43b';
+      ctx.lineWidth = 1.5 * displayRatio;
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y - arm); ctx.lineTo(pt.x, pt.y + arm);
+      ctx.moveTo(pt.x - arm, pt.y); ctx.lineTo(pt.x + arm, pt.y);
+      ctx.stroke();
+      // Open circle
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 5 * displayRatio, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffd43b';
+      ctx.lineWidth = 1.5 * displayRatio;
       ctx.stroke();
     });
 
@@ -642,10 +671,6 @@ export function TargetAnalysis() {
       ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 6 * displayRatio;
       ctx.stroke();
       ctx.shadowBlur = 0;
-      // Center dot
-      ctx.beginPath();
-      ctx.arc(poa.x, poa.y, Math.max(4, r * 0.12), 0, Math.PI * 2);
-      ctx.fillStyle = 'white'; ctx.fill();
       // Inner tick marks (stay within circle)
       const tick = r * 0.4;
       ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = Math.max(2, displayRatio * 1.5);
@@ -655,10 +680,30 @@ export function TargetAnalysis() {
         ctx.lineTo(poa.x + dx * (r - tick), poa.y + dy * (r - tick));
         ctx.stroke();
       });
+      // POA center: crosshair shadow then white
+      const poaArm = 12 * displayRatio;
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 3 * displayRatio;
+      ctx.beginPath();
+      ctx.moveTo(poa.x, poa.y - poaArm); ctx.lineTo(poa.x, poa.y + poaArm);
+      ctx.moveTo(poa.x - poaArm, poa.y); ctx.lineTo(poa.x + poaArm, poa.y);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 1.5 * displayRatio;
+      ctx.beginPath();
+      ctx.moveTo(poa.x, poa.y - poaArm); ctx.lineTo(poa.x, poa.y + poaArm);
+      ctx.moveTo(poa.x - poaArm, poa.y); ctx.lineTo(poa.x + poaArm, poa.y);
+      ctx.stroke();
+      // 3px open ring
+      ctx.beginPath();
+      ctx.arc(poa.x, poa.y, 3 * displayRatio, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 1.5 * displayRatio;
+      ctx.stroke();
     }
 
     // ── CEP ring (centered on shot group mean) ────────────────────────────
-    if (marks.length >= 2 && pixelsPerInch) {
+    if (taOptions.cepRing && marks.length >= 2 && pixelsPerInch) {
       const poa = marks[0];
       const shots = marks.slice(1);
       const meanX = shots.reduce((a, s) => a + s.x, 0) / shots.length;
@@ -699,6 +744,14 @@ export function TargetAnalysis() {
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(i), shot.x, shot.y);
+      // Small 2px crosshair for precise center
+      const shotArm = 2 * displayRatio;
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 2 * displayRatio;
+      ctx.beginPath();
+      ctx.moveTo(shot.x, shot.y - shotArm); ctx.lineTo(shot.x, shot.y + shotArm);
+      ctx.moveTo(shot.x - shotArm, shot.y); ctx.lineTo(shot.x + shotArm, shot.y);
+      ctx.stroke();
     }
 
     // ── Loupe magnifier (drawn from main canvas after it's fully rendered) ──
@@ -728,7 +781,7 @@ export function TargetAnalysis() {
       lctx.strokeStyle = 'rgba(255,60,60,0.6)';
       lctx.beginPath(); lctx.arc(cx, cy, 5, 0, Math.PI * 2); lctx.stroke();
     }
-  }, [calibPts, marks, bulletDiaIn, pixelsPerInch]);
+  }, [calibPts, marks, bulletDiaIn, pixelsPerInch, taOptions]);
 
   useEffect(() => { drawCanvas(); }, [drawCanvas]);
 
@@ -768,7 +821,7 @@ export function TargetAnalysis() {
         setCalledShotDisplay({ x: offX, y: offY });
       }
       setAwaitingCalledShot(false);
-      goToResultsInner();
+      goToResultsInnerRef.current();
       return;
     }
     if (markMode === 'calib') {
@@ -998,12 +1051,17 @@ export function TargetAnalysis() {
 
     setStep(4); setResultTab('stats');
   };
+  goToResultsInnerRef.current = goToResultsInner;
 
   // ── Go to results — enters called shot mode first (8I) ───────────────────
   const goToResults = () => {
     haptic();
-    // Enter called shot mode — user taps where they called the shot
-    setAwaitingCalledShot(true);
+    if (taOptions.calledShot) {
+      // Enter called shot mode — user taps where they called the shot
+      setAwaitingCalledShot(true);
+    } else {
+      goToResultsInnerRef.current();
+    }
   };
 
   useEffect(() => {
@@ -1024,6 +1082,8 @@ export function TargetAnalysis() {
     }
   }, [step, stats, distanceYds, bulletDiaIn]);
   useEffect(() => { if (step === 4) { setHistory(getTargetAnalyses()); setGuns(getAllGuns()); setAmmoLots(getAllAmmo()); } }, [step]);
+  // Load guns on mount so step 1 gun picker works
+  useEffect(() => { setGuns(getAllGuns()); }, []);
 
   // ── Export — share / download the pre-rendered overlay ───────────────────
   const exportOverlay = async () => {
@@ -1155,10 +1215,90 @@ export function TargetAnalysis() {
 
   // ── STEP 1: Upload + Distance + Bullet ────────────────────────────────────
   const renderStep1 = () => {
+    // History filter computation
+    const step1History = getTargetAnalyses();
+    const step1Guns = getAllGuns();
+    const hasGunFilter = step1History.some(r => r.gunId);
+    const allDists = [...new Set(step1History.map(r => r.distanceYds))];
+    const hasDistFilter = allDists.length > 1;
+    const hasCaliberFilter = step1History.some(r => {
+      if (!r.gunId) return false;
+      const g = step1Guns.find(g => g.id === r.gunId);
+      return g && g.caliber;
+    });
+    const filteredHistory = step1History.filter(r => {
+      if (histFilterGun !== 'all' && r.gunId !== histFilterGun) return false;
+      if (histFilterDist !== 'all' && String(r.distanceYds) !== histFilterDist) return false;
+      if (histFilterCaliber !== 'all') {
+        const g = r.gunId ? step1Guns.find(g => g.id === r.gunId) : null;
+        if (!g || g.caliber !== histFilterCaliber) return false;
+      }
+      return true;
+    });
+
     return (
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         {!imageUrl ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
+            {/* History section — above upload buttons */}
+            {step1History.length > 0 && (
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>History</div>
+                {/* Smart filter chips */}
+                {(hasGunFilter || hasDistFilter || hasCaliberFilter) && (
+                  <div style={{ display: 'flex', overflowX: 'auto', gap: 6, paddingBottom: 8, scrollbarWidth: 'none' }}>
+                    {hasGunFilter && (
+                      <>
+                        <button onClick={() => setHistFilterGun('all')} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${histFilterGun === 'all' ? theme.accent : theme.border}`, background: histFilterGun === 'all' ? theme.accentDim : 'transparent', color: histFilterGun === 'all' ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>All Guns</button>
+                        {step1Guns.filter(g => step1History.some(r => r.gunId === g.id)).map(g => (
+                          <button key={g.id} onClick={() => setHistFilterGun(histFilterGun === g.id ? 'all' : g.id)} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${histFilterGun === g.id ? theme.accent : theme.border}`, background: histFilterGun === g.id ? theme.accentDim : 'transparent', color: histFilterGun === g.id ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>{g.displayName || `${g.make} ${g.model}`}</button>
+                        ))}
+                      </>
+                    )}
+                    {hasDistFilter && allDists.sort((a,b)=>a-b).map(d => (
+                      <button key={d} onClick={() => setHistFilterDist(histFilterDist === String(d) ? 'all' : String(d))} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${histFilterDist === String(d) ? theme.accent : theme.border}`, background: histFilterDist === String(d) ? theme.accentDim : 'transparent', color: histFilterDist === String(d) ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>{d}yd</button>
+                    ))}
+                    {hasCaliberFilter && (() => {
+                      const calibers = [...new Set(step1History.map(r => { const g = r.gunId ? step1Guns.find(g => g.id === r.gunId) : null; return g?.caliber; }).filter(Boolean))] as string[];
+                      return calibers.map(cal => (
+                        <button key={cal} onClick={() => setHistFilterCaliber(histFilterCaliber === cal ? 'all' : cal)} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${histFilterCaliber === cal ? theme.accent : theme.border}`, background: histFilterCaliber === cal ? theme.accentDim : 'transparent', color: histFilterCaliber === cal ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>{cal}</button>
+                      ));
+                    })()}
+                  </div>
+                )}
+                {/* History cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto', scrollbarWidth: 'none' }}>
+                  {filteredHistory.length === 0 && (
+                    <span style={{ fontSize: 12, color: theme.textMuted }}>No matching analyses.</span>
+                  )}
+                  {filteredHistory.map(record => {
+                    const gun = record.gunId ? step1Guns.find(g => g.id === record.gunId) : null;
+                    const dateStr = new Date(record.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    return (
+                      <button key={record.id} onClick={() => setSelectedHistoryRecord(record)} style={{ textAlign: 'left', background: theme.surface, borderRadius: 10, padding: '9px 12px', border: `1px solid ${theme.border}`, cursor: 'pointer', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: theme.textPrimary }}>{dateStr}</span>
+                            <span style={{ fontSize: 11, color: theme.textMuted }}>•</span>
+                            <span style={{ fontSize: 11, color: theme.textSecondary }}>{record.distanceYds}yd</span>
+                            {gun && <><span style={{ fontSize: 11, color: theme.textMuted }}>•</span><span style={{ fontSize: 11, color: theme.accent }}>{gun.displayName || `${gun.make} ${gun.model}`}</span></>}
+                          </div>
+                          <span style={{ fontSize: 10, color: theme.textMuted }}>›</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                          <span style={{ fontSize: 11, color: theme.textSecondary, fontFamily: 'monospace' }}>{record.stats.shotCount} shots</span>
+                          <span style={{ fontSize: 11, color: theme.textSecondary, fontFamily: 'monospace' }}>ES {record.stats.extremeSpreadMoa.toFixed(2)} MOA</span>
+                          <span style={{ fontSize: 11, color: theme.textSecondary, fontFamily: 'monospace' }}>CEP {record.stats.cepIn.toFixed(2)}"</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {step1History.length === 0 && (
+              <div style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center', paddingBottom: 4 }}>Your analyses will appear here.</div>
+            )}
             <div style={{ textAlign: 'center', marginBottom: 8 }}>
               <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 10 }}>🎯</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>Target Analysis</div>
@@ -1274,7 +1414,7 @@ export function TargetAnalysis() {
           <span style={{ fontSize: 12, color: awaitingCalledShot ? theme.accent : calibBannerMsg ? '#4caf50' : theme.textPrimary, fontWeight: awaitingCalledShot || calibBannerMsg ? 700 : 500, flex: 1 }}>{instruction}</span>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             {awaitingCalledShot && (
-              <button onClick={() => { setAwaitingCalledShot(false); goToResultsInner(); }} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Skip</button>
+              <button onClick={() => { setAwaitingCalledShot(false); goToResultsInnerRef.current(); }} style={{ padding: '5px 10px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Skip</button>
             )}
             {!awaitingCalledShot && scale > 1 && <button onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, cursor: 'pointer' }}>Reset Zoom</button>}
             {!awaitingCalledShot && (markMode === 'poa' || markMode === 'shots') && <button onClick={resetCalibration} style={{ padding: '5px 9px', borderRadius: 7, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 11, cursor: 'pointer' }}>Recal.</button>}
@@ -1319,7 +1459,7 @@ export function TargetAnalysis() {
         </div>
 
         {/* Shot sequence timeline strip */}
-        {markMode === 'shots' && marks.length >= 3 && (() => {
+        {taOptions.shotTimeline && markMode === 'shots' && marks.length >= 3 && (() => {
           const shots = marks.slice(1);
           const meanX = shots.reduce((a, s) => a + s.x, 0) / shots.length;
           const meanY = shots.reduce((a, s) => a + s.y, 0) / shots.length;
@@ -1339,6 +1479,14 @@ export function TargetAnalysis() {
                     </div>
                   );
                 })}
+              </div>
+              <div style={{ display: 'flex', gap: 10, padding: '2px 12px 4px', flexShrink: 0 }}>
+                {([['#4caf50','Within 1 SD'], ['#ffd43b','1–2 SD'], ['#ef5350','>2 SD']] as [string,string][]).map(([color, label]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'monospace' }}>{label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           );
@@ -1390,7 +1538,7 @@ export function TargetAnalysis() {
             </div>
             <div style={{ display: 'flex', gap: 10, padding: 12, flexShrink: 0 }}>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: 12, borderRadius: 10, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬇ Export</button>
+              <button onClick={exportOverlay} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
             </div>
           </div>
         ) : (
@@ -1414,20 +1562,6 @@ export function TargetAnalysis() {
               </div>
             )}
 
-            {/* 8H — Ammo lot picker */}
-            {ammoLots.length > 0 && (
-              <div style={{ background: theme.surface, borderRadius: 12, padding: '10px 14px', border: `1px solid ${theme.border}` }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Link Ammo</div>
-                <div style={{ display: 'flex', overflowX: 'auto', gap: 6, paddingBottom: 2, scrollbarWidth: 'none' }}>
-                  <button onClick={() => linkAmmoLot(null)} style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 20, border: `1px solid ${!linkedAmmoLotId ? theme.accent : theme.border}`, background: !linkedAmmoLotId ? theme.accentDim : 'transparent', color: !linkedAmmoLotId ? theme.accent : theme.textMuted, fontSize: 11, cursor: 'pointer' }}>None</button>
-                  {ammoLots.map(lot => (
-                    <button key={lot.id} onClick={() => linkAmmoLot(lot.id)} style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 20, border: `1px solid ${linkedAmmoLotId === lot.id ? theme.accent : theme.border}`, background: linkedAmmoLotId === lot.id ? theme.accentDim : 'transparent', color: linkedAmmoLotId === lot.id ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>
-                      {lot.brand} {lot.grainWeight}gr {lot.bulletType}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* 8J — Environmental conditions */}
             <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
@@ -1472,7 +1606,11 @@ export function TargetAnalysis() {
               <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</div>
               <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} primary />
               <StatRow label="CEP"            val={`${stats.cepIn.toFixed(3)}"`}            moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
-              <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}     moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} primary />
+              {taOptions.cepRing && (
+                <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', paddingBottom: 6, paddingLeft: 2 }}>
+                  ↑ ring on canvas surrounds 50% of shots — shrinks as group tightens
+                </div>
+              )}
             </div>
             {/* SECONDARY — POA Offset */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
@@ -1531,6 +1669,7 @@ export function TargetAnalysis() {
                   <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}     moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
                   <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}   moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
                   <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`} moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Mean Radius"   val={`${stats.meanRadiusIn.toFixed(3)}"`}   moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
                   <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
                   <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
                 </div>
@@ -1539,7 +1678,7 @@ export function TargetAnalysis() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: 13, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬇ Export</button>
+              <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
             </div>
 
             {/* GROUP TREND SPARKLINE */}
@@ -1636,6 +1775,38 @@ export function TargetAnalysis() {
               </div>
             )}
 
+            {/* 8H — Ammo lot picker (moved to bottom) */}
+            {ammoLots.length > 0 && (() => {
+              const recentLots = [...ammoLots].slice(0, 2);
+              const searchLower = ammoSearch.toLowerCase();
+              const searchResults = ammoSearch ? ammoLots.filter(l => `${l.brand} ${l.grainWeight} ${l.bulletType}`.toLowerCase().includes(searchLower)).slice(0, 4) : [];
+              return (
+                <div style={{ background: theme.surface, borderRadius: 12, padding: '10px 14px', border: `1px solid ${theme.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Link Ammo</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                    <button onClick={() => linkAmmoLot(null)} style={{ padding: '4px 10px', borderRadius: 20, border: `1px solid ${!linkedAmmoLotId ? theme.accent : theme.border}`, background: !linkedAmmoLotId ? theme.accentDim : 'transparent', color: !linkedAmmoLotId ? theme.accent : theme.textMuted, fontSize: 11, cursor: 'pointer' }}>None</button>
+                    {recentLots.map(lot => (
+                      <button key={lot.id} onClick={() => linkAmmoLot(lot.id)} style={{ padding: '4px 10px', borderRadius: 20, border: `1px solid ${linkedAmmoLotId === lot.id ? theme.accent : theme.border}`, background: linkedAmmoLotId === lot.id ? theme.accentDim : 'transparent', color: linkedAmmoLotId === lot.id ? theme.accent : theme.textSecondary, fontSize: 11, cursor: 'pointer' }}>
+                        {lot.brand} {lot.grainWeight}gr {lot.bulletType}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input type="text" placeholder="Search ammo lots..." value={ammoSearch} onChange={e => setAmmoSearch(e.target.value)} style={{ width: '100%', padding: '7px 12px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 12, boxSizing: 'border-box' }} />
+                    {searchResults.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: theme.surfaceAlt, border: `1px solid ${theme.border}`, borderRadius: 8, zIndex: 10, overflow: 'hidden', marginTop: 2 }}>
+                        {searchResults.map(lot => (
+                          <button key={lot.id} onClick={() => { linkAmmoLot(lot.id); setAmmoSearch(''); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: linkedAmmoLotId === lot.id ? theme.accentDim : 'transparent', border: 'none', borderBottom: `1px solid ${theme.border}`, color: linkedAmmoLotId === lot.id ? theme.accent : theme.textPrimary, fontSize: 12, cursor: 'pointer' }}>
+                            {lot.brand} {lot.grainWeight}gr {lot.bulletType}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             <button onClick={resetAll} style={{ padding: 11, borderRadius: 12, background: 'transparent', color: theme.textMuted, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>+ NEW TARGET</button>
 
             {history.length > 0 && (
@@ -1697,6 +1868,34 @@ export function TargetAnalysis() {
               </div>
             );
           })}
+          <button onClick={() => setShowOptions(v => !v)} style={{ flexShrink: 0, marginLeft: 6, padding: '4px 7px', borderRadius: 8, background: showOptions ? theme.accentDim : 'transparent', border: `1px solid ${showOptions ? theme.accent : theme.border}`, color: showOptions ? theme.accent : theme.textMuted, fontSize: 14, cursor: 'pointer', lineHeight: 1 }}>⚙</button>
+        </div>
+      )}
+      {/* Options overlay */}
+      {showOptions && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowOptions(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: theme.surface, borderTop: `1px solid ${theme.border}`, borderRadius: '16px 16px 0 0', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: theme.textMuted, letterSpacing: '1px', textTransform: 'uppercase' }}>Analysis Options</span>
+              <button onClick={() => setShowOptions(false)} style={{ background: 'transparent', border: 'none', color: theme.textMuted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            {([
+              { key: 'calledShot' as const, label: 'Called Shot', desc: 'Log where you called your shot before revealing stats' },
+              { key: 'shotTimeline' as const, label: 'Shot Timeline', desc: 'Show shot sequence strip below canvas' },
+              { key: 'cepRing' as const, label: 'CEP Ring', desc: 'Show 50% probability ring on canvas' },
+              { key: 'autoLinkGun' as const, label: 'Auto-link Gun', desc: 'Remember last selected gun' },
+            ]).map(({ key, label, desc }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, color: theme.textPrimary, fontWeight: 600 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{desc}</div>
+                </div>
+                <button onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 3, left: taOptions[key] ? 26 : 3, width: 22, height: 22, borderRadius: '50%', background: taOptions[key] ? '#000' : theme.textMuted, transition: 'left 0.2s' }} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {!showCrop && <div style={{ flex: 1, overflowY: step === 3 || (step === 4 && resultTab === 'overlay') ? 'hidden' : 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -1705,6 +1904,44 @@ export function TargetAnalysis() {
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
       </div>}
+      {/* History record detail modal */}
+      {selectedHistoryRecord && (() => {
+        const rec = selectedHistoryRecord;
+        const recGun = rec.gunId ? getAllGuns().find(g => g.id === rec.gunId) : null;
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedHistoryRecord(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: theme.surface, borderRadius: '16px 16px 0 0', maxHeight: '80vh', overflowY: 'auto', padding: '16px 20px 40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: theme.textPrimary }}>{new Date(rec.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div style={{ fontSize: 12, color: theme.textMuted }}>{rec.distanceYds}yd  •  {rec.stats.shotCount} shots{recGun ? `  •  ${recGun.displayName || `${recGun.make} ${recGun.model}`}` : ''}</div>
+                </div>
+                <button onClick={() => setSelectedHistoryRecord(null)} style={{ background: 'transparent', border: 'none', color: theme.textMuted, fontSize: 20, cursor: 'pointer' }}>✕</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {([
+                  ['Extreme Spread', `${rec.stats.extremeSpreadIn.toFixed(3)}"`, `${rec.stats.extremeSpreadMoa.toFixed(2)} MOA`],
+                  ['CEP', `${rec.stats.cepIn.toFixed(3)}"`, `${rec.stats.cepMoa.toFixed(2)} MOA`],
+                  ['Mean Radius', `${rec.stats.meanRadiusIn.toFixed(3)}"`, `${rec.stats.meanRadiusMoa.toFixed(2)} MOA`],
+                  ['Windage', `${rec.stats.windageIn >= 0 ? 'RIGHT' : 'LEFT'} ${Math.abs(rec.stats.windageIn).toFixed(3)}"`, `${rec.stats.windageMoa.toFixed(2)} MOA`],
+                  ['Elevation', `${rec.stats.elevationIn >= 0 ? 'UP' : 'DOWN'} ${Math.abs(rec.stats.elevationIn).toFixed(3)}"`, `${rec.stats.elevationMoa.toFixed(2)} MOA`],
+                  ['Radial SD', `${rec.stats.radialSdIn.toFixed(3)}"`, `${rec.stats.radialSdMoa.toFixed(2)} MOA`],
+                  ['Vertical SD', `${rec.stats.verticalSdIn.toFixed(3)}"`, `${rec.stats.verticalSdMoa.toFixed(2)} MOA`],
+                  ['Horizontal SD', `${rec.stats.horizontalSdIn.toFixed(3)}"`, `${rec.stats.horizontalSdMoa.toFixed(2)} MOA`],
+                ] as [string, string, string][]).map(([label, val, moa]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${theme.border}` }}>
+                    <span style={{ fontSize: 13, color: theme.textSecondary }}>{label}</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{val}</div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace' }}>{moa}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

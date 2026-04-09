@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
-import { exportVaultBackup, importVaultBackup, resetAllData } from './storage';
+import { exportVaultBackup, importVaultBackup, resetAllData, getAllGuns } from './storage';
 import { deleteAccountData } from './lib/sync';
 import { useAuth } from './auth/AuthProvider';
 import { supabase } from './lib/supabase';
@@ -28,7 +28,6 @@ export interface AppSettings {
   showCollectionValue: boolean;
   showShooterProfile: boolean;
   showRangeInsights: boolean;
-  statsPeriodDays: 30 | 90 | 365;
   // AI
   aiResponseStyle: 'brief' | 'detailed';
   proactiveInsights: boolean;
@@ -50,7 +49,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   showCollectionValue: true,
   showShooterProfile: true,
   showRangeInsights: true,
-  statsPeriodDays: 90,
   aiResponseStyle: 'brief',
   proactiveInsights: false,
 };
@@ -229,6 +227,7 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('gunvault_claude_key') || '');
+  const [showExportSheet, setShowExportSheet] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -301,6 +300,38 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
     setClaudeKey(key);
     if (key.trim()) localStorage.setItem('gunvault_claude_key', key.trim());
     else localStorage.removeItem('gunvault_claude_key');
+  }
+
+  function exportGunsCSV() {
+    const guns = getAllGuns();
+    const headers = ['Make', 'Model', 'Caliber', 'Serial Number', 'Acquired Date', 'Acquired Price', 'Condition', 'Status', 'Round Count', 'Notes'];
+    const escapeCSV = (val: string | number | undefined | null) => {
+      if (val == null) return '';
+      const s = String(val);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const rows = guns.map(g => [
+      escapeCSV(g.make),
+      escapeCSV(g.model),
+      escapeCSV(g.caliber),
+      escapeCSV(g.serialNumber),
+      escapeCSV(g.acquiredDate),
+      escapeCSV(g.acquiredPrice),
+      escapeCSV(g.condition),
+      escapeCSV(g.status),
+      escapeCSV(g.roundCount),
+      escapeCSV(g.notes),
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lindcott-armory-guns-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportSheet(false);
   }
 
   const btnBase: React.CSSProperties = {
@@ -498,15 +529,6 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
           <ToggleRow label="Show collection value" sub="Estimated market value in the vault header" value={settings.showCollectionValue} onChange={v => update({ showCollectionValue: v })} />
           <ToggleRow label="Show shooter profile" sub="Persona, skills, and milestones card" value={settings.showShooterProfile} onChange={v => update({ showShooterProfile: v })} />
           <ToggleRow label="Show range insights" sub="Recent activity stats and trends" value={settings.showRangeInsights} onChange={v => update({ showRangeInsights: v })} />
-
-          <div style={{ marginTop: '4px' }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '6px' }}>Stats period</div>
-            <SegmentedControl
-              options={[{ key: 30, label: '30 days' }, { key: 90, label: '90 days' }, { key: 365, label: '1 year' }] as { key: 30 | 90 | 365; label: string }[]}
-              value={settings.statsPeriodDays}
-              onChange={v => update({ statsPeriodDays: v })}
-            />
-          </div>
         </Section>
 
         {/* ── AI ASSISTANT ── */}
@@ -540,9 +562,42 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
 
         {/* ── DATA & BACKUP ── */}
         <Section id="data" label="Data & Backup" open={openSections.has('data')} onToggle={toggleSection}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-            <button onClick={exportVaultBackup} style={btnBase}>EXPORT BACKUP</button>
-            <button onClick={() => fileInputRef.current?.click()} style={btnBase}>RESTORE BACKUP</button>
+          <div style={{ position: 'relative', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowExportSheet(v => !v)}
+                style={btnBase}
+              >
+                EXPORT BACKUP
+              </button>
+              <button onClick={() => fileInputRef.current?.click()} style={btnBase}>RESTORE BACKUP</button>
+            </div>
+            {showExportSheet && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 10,
+                backgroundColor: theme.surface, border: '0.5px solid ' + theme.border,
+                borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', borderBottom: '0.5px solid ' + theme.border }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted }}>EXPORT FORMAT</span>
+                  <button onClick={() => setShowExportSheet(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontFamily: 'monospace', fontSize: '16px', lineHeight: 1, padding: '2px' }}>×</button>
+                </div>
+                <button
+                  onClick={() => { exportVaultBackup(); setShowExportSheet(false); }}
+                  style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', padding: '12px', background: 'none', border: 'none', borderBottom: '0.5px solid ' + theme.border, cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>JSON</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>Full backup, restoreable</span>
+                </button>
+                <button
+                  onClick={exportGunsCSV}
+                  style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', padding: '12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>CSV</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>Spreadsheet-friendly (guns only)</span>
+                </button>
+              </div>
+            )}
           </div>
           <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
           {restoreMsg && (
@@ -562,8 +617,8 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
           </div>
         </Section>
 
-        {/* ── DANGER ZONE ── */}
-        <Section id="danger" label="Danger Zone" open={openSections.has('danger')} onToggle={toggleSection}>
+        {/* ── DELETE ACCOUNT ── */}
+        <Section id="danger" label="Delete Account" open={openSections.has('danger')} onToggle={toggleSection}>
           {deleteStep === 0 && (
             <button
               onClick={() => setDeleteStep(1)}
@@ -654,8 +709,24 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
           </div>
         )}
 
+        {/* ── Legal buttons ── */}
+        <div style={{ padding: '16px 20px', display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => { onClose(); onNavigateToLegal(); }}
+            style={{ ...btnBase, flex: 1 }}
+          >
+            TERMS OF SERVICE
+          </button>
+          <button
+            onClick={() => { onClose(); onNavigateToLegal(); }}
+            style={{ ...btnBase, flex: 1 }}
+          >
+            PRIVACY POLICY
+          </button>
+        </div>
+
         {/* ── Footer ── */}
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+        <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={onFeedbackOpen}
             style={{
@@ -672,12 +743,6 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
             SEND FEEDBACK
           </button>
           <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>LINDCOTT ARMORY v1.0</div>
-          <button
-            onClick={() => { onClose(); onNavigateToLegal(); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.5px', color: theme.textMuted, textDecoration: 'underline', padding: '2px 4px' }}
-          >
-            Terms of Service · Privacy Policy
-          </button>
         </div>
 
       </div>

@@ -4,7 +4,7 @@ import { theme } from './theme';
 import type { Gun, SessionPurpose, IssueType, TargetPhoto, SessionString } from './types';
 import {
   logSession, updateSession, getAllGuns, getAllSessions,
-  getAmmoByCaliber, updateAmmo, getRecentLocations, getAllLocations,
+  getAmmoByCaliber, updateAmmo,
 } from './storage';
 import { generateSessionNarrative, hasClaudeApiKey, analyzeTargetPhoto } from './claudeApi';
 import { haptic } from './haptic';
@@ -37,6 +37,18 @@ function getDistancesForGun(gun: Gun | null): number[] {
 
 function generateStringId() {
   return `${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+}
+
+function fuzzyMatch(query: string, target: string): boolean {
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+  if (t.includes(q)) return true;
+  // Check if all chars of query appear in order in target
+  let qi = 0;
+  for (let i = 0; i < t.length && qi < q.length; i++) {
+    if (t[i] === q[qi]) qi++;
+  }
+  return qi === q.length;
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
@@ -516,8 +528,6 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
 export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLogViewProps) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const recentLocations = getRecentLocations();
-  const allLocations = getAllLocations();
   const _allSessions = getAllSessions().sort((a, b) => b.date.localeCompare(a.date));
   const recentGunIds = [...new Set(_allSessions.map(s => s.gunId))];
   const allGuns = getAllGuns()
@@ -531,9 +541,28 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
       return ai - bi;
     });
 
+  // Derive location data from sessions
+  const allPriorLocations = [...new Set(
+    _allSessions.map(s => s.location).filter((l): l is string => !!l && l.trim().length > 0)
+  )];
+  const last3Locations = (() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const s of _allSessions) {
+      if (s.location && s.location.trim() && !seen.has(s.location)) {
+        seen.add(s.location);
+        result.push(s.location);
+        if (result.length === 3) break;
+      }
+    }
+    return result;
+  })();
+
   // Session header state
   const [date, setDate] = useState(today);
-  const [location, setLocation] = useState(recentLocations[0] || '');
+  const [location, setLocation] = useState(last3Locations[0] || '');
+  const [locationSearch, setLocationSearch] = useState('');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [indoorOutdoor, setIndoorOutdoor] = useState<'Indoor' | 'Outdoor'>('Outdoor');
   const [purposes, setPurposes] = useState<SessionPurpose[]>([]);
   const [notes, setNotes] = useState('');
@@ -568,6 +597,8 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
   const [saving, setSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showPhotoActionSheet, setShowPhotoActionSheet] = useState(false);
 
   // If preselected gun, open the string picker right away (once)
   if (openPickerForPreselected && !pickerOpenedOnce && !showStringPicker) {
@@ -796,23 +827,29 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
         {/* Location */}
         <div style={{ position: 'relative' }}>
           <span style={labelStyle}>Location</span>
-          {/* Recent chips — tap to fill input */}
-          {recentLocations.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-              {recentLocations.map(loc => (
+          {/* Last 3 location chips */}
+          {last3Locations.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', marginBottom: '8px' }}>
+              {last3Locations.map(loc => (
                 <button
                   key={loc}
-                  onClick={() => setLocation(location === loc ? '' : loc)}
+                  onClick={() => {
+                    setLocation(loc === location ? '' : loc);
+                    setLocationSearch('');
+                    setShowLocationDropdown(false);
+                  }}
                   style={{
                     padding: '5px 10px',
-                    backgroundColor: location === loc ? theme.accent : theme.surface,
-                    color: location === loc ? theme.bg : theme.textMuted,
+                    backgroundColor: location === loc ? 'transparent' : 'transparent',
+                    color: location === loc ? theme.accent : theme.textMuted,
                     border: '0.5px solid ' + (location === loc ? theme.accent : theme.border),
                     borderRadius: '4px',
                     fontFamily: 'monospace',
                     fontSize: '10px',
                     cursor: 'pointer',
                     fontWeight: location === loc ? 700 : 400,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   {loc}
@@ -820,21 +857,71 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               ))}
             </div>
           )}
-          {/* Always-visible input with autocomplete */}
+          {/* Fuzzy search input */}
           <input
             type="text"
             inputMode="text"
-            placeholder="Type or select a location..."
-            value={location}
-            onChange={e => setLocation(e.target.value)}
+            placeholder="Search or add location..."
+            value={locationSearch}
+            onChange={e => {
+              const val = e.target.value;
+              setLocationSearch(val);
+              setLocation(val);
+              setShowLocationDropdown(val.length > 0);
+            }}
+            onFocus={() => {
+              if (locationSearch.length > 0) setShowLocationDropdown(true);
+            }}
+            onBlur={() => {
+              // Delay so click on dropdown item registers
+              setTimeout(() => setShowLocationDropdown(false), 150);
+            }}
             style={inputStyle}
-            list="location-suggestions"
           />
-          <datalist id="location-suggestions">
-            {allLocations.map(loc => (
-              <option key={loc} value={loc} />
-            ))}
-          </datalist>
+          {/* Fuzzy dropdown */}
+          {showLocationDropdown && (() => {
+            const filtered = allPriorLocations
+              .filter(loc => fuzzyMatch(locationSearch, loc))
+              .slice(0, 6);
+            return filtered.length > 0 ? (
+              <div style={{
+                position: 'absolute',
+                left: 0, right: 0,
+                backgroundColor: theme.surface,
+                border: `0.5px solid ${theme.border}`,
+                borderRadius: '6px',
+                zIndex: 50,
+                marginTop: '2px',
+                overflow: 'hidden',
+              }}>
+                {filtered.map(loc => (
+                  <button
+                    key={loc}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      setLocation(loc);
+                      setLocationSearch('');
+                      setShowLocationDropdown(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: `0.5px solid ${theme.border}`,
+                      color: theme.textPrimary,
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {loc}
+                  </button>
+                ))}
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {/* Indoor / Outdoor */}
@@ -966,7 +1053,7 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
             }}
           >
             <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
-            {strings.length === 0 ? 'ADD YOUR FIRST STRING' : 'ADD ANOTHER STRING'}
+            {strings.length === 0 ? '+ Add First Gun & Distance' : '+ Add Another Gun'}
           </button>
 
           {/* Running totals */}
@@ -1068,16 +1155,25 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
             </div>
           ))}
 
+          {/* Hidden camera input */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="camera"
+            onChange={handlePhotoCapture}
+            style={{ display: 'none' }}
+          />
+          {/* Hidden upload input */}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handlePhotoCapture}
             style={{ display: 'none' }}
           />
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowPhotoActionSheet(true)}
             style={{
               width: '100%',
               padding: '12px',
@@ -1101,6 +1197,81 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
             </svg>
             ANALYZE TARGET
           </button>
+
+          {/* Photo action sheet */}
+          {showPhotoActionSheet && (
+            <div
+              style={{
+                position: 'fixed', inset: 0, zIndex: 200,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              }}
+              onClick={() => setShowPhotoActionSheet(false)}
+            >
+              <div
+                style={{
+                  backgroundColor: theme.surface,
+                  borderRadius: '12px 12px 0 0',
+                  padding: '16px',
+                  maxWidth: '480px',
+                  margin: '0 auto',
+                  width: '100%',
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{
+                  fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px',
+                  color: theme.textMuted, textTransform: 'uppercase',
+                  textAlign: 'center', marginBottom: '14px',
+                }}>
+                  Add Target Photo
+                </div>
+                <button
+                  onClick={() => { setShowPhotoActionSheet(false); cameraInputRef.current?.click(); }}
+                  style={{
+                    width: '100%', padding: '14px',
+                    backgroundColor: 'transparent',
+                    border: `0.5px solid ${theme.border}`,
+                    borderRadius: '8px',
+                    color: theme.textPrimary,
+                    fontFamily: 'monospace', fontSize: '13px',
+                    cursor: 'pointer', marginBottom: '8px',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>📷</span> Take Photo
+                </button>
+                <button
+                  onClick={() => { setShowPhotoActionSheet(false); fileInputRef.current?.click(); }}
+                  style={{
+                    width: '100%', padding: '14px',
+                    backgroundColor: 'transparent',
+                    border: `0.5px solid ${theme.border}`,
+                    borderRadius: '8px',
+                    color: theme.textPrimary,
+                    fontFamily: 'monospace', fontSize: '13px',
+                    cursor: 'pointer', marginBottom: '8px',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>🖼</span> Upload Photo
+                </button>
+                <button
+                  onClick={() => setShowPhotoActionSheet(false)}
+                  style={{
+                    width: '100%', padding: '12px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: theme.textMuted,
+                    fontFamily: 'monospace', fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Save / Cancel */}
