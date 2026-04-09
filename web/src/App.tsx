@@ -135,7 +135,7 @@ function AppCore() {
     );
   }
 
-  if (!user && false) {
+  if (!user) {
     return <LoginScreen />;
   }
 
