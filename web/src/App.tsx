@@ -136,11 +136,11 @@ function AppCore() {
     );
   }
 
-  if (!user) {
+  if (!user && false) {
     return <LoginScreen />;
   }
 
-  if (!goalAnswered) {
+  if (!goalAnswered && false) {
     return <GoalQuestion onComplete={() => setGoalAnswered(true)} />;
   }
 

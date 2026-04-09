@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { theme } from './theme';
-import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns, getActiveAssignmentForGun, getOpticById } from './storage';
+import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from './storage';
 import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
@@ -1401,6 +1401,52 @@ export function TargetAnalysis() {
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: 13, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
               <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬇ Export</button>
             </div>
+
+            {/* GROUP TREND SPARKLINE */}
+            {(() => {
+              if (!selectedGunId) return null;
+              const gun = guns.find(g => g.id === selectedGunId);
+              const prior = getAnalysesForGun(selectedGunId).sort((a, b) => a.date.localeCompare(b.date));
+              // Include current session as the latest point
+              const allPoints = [...prior.map(a => ({ moa: a.stats.extremeSpreadMoa, current: false })), { moa: stats.extremeSpreadMoa, current: true }];
+              if (allPoints.length < 3) return null;
+
+              const W = 280, H = 60, padX = 12, padY = 8;
+              const moas = allPoints.map(p => p.moa);
+              const minM = Math.min(...moas), maxM = Math.max(...moas);
+              const range = maxM - minM || 1;
+              const xStep = (W - padX * 2) / (allPoints.length - 1);
+              const toX = (i: number) => padX + i * xStep;
+              // Invert Y: lower MOA = higher on chart (better)
+              const toY = (m: number) => padY + ((maxM - m) / range) * (H - padY * 2);
+              const points = allPoints.map((p, i) => `${toX(i)},${toY(p.moa)}`).join(' ');
+
+              return (
+                <div style={{ background: theme.surface, borderRadius: 12, padding: '12px 16px', border: `1px solid ${theme.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+                    Group Trend — {gun ? `${gun.make} ${gun.model}` : 'This Gun'}
+                  </div>
+                  <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
+                    <polyline points={points} fill="none" stroke="rgba(255,212,59,0.4)" strokeWidth="1.5" strokeLinejoin="round" />
+                    {allPoints.map((p, i) => (
+                      <g key={i}>
+                        <circle cx={toX(i)} cy={toY(p.moa)} r={p.current ? 5 : 3.5}
+                          fill={p.current ? '#ffd43b' : 'rgba(255,212,59,0.5)'}
+                          stroke={p.current ? '#000' : 'none'} strokeWidth="1" />
+                        <text x={toX(i)} y={toY(p.moa) - 8} textAnchor="middle"
+                          style={{ fontSize: 8, fill: p.current ? '#ffd43b' : 'rgba(255,212,59,0.6)', fontFamily: 'monospace' }}>
+                          {p.moa.toFixed(1)}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                    <span style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'monospace' }}>OLDEST</span>
+                    <span style={{ fontSize: 9, color: theme.accent, fontFamily: 'monospace' }}>THIS SESSION ●</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {!showCoach ? (
               <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, overflow: 'hidden' }}>
