@@ -472,7 +472,10 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filtered.slice(0, 6).map(gun => ( // TEMP: screenshot — slice to 6
+          {filtered.filter(g => { // TEMP: screenshot — show specific guns only
+            const n = `${g.make} ${g.model}`.toLowerCase();
+            return n.includes('glock 19') || n.includes('howa 1500') || n.includes('benelli m2') || n.includes('springfield m1a') || n.includes('aero ar');
+          }).map(gun => (
             <GunListRow
               key={gun.id}
               gun={gun}
