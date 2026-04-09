@@ -33,6 +33,10 @@ async function callClaude(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
+    if (res.status === 429 || err.error === 'budget_exceeded') {
+      window.dispatchEvent(new CustomEvent('ai_budget_exceeded'));
+      throw new Error('BUDGET_EXCEEDED');
+    }
     throw new Error(err.error ?? `AI error ${res.status}`);
   }
 

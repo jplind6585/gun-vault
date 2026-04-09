@@ -191,9 +191,12 @@ function PrivacyContent() {
       <h2 style={heading2}>4. AI Assistant</h2>
       <p style={body}>
         When you use the AI Assistant, your query is sent to Anthropic, Inc.
-        (anthropic.com) for processing. Queries are not stored by us beyond the
-        session. Anthropic's privacy policy applies to query processing.
-        Do not include personally identifying information in AI queries.
+        (anthropic.com) for processing. Query content is not stored beyond the
+        session. We record aggregate usage counts (number of AI calls and token
+        consumption) on our servers solely to enforce monthly usage limits and
+        administer Pro subscriptions. Anthropic's privacy policy applies to
+        query processing. Do not include personally identifying information in
+        AI queries.
       </p>
 
       <h2 style={heading2}>5. Sensitive Data</h2>

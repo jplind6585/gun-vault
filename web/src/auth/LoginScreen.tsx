@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { theme } from '../theme';
 
-type Step = 'menu' | 'email' | 'sent';
+type Step = 'menu' | 'email' | 'sent' | 'signup';
 
 function AppleLogo() {
   return (
@@ -26,6 +26,9 @@ function GoogleLogo() {
 export function LoginScreen() {
   const [step, setStep] = useState<Step>('menu');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState<string | null>(null); // which button is loading
   const [error, setError] = useState('');
 
@@ -61,12 +64,65 @@ export function LoginScreen() {
     if (err) { setError(err.message); } else { setStep('sent'); }
   }
 
+  async function handlePasswordSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    if (!password) {
+      // Fall through to magic link
+      return handleEmail(e);
+    }
+
+    setLoading('email');
+    setError('');
+    const { error: err } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setLoading(null);
+    if (err) {
+      setError(err.message);
+    }
+    // On success: AuthProvider sets user, App.tsx re-renders — no further action needed
+  }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordError('');
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    setLoading('email');
+    setError('');
+    const { error: err } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setLoading(null);
+    if (err) { setError(err.message); } else { setStep('sent'); }
+  }
+
   const dividerStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0',
   };
 
   const dividerLine: React.CSSProperties = {
     flex: 1, height: '0.5px', backgroundColor: theme.border,
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '12px 14px',
+    backgroundColor: theme.surface,
+    border: `0.5px solid ${theme.border}`,
+    borderRadius: '6px',
+    color: theme.textPrimary, fontFamily: 'monospace',
+    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
   };
 
   const oauthBtn = (label: string, provider: 'google' | 'apple', Icon: React.FC, dark?: boolean): React.ReactElement => (
@@ -167,10 +223,10 @@ export function LoginScreen() {
 
         {/* ── EMAIL FORM ── */}
         {step === 'email' && (
-          <form onSubmit={handleEmail}>
+          <form onSubmit={handlePasswordSignIn}>
             <button
               type="button"
-              onClick={() => { setStep('menu'); setError(''); }}
+              onClick={() => { setStep('menu'); setError(''); setPassword(''); }}
               style={{ background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', marginBottom: '20px', letterSpacing: '0.5px', padding: 0 }}
             >
               ← Back
@@ -188,15 +244,24 @@ export function LoginScreen() {
               autoFocus
               autoCapitalize="off"
               autoCorrect="off"
-              style={{
-                width: '100%', padding: '12px 14px',
-                backgroundColor: theme.surface,
-                border: `0.5px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.textPrimary, fontFamily: 'monospace',
-                fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-              }}
+              style={inputStyle}
             />
+
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px', marginTop: '14px' }}>
+              Password
+            </div>
+
+            <input
+              type="password"
+              placeholder="Password (optional)"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+
+            <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '6px', lineHeight: 1.5 }}>
+              Leave blank to sign in with a one-time email link
+            </div>
 
             {error && (
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, marginTop: '8px' }}>
@@ -217,12 +282,98 @@ export function LoginScreen() {
                 cursor: loading || !email.trim() ? 'default' : 'pointer',
               }}
             >
-              {loading === 'email' ? 'SENDING...' : 'SEND SIGN-IN LINK'}
+              {loading === 'email' ? 'SIGNING IN...' : password ? 'SIGN IN' : 'SEND SIGN-IN LINK'}
             </button>
 
-            <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'center', marginTop: '16px', lineHeight: 1.6 }}>
-              No password required. We'll email you a secure sign-in link.
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => { setStep('signup'); setError(''); setPassword(''); setConfirmPassword(''); setPasswordError(''); }}
+                style={{ background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', letterSpacing: '0.3px' }}
+              >
+                New to Lindcott Armory? Create account →
+              </button>
             </div>
+          </form>
+        )}
+
+        {/* ── SIGNUP FORM ── */}
+        {step === 'signup' && (
+          <form onSubmit={handleSignUp}>
+            <button
+              type="button"
+              onClick={() => { setStep('email'); setError(''); setPassword(''); setConfirmPassword(''); setPasswordError(''); }}
+              style={{ background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', marginBottom: '20px', letterSpacing: '0.5px', padding: 0 }}
+            >
+              ← Back
+            </button>
+
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
+              Email address
+            </div>
+
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoFocus
+              autoCapitalize="off"
+              autoCorrect="off"
+              style={inputStyle}
+            />
+
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px', marginTop: '14px' }}>
+              Password
+            </div>
+
+            <input
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px', marginTop: '14px' }}>
+              Confirm password
+            </div>
+
+            <input
+              type="password"
+              placeholder="Repeat password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              style={inputStyle}
+            />
+
+            {passwordError && (
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, marginTop: '8px' }}>
+                {passwordError}
+              </div>
+            )}
+
+            {error && (
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, marginTop: '8px' }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!!loading || !email.trim() || !password}
+              style={{
+                width: '100%', marginTop: '14px', padding: '13px',
+                backgroundColor: loading || !email.trim() || !password ? theme.surface : theme.accent,
+                color: loading || !email.trim() || !password ? theme.textMuted : theme.bg,
+                border: 'none', borderRadius: '6px',
+                fontFamily: 'monospace', fontSize: '11px',
+                fontWeight: 700, letterSpacing: '1px',
+                cursor: loading || !email.trim() || !password ? 'default' : 'pointer',
+              }}
+            >
+              {loading === 'email' ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+            </button>
           </form>
         )}
 
@@ -248,7 +399,7 @@ export function LoginScreen() {
               <span style={{ color: theme.textSecondary }}>{email}</span>
             </div>
             <button
-              onClick={() => { setStep('menu'); setEmail(''); }}
+              onClick={() => { setStep('menu'); setEmail(''); setPassword(''); setConfirmPassword(''); }}
               style={{ marginTop: '24px', background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', letterSpacing: '0.5px' }}
             >
               Use a different method

@@ -39,6 +39,7 @@ const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.O
 const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.LegalDocs })));
 const OnboardingConversation = lazy(() => import('./OnboardingConversation').then(m => ({ default: m.OnboardingConversation })));
 const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 import { useShooterProfile } from './useShooterProfile';
 import { shouldShowOnboarding } from './profileStorage';
@@ -78,6 +79,7 @@ function AppCore() {
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
@@ -96,6 +98,13 @@ function AppCore() {
       setShowOnboarding(shouldShowOnboarding(profile.totalSessions, profile.onboardingCompleted));
     }
   }, [ready, profile]);
+
+  // Listen for global budget-exceeded event to show upgrade modal
+  useEffect(() => {
+    const handler = () => setShowUpgrade(true);
+    window.addEventListener('ai_budget_exceeded', handler);
+    return () => window.removeEventListener('ai_budget_exceeded', handler);
+  }, []);
 
   // Keyboard shortcuts — must be before any early return to satisfy rules of hooks
   useEffect(() => {
@@ -136,7 +145,7 @@ function AppCore() {
     );
   }
 
-  if (!user && false) {
+  if (!user) {
     return <LoginScreen />;
   }
 
@@ -382,6 +391,7 @@ function AppCore() {
         />
       )}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} />}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 

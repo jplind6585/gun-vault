@@ -48,25 +48,37 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  // ── Monthly usage check ──────────────────────────────────────────────────────
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { data: usageRows } = await supabase
-    .from('ai_usage')
-    .select('input_tokens, output_tokens')
+  // ── Check Pro status ─────────────────────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('is_pro, pro_expires_at')
     .eq('user_id', user.id)
-    .gte('created_at', startOfMonth.toISOString());
+    .single();
 
-  const tokensUsed = (usageRows ?? []).reduce(
-    (sum: number, row: { input_tokens: number; output_tokens: number }) =>
-      sum + row.input_tokens + row.output_tokens,
-    0
-  );
+  const isPro = profile?.is_pro === true &&
+    (!profile.pro_expires_at || new Date(profile.pro_expires_at) > new Date());
 
-  if (tokensUsed >= MONTHLY_TOKEN_BUDGET) {
-    return json({ error: 'Monthly AI usage limit reached. Resets on the 1st.' }, 429);
+  if (!isPro) {
+    // ── Monthly usage check ────────────────────────────────────────────────────
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { data: usageRows } = await supabase
+      .from('ai_usage')
+      .select('input_tokens, output_tokens')
+      .eq('user_id', user.id)
+      .gte('created_at', startOfMonth.toISOString());
+
+    const tokensUsed = (usageRows ?? []).reduce(
+      (sum: number, row: { input_tokens: number; output_tokens: number }) =>
+        sum + row.input_tokens + row.output_tokens,
+      0
+    );
+
+    if (tokensUsed >= MONTHLY_TOKEN_BUDGET) {
+      return json({ error: 'budget_exceeded', message: 'Monthly AI usage limit reached. Resets on the 1st.' }, 429);
+    }
   }
 
   // ── Parse request ────────────────────────────────────────────────────────────

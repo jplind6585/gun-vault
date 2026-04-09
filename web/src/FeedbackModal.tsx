@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { theme } from './theme';
-
-const SUPPORT_EMAIL = 'support@lindcottarmory.com';
+import { supabase } from './lib/supabase';
 
 type Category = 'bug' | 'feature' | 'general';
 
-const CATEGORIES: { key: Category; label: string; subject: string }[] = [
-  { key: 'bug',     label: 'Bug report',       subject: 'Bug Report' },
-  { key: 'feature', label: 'Feature request',  subject: 'Feature Request' },
-  { key: 'general', label: 'General feedback', subject: 'Feedback' },
+const CATEGORIES: { key: Category; label: string }[] = [
+  { key: 'bug',     label: 'Bug report' },
+  { key: 'feature', label: 'Feature request' },
+  { key: 'general', label: 'General feedback' },
 ];
 
 interface Props {
@@ -18,17 +17,34 @@ interface Props {
 export function FeedbackModal({ onClose }: Props) {
   const [category, setCategory] = useState<Category>('general');
   const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   function handleBackdrop(e: React.MouseEvent) {
     if (e.target === e.currentTarget) onClose();
   }
 
-  function handleSend() {
-    const cat = CATEGORIES.find(c => c.key === category)!;
-    const subject = encodeURIComponent(`Lindcott Armory — ${cat.subject}`);
-    const body = encodeURIComponent(message.trim());
-    window.open(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`, '_blank');
-    onClose();
+  async function handleSend() {
+    if (!message.trim()) return;
+    setSending(true);
+    setError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error: insertError } = await supabase.from('feedback').insert({
+        user_id: session?.user?.id ?? null,
+        category,
+        message: message.trim(),
+        email: session?.user?.email ?? null,
+        app_version: '1.0',
+      });
+      if (insertError) throw insertError;
+      setSent(true);
+    } catch {
+      setError('Failed to send. Please try again.');
+    } finally {
+      setSending(false);
+    }
   }
 
   const btnBase: React.CSSProperties = {
@@ -72,70 +88,106 @@ export function FeedbackModal({ onClose }: Props) {
         </div>
 
         <div style={{ padding: '20px' }}>
-          {/* Category */}
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
-            Type
-          </div>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
-            {CATEGORIES.map(c => (
+          {sent ? (
+            /* Success state */
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '32px', marginBottom: '12px' }}>✓</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textPrimary, marginBottom: '8px' }}>
+                Thanks for your feedback!
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '24px' }}>
+                Your feedback goes directly to the team.
+              </div>
               <button
-                key={c.key}
-                onClick={() => setCategory(c.key)}
+                onClick={onClose}
                 style={{
-                  ...btnBase,
-                  backgroundColor: category === c.key ? theme.accent : 'transparent',
-                  border: '0.5px solid ' + (category === c.key ? theme.accent : theme.border),
-                  color: category === c.key ? theme.bg : theme.textSecondary,
-                  fontWeight: category === c.key ? 700 : 600,
+                  width: '100%', padding: '13px',
+                  backgroundColor: theme.accent,
+                  border: '0.5px solid ' + theme.accent,
+                  borderRadius: '8px',
+                  color: theme.bg,
+                  fontFamily: 'monospace', fontSize: '12px',
+                  fontWeight: 700, letterSpacing: '1px',
+                  cursor: 'pointer',
                 }}
               >
-                {c.label}
+                DONE
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <>
+              {/* Category */}
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
+                Type
+              </div>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c.key}
+                    onClick={() => setCategory(c.key)}
+                    style={{
+                      ...btnBase,
+                      backgroundColor: category === c.key ? theme.accent : 'transparent',
+                      border: '0.5px solid ' + (category === c.key ? theme.accent : theme.border),
+                      color: category === c.key ? theme.bg : theme.textSecondary,
+                      fontWeight: category === c.key ? 700 : 600,
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* Message */}
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
-            Message
-          </div>
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            placeholder="Tell us what's on your mind..."
-            rows={5}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '12px', resize: 'none',
-              backgroundColor: theme.bg,
-              border: '0.5px solid ' + theme.border,
-              borderRadius: '6px',
-              color: theme.textPrimary,
-              fontFamily: 'monospace', fontSize: '12px',
-              lineHeight: 1.6, outline: 'none',
-              marginBottom: '8px',
-            }}
-          />
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '20px' }}>
-            Opens in your email app. Sent to {SUPPORT_EMAIL}
-          </div>
+              {/* Message */}
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
+                Message
+              </div>
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder="Tell us what's on your mind..."
+                rows={5}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '12px', resize: 'none',
+                  backgroundColor: theme.bg,
+                  border: '0.5px solid ' + theme.border,
+                  borderRadius: '6px',
+                  color: theme.textPrimary,
+                  fontFamily: 'monospace', fontSize: '12px',
+                  lineHeight: 1.6, outline: 'none',
+                  marginBottom: '8px',
+                }}
+              />
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '20px' }}>
+                Your feedback goes directly to the team.
+              </div>
 
-          {/* Send */}
-          <button
-            onClick={handleSend}
-            disabled={!message.trim()}
-            style={{
-              width: '100%', padding: '13px',
-              backgroundColor: message.trim() ? theme.accent : theme.surface,
-              border: '0.5px solid ' + (message.trim() ? theme.accent : theme.border),
-              borderRadius: '8px',
-              color: message.trim() ? theme.bg : theme.textMuted,
-              fontFamily: 'monospace', fontSize: '12px',
-              fontWeight: 700, letterSpacing: '1px',
-              cursor: message.trim() ? 'pointer' : 'default',
-            }}
-          >
-            SEND FEEDBACK
-          </button>
+              {/* Send */}
+              <button
+                onClick={handleSend}
+                disabled={sending || !message.trim()}
+                style={{
+                  width: '100%', padding: '13px',
+                  backgroundColor: (sending || !message.trim()) ? theme.surface : theme.accent,
+                  border: '0.5px solid ' + ((sending || !message.trim()) ? theme.border : theme.accent),
+                  borderRadius: '8px',
+                  color: (sending || !message.trim()) ? theme.textMuted : theme.bg,
+                  fontFamily: 'monospace', fontSize: '12px',
+                  fontWeight: 700, letterSpacing: '1px',
+                  cursor: (sending || !message.trim()) ? 'default' : 'pointer',
+                }}
+              >
+                {sending ? 'SENDING...' : 'SEND FEEDBACK'}
+              </button>
+
+              {error && (
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, marginTop: '10px', textAlign: 'center' }}>
+                  {error}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
