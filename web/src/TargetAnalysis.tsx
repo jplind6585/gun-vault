@@ -1196,6 +1196,32 @@ export function TargetAnalysis() {
           )}
         </div>
 
+        {/* Shot sequence timeline strip */}
+        {markMode === 'shots' && marks.length >= 3 && (() => {
+          const shots = marks.slice(1);
+          const meanX = shots.reduce((a, s) => a + s.x, 0) / shots.length;
+          const meanY = shots.reduce((a, s) => a + s.y, 0) / shots.length;
+          const radials = shots.map(s => Math.sqrt((s.x - meanX) ** 2 + (s.y - meanY) ** 2));
+          const meanR = radials.reduce((a, b) => a + b, 0) / radials.length;
+          const sdR = Math.sqrt(radials.map(r => (r - meanR) ** 2).reduce((a, b) => a + b, 0) / radials.length);
+          return (
+            <div style={{ flexShrink: 0, borderTop: `1px solid ${theme.border}`, background: theme.surface }}>
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Shot Sequence</div>
+              <div style={{ display: 'flex', overflowX: 'auto', gap: 6, padding: '4px 12px 8px', scrollbarWidth: 'none' }}>
+                {shots.map((_, i) => {
+                  const r = radials[i];
+                  const color = r <= sdR ? '#4caf50' : r <= 2 * sdR ? '#ffd43b' : '#ff5252';
+                  return (
+                    <div key={i} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: r <= sdR ? '#fff' : '#000' }}>
+                      {i + 1}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <button onClick={() => setStep(2)} style={{ margin: 10, padding: 11, borderRadius: 10, flexShrink: 0, background: theme.surface, color: theme.textSecondary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>
           ← Back to Scale
         </button>
