@@ -6,7 +6,7 @@ import type { ShooterProfile } from './shooterProfile';
 import { inferProfileFromVault, evaluateCheckInTrigger } from './profileInference';
 import type { CheckInTrigger } from './profileInference';
 import { getStoredProfile, saveProfile } from './profileStorage';
-import { getAllGuns, getAllSessions, getAllAmmoLots } from './storage';
+import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
 
 interface UseShooterProfileResult {
   profile: ShooterProfile | null;
@@ -21,7 +21,7 @@ export function useShooterProfile(): UseShooterProfileResult {
   const refresh = useCallback(() => {
     const guns = getAllGuns();
     const sessions = getAllSessions();
-    const ammoLots = getAllAmmoLots();
+    const ammoLots = getAllAmmo();
     const existing = getStoredProfile();
 
     const updated = inferProfileFromVault(guns, sessions, ammoLots, existing);

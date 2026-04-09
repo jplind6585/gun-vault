@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { theme } from './theme';
 import { callOnboardingAssistant, extractOnboardingGoals, buildFullContext } from './claudeApi';
-import { getAllGuns, getAllSessions, getAllAmmoLots } from './storage';
+import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
 import { getStoredProfile, saveProfile, dismissOnboarding } from './profileStorage';
 import type { ShooterGoal } from './shooterProfile';
 
@@ -60,7 +60,7 @@ export function OnboardingConversation({ onComplete, onDismiss }: Props) {
   useEffect(() => {
     const guns = getAllGuns();
     const sessions = getAllSessions();
-    const ammo = getAllAmmoLots();
+    const ammo = getAllAmmo();
     const profile = getStoredProfile();
     setVaultContext(buildFullContext(guns, sessions, ammo, profile));
   }, []);

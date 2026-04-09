@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import { callArmoryAssistant, buildFullContext } from './claudeApi';
-import { getAllGuns, getAllSessions, getAllAmmoLots } from './storage';
+import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
 import { useShooterProfile } from './useShooterProfile';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ export function ArmoryAssistant() {
   useEffect(() => {
     const guns = getAllGuns();
     const sessions = getAllSessions();
-    const ammo = getAllAmmoLots();
+    const ammo = getAllAmmo();
     setVaultContext(buildFullContext(guns, sessions, ammo, profile));
   }, [profile]);
 
