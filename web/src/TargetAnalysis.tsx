@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { theme } from './theme';
-import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns } from './storage';
+import { getTargetAnalyses, saveTargetAnalysis, deleteTargetAnalysis, getAllGuns, getActiveAssignmentForGun, getOpticById } from './storage';
 import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
@@ -75,6 +75,27 @@ function median(values: number[]): number {
 function toMoa(inches: number, yards: number) { return yards > 0 ? (inches / yards) * 95.5 : 0; }
 function inToMm(inches: number) { return (inches * 25.4).toFixed(1); }
 function mmToIn(mm: number) { return mm / 25.4; }
+function caliberToBulletDia(caliber: string): number | null {
+  const c = caliber.toLowerCase();
+  if (c.includes('9mm') || c.includes('9x19') || c.includes('9 mm') || c.includes('.357') || c.includes('357 sig')) return 0.355;
+  if (c.includes('.22') || c.includes('22 lr') || c.includes('22lr') || c.includes('5.56') || c.includes('223') || c.includes('.223')) return 0.224;
+  if (c.includes('6.5') || c.includes('260 rem')) return 0.264;
+  if (c.includes('6mm') || c.includes('.243') || c.includes('243')) return 0.243;
+  if (c.includes('.308') || c.includes('308') || c.includes('7.62') || c.includes('30-06') || c.includes('.30-06') || c.includes('300 win') || c.includes('.300')) return 0.308;
+  if (c.includes('.338') || c.includes('338')) return 0.338;
+  if (c.includes('.45') || c.includes('45 acp') || c.includes('45acp') || c.includes('45 colt')) return 0.452;
+  if (c.includes('.40') || c.includes('40 s&w') || c.includes('10mm')) return 0.400;
+  if (c.includes('12 ga') || c.includes('12ga') || c.includes('12 gauge')) return 0.729;
+  if (c.includes('20 ga') || c.includes('20ga') || c.includes('20 gauge')) return 0.615;
+  if (c.includes('.50') || c.includes('50 bmg') || c.includes('.500')) return 0.500;
+  if (c.includes('.375') || c.includes('375')) return 0.375;
+  if (c.includes('.277') || c.includes('277') || c.includes('.270') || c.includes('270')) return 0.277;
+  if (c.includes('7mm') || c.includes('.284') || c.includes('284')) return 0.284;
+  if (c.includes('.17') || c.includes('17 hmr')) return 0.172;
+  if (c.includes('.204') || c.includes('204 ruger')) return 0.204;
+  if (c.includes('.410') || c.includes('410 bore')) return 0.410;
+  return null;
+}
 
 // ── Stats panel drawn on canvas (overlay + export) ────────────────────────
 function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, stats: Stats, distYds: number) {
@@ -440,7 +461,10 @@ export function TargetAnalysis() {
   const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
+  const [selectedGunId, setSelectedGunId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdjustZero, setShowAdjustZero] = useState(false);
+  const [adjustZeroClickValue, setAdjustZeroClickValue] = useState('');
   const [showCoach, setShowCoach] = useState(false);
   const [coachTier, setCoachTier] = useState<1 | 2 | 3>(1);
   const [coachMessages, setCoachMessages] = useState<{ role: string; content: string }[]>([]);
@@ -949,7 +973,7 @@ export function TargetAnalysis() {
   useEffect(() => {
     if (step === 4 && stats && !savedRef.current) {
       savedRef.current = true;
-      saveTargetAnalysis({ distanceYds, bulletDiaIn, stats, sessionId: undefined, gunId: undefined, ammoLotId: undefined });
+      saveTargetAnalysis({ distanceYds, bulletDiaIn, stats, sessionId: undefined, gunId: selectedGunId ?? undefined, ammoLotId: undefined });
       setSavedMsg(true); setTimeout(() => setSavedMsg(false), 2500);
       setHistory(getTargetAnalyses()); setGuns(getAllGuns());
     }
@@ -1084,6 +1108,30 @@ export function TargetAnalysis() {
                 <img src={imageUrl} alt="Target" style={{ width: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
               </div>
               <button onClick={() => setImageUrl(null)} style={{ position: 'absolute', top: 6, right: 6, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', fontSize: 11, cursor: 'pointer' }}>Change</button>
+            </div>
+
+            <div>
+              {sectionLabel('Gun (optional)')}
+              <div style={{ display: 'flex', overflowX: 'auto', gap: 8, paddingBottom: 4, scrollbarWidth: 'none' }}>
+                {guns.filter(g => g.status === 'Active').map(g => {
+                  const isSelected = selectedGunId === g.id;
+                  return (
+                    <button key={g.id} onClick={() => {
+                      if (isSelected) { setSelectedGunId(null); }
+                      else {
+                        setSelectedGunId(g.id);
+                        const dia = caliberToBulletDia(g.caliber);
+                        if (dia) { setBulletDiaIn(dia); setCustomBullet(''); }
+                      }
+                    }} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: 20, border: `1px solid ${isSelected ? theme.accent : theme.border}`, background: isSelected ? theme.accent : theme.surface, color: isSelected ? '#000' : theme.textPrimary, fontSize: 13, fontWeight: isSelected ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      {g.displayName || `${g.make} ${g.model}`}
+                    </button>
+                  );
+                })}
+                {guns.filter(g => g.status === 'Active').length === 0 && (
+                  <span style={{ fontSize: 12, color: theme.textMuted }}>No active guns in vault</span>
+                )}
+              </div>
             </div>
 
             <div>
@@ -1288,9 +1336,49 @@ export function TargetAnalysis() {
             </div>
             {/* SECONDARY — POA Offset */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
-              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>POA Offset</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 2 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>POA Offset</span>
+                <button onClick={() => setShowAdjustZero(v => !v)} style={{ padding: '3px 10px', borderRadius: 12, background: showAdjustZero ? theme.accent : 'transparent', color: showAdjustZero ? '#000' : theme.accent, border: `1px solid ${theme.accent}`, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Adjust Zero</button>
+              </div>
               <StatRow label="Elevation" val={`${stats.elevationIn >= 0 ? 'UP' : 'DOWN'} ${Math.abs(stats.elevationIn).toFixed(3)}"`} moa={`${stats.elevationMoa.toFixed(2)} MOA`} />
               <StatRow label="Windage"   val={`${stats.windageIn >= 0 ? 'RIGHT' : 'LEFT'} ${Math.abs(stats.windageIn).toFixed(3)}"`}  moa={`${stats.windageMoa.toFixed(2)} MOA`} />
+              {showAdjustZero && (() => {
+                const assignment = selectedGunId ? getActiveAssignmentForGun(selectedGunId) : null;
+                const optic = assignment ? getOpticById(assignment.opticId) : null;
+                const clickMoa = optic?.clickValueMOA ?? (optic?.clickValueMRAD ? optic.clickValueMRAD * 3.438 : null);
+                const manualVal = parseFloat(adjustZeroClickValue);
+                const effectiveClick = clickMoa ?? (adjustZeroClickValue && !isNaN(manualVal) && manualVal > 0 ? manualVal : null);
+
+                const elevClicks = effectiveClick ? Math.round(stats.elevationMoa / effectiveClick) : null;
+                const windClicks = effectiveClick ? Math.round(stats.windageMoa / effectiveClick) : null;
+                const elevDir = stats.elevationIn >= 0 ? 'UP' : 'DOWN';
+                const windDir = stats.windageIn >= 0 ? 'RIGHT' : 'LEFT';
+
+                return (
+                  <div style={{ borderTop: `1px solid ${theme.border}`, padding: '12px 0' }}>
+                    {optic && clickMoa ? (
+                      <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>
+                        {optic.make} {optic.model} · {clickMoa === optic.clickValueMOA ? `${clickMoa} MOA/click` : `${optic.clickValueMRAD} MRAD/click`}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontSize: 12, color: theme.textSecondary, flexShrink: 0 }}>Click value (MOA/click):</span>
+                        <input type="number" step="0.025" placeholder="e.g. 0.25" value={adjustZeroClickValue} onChange={e => setAdjustZeroClickValue(e.target.value)} style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.background, color: theme.textPrimary, fontSize: 13, fontFamily: 'monospace' }} />
+                      </div>
+                    )}
+                    {effectiveClick ? (
+                      <div style={{ padding: '10px 12px', borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}` }}>
+                        <div style={{ fontSize: 13, fontFamily: 'monospace', color: theme.textPrimary, lineHeight: 1.7 }}>
+                          <div>Elevation: <strong style={{ color: theme.accent }}>{Math.abs(elevClicks!)} click{Math.abs(elevClicks!) !== 1 ? 's' : ''} {elevClicks === 0 ? '— on zero' : elevDir}</strong></div>
+                          <div>Windage: <strong style={{ color: theme.accent }}>{Math.abs(windClicks!)} click{Math.abs(windClicks!) !== 1 ? 's' : ''} {windClicks === 0 ? '— on zero' : windDir}</strong></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: theme.textMuted }}>Enter your turret click value to calculate adjustments.</div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             {/* ADVANCED — collapsed by default */}
             <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
