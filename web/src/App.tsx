@@ -356,7 +356,7 @@ function AppCore() {
         currentView={activeNavView}
         onNavigateToHome={() => setCurrentView('home')}
         onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
-        onNavigateToSessions={() => setCurrentView('sessions')}
+        onNavigateToSessions={() => { setSessionFilterGunId(null); setCurrentView('sessions'); }}
         onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
         onNavigateToMore={() => setCurrentView('more')}
       />
