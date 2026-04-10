@@ -958,7 +958,7 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
 
         {/* ── Strings section ── */}
         <div>
-          <span style={labelStyle}>Strings</span>
+          <span style={labelStyle}>Guns Used</span>
 
           {/* Existing string cards */}
           {strings.length > 0 && (
@@ -1052,7 +1052,6 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
               gap: '6px',
             }}
           >
-            <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
             {strings.length === 0 ? '+ Add First Gun & Distance' : '+ Add Another Gun'}
           </button>
 
