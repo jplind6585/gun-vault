@@ -126,14 +126,21 @@ function TermsContent() {
         removed from our servers within 30 days.
       </p>
 
-      <h2 style={heading2}>9. Changes to These Terms</h2>
+      <h2 style={heading2}>9. Governing Law</h2>
+      <p style={body}>
+        These Terms are governed by and construed in accordance with the laws of the
+        State of Wyoming, United States. Any disputes shall be resolved in the courts
+        of Laramie County, Wyoming.
+      </p>
+
+      <h2 style={heading2}>10. Changes to These Terms</h2>
       <p style={body}>
         We may update these Terms from time to time. Continued use of the app after
         changes are posted constitutes your acceptance. Material changes will be
         communicated via in-app notice.
       </p>
 
-      <h2 style={heading2}>10. Contact</h2>
+      <h2 style={heading2}>11. Contact</h2>
       <p style={body}>
         Questions about these Terms: {CONTACT_EMAIL}
       </p>
@@ -155,17 +162,20 @@ function PrivacyContent() {
 
       <h2 style={heading2}>1. Data You Provide</h2>
       <p style={body}>
-        When you use {APP_NAME} you may provide:
+        Data you create in the app — gun records (make, model, caliber, serial number, acquisition details),
+        session logs, ammo inventory, optics and accessory information, target analysis photos and shot data,
+        notes, and profile information. This data is stored locally on your device first.
       </p>
-      <ul style={{ ...body, paddingLeft: '18px', marginTop: '4px' }}>
-        <li>Email address (for account creation and sign-in)</li>
-        <li>Firearm details (make, model, caliber, serial number, acquisition information)</li>
-        <li>Ammo inventory and range session logs</li>
-        <li>Optics and accessory information</li>
-        <li>Photos you choose to attach to records</li>
-        <li>Target analysis data: photos you submit for analysis, shot coordinates, and computed ballistic statistics stored locally and optionally synced to our servers.</li>
-        <li>Insurance export data: when you use the insurance claim export feature, gun details including serial numbers are included in the exported file. This file is saved locally to your device.</li>
-      </ul>
+      <p style={body}>
+        <strong>Account data</strong> — if you create an account, we store your email address (or OAuth provider
+        token) to enable backup and cross-device sync. An account is not required to use the app.
+      </p>
+      <p style={body}>
+        <strong>Device information</strong> — basic device type and OS version, used only to diagnose technical
+        issues if you contact support.
+      </p>
+      <p style={body}>We do not collect location data, contact lists, biometric data, behavioral tracking or
+        advertising identifiers, or any data beyond what you explicitly enter into the app.</p>
 
       <h2 style={heading2}>2. How Data Is Stored</h2>
       <p style={body}>
@@ -191,12 +201,12 @@ function PrivacyContent() {
       <h2 style={heading2}>4. AI Assistant</h2>
       <p style={body}>
         When you use the AI Assistant, your query is sent to Anthropic, Inc.
-        (anthropic.com) for processing. Query content is not stored beyond the
-        session. We record aggregate usage counts (number of AI calls and token
+        (anthropic.com) for processing. Your data is sent solely for the purpose
+        of generating your response — it is not retained by Anthropic for training
+        purposes. We record aggregate usage counts (number of AI calls and token
         consumption) on our servers solely to enforce monthly usage limits and
-        administer Pro subscriptions. Anthropic's privacy policy applies to
-        query processing. Do not include personally identifying information in
-        AI queries.
+        administer Pro subscriptions. Do not include personally identifying
+        information in AI queries.
       </p>
 
       <h2 style={heading2}>5. Sensitive Data</h2>
@@ -213,8 +223,8 @@ function PrivacyContent() {
         You may at any time:
       </p>
       <ul style={{ ...body, paddingLeft: '18px', marginTop: '4px' }}>
-        <li>Export a full copy of your data (Settings → Backup & Restore)</li>
-        <li>Delete all data from your device (Settings → Delete Account)</li>
+        <li>Export a full copy of your data (Settings → Data & Backup)</li>
+        <li>Delete all data and your account (Settings → Delete Account)</li>
         <li>Request deletion of your cloud data by deleting your account</li>
         <li>Contact us to request manual data deletion: {CONTACT_EMAIL}</li>
       </ul>
@@ -224,8 +234,8 @@ function PrivacyContent() {
 
       <h2 style={heading2}>7. Children</h2>
       <p style={body}>
-        {APP_NAME} is not intended for users under 18. We do not knowingly collect
-        information from minors. If you believe a minor has created an account,
+        {APP_NAME} is intended for adults 18 and older. We do not knowingly collect
+        information from anyone under 18. If you believe a minor has created an account,
         contact us at {CONTACT_EMAIL} and we will delete it.
       </p>
 
@@ -237,8 +247,10 @@ function PrivacyContent() {
 
       <h2 style={heading2}>9. Contact</h2>
       <p style={body}>
-        Privacy questions: {CONTACT_EMAIL}
-        {'\n'}{COMPANY}
+        Privacy questions: {CONTACT_EMAIL}{'\n'}{COMPANY}
+      </p>
+      <p style={muted}>
+        Canonical version of this policy always available at lindcottarmory.com/privacy
       </p>
     </div>
   );

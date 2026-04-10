@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lindcott Armory</string>
+    <string name="title_activity_main">Lindcott Armory</string>
+    <string name="package_name">com.lindcottarmory.app</string>
+    <string name="custom_url_scheme">com.lindcottarmory.app</string>
+</resources>
