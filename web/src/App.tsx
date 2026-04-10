@@ -86,8 +86,8 @@ function AppCore() {
 
   // Initialize seed data before first render
   useEffect(() => {
-    // Safety net: never hang on the loading screen for more than 4 seconds
-    const fallback = setTimeout(() => setReady(true), 4000);
+    // Safety net: never hang on the loading screen for more than 2 seconds
+    const fallback = setTimeout(() => { setReady(true); loadGuns(); }, 2000);
     ensureInitialized().then(() => {
       clearTimeout(fallback);
       setReady(true);
@@ -95,8 +95,18 @@ function AppCore() {
     }).catch(() => {
       clearTimeout(fallback);
       setReady(true);
+      loadGuns();
     });
   }, []);
+
+  // Re-load guns after Supabase pull completes on sign-in
+  useEffect(() => {
+    if (!user) return;
+    // pullFromSupabase() in AuthProvider runs async after sign-in.
+    // Give it a moment to finish, then refresh the gun list from localStorage.
+    const t = setTimeout(loadGuns, 2000);
+    return () => clearTimeout(t);
+  }, [user]);
 
   // Show onboarding when profile is loaded and conditions are met
   useEffect(() => {
