@@ -28,11 +28,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAnonymous = user?.is_anonymous ?? false;
 
   useEffect(() => {
+    // Safety net: never hang on authLoading for more than 5 seconds
+    const authTimeout = setTimeout(() => setLoading(false), 5000);
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(authTimeout);
       setUser(session?.user ?? null);
       setLoading(false);
     }).catch(() => {
+      clearTimeout(authTimeout);
       setLoading(false);
     });
 
@@ -58,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         // Clear local data on sign out so next user starts fresh
-        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings', 'lindcott_initial_goals'];
+        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings', 'lindcott_initial_goals', 'gunvault_initialized', 'gunvault_version'];
         const saved: Record<string, string> = {};
         keysToKeep.forEach(k => { const v = localStorage.getItem(k); if (v) saved[k] = v; });
         localStorage.clear();
@@ -66,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => { clearTimeout(authTimeout); subscription.unsubscribe(); };
   }, []);
 
   async function signOut() {

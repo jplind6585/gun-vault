@@ -86,11 +86,14 @@ function AppCore() {
 
   // Initialize seed data before first render
   useEffect(() => {
+    // Safety net: never hang on the loading screen for more than 4 seconds
+    const fallback = setTimeout(() => setReady(true), 4000);
     ensureInitialized().then(() => {
+      clearTimeout(fallback);
       setReady(true);
       loadGuns();
     }).catch(() => {
-      // Ensure we never get stuck on the loading screen even if init fails
+      clearTimeout(fallback);
       setReady(true);
     });
   }, []);
