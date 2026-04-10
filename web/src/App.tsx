@@ -89,6 +89,9 @@ function AppCore() {
     ensureInitialized().then(() => {
       setReady(true);
       loadGuns();
+    }).catch(() => {
+      // Ensure we never get stuck on the loading screen even if init fails
+      setReady(true);
     });
   }, []);
 

@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         // Clear local data on sign out so next user starts fresh
-        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings'];
+        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings', 'lindcott_initial_goals'];
         const saved: Record<string, string> = {};
         keysToKeep.forEach(k => { const v = localStorage.getItem(k); if (v) saved[k] = v; });
         localStorage.clear();
