@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT false;
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS pro_expires_at TIMESTAMPTZ;
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS early_access_claimed_at TIMESTAMPTZ;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS subscription_source TEXT; -- 'early_access' | 'google_play' | 'apple'
 
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 

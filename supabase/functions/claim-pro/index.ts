@@ -1,8 +1,11 @@
-// Supabase Edge Function — Claim Early Access Pro Month
+// Supabase Edge Function — Activate Pro
 // POST /functions/v1/claim-pro
 // Auth: requires valid Supabase JWT
-// Sets is_pro=true and pro_expires_at=now()+30days for the authenticated user.
-// Can only be claimed once per user (enforced server-side).
+// Body (optional): { source: 'google_play' | 'early_access' }
+//
+// - google_play: paid subscription confirmed by RevenueCat on device.
+//   Sets is_pro=true with no expiry (subscription managed by Play).
+// - early_access (default): free 30-day claim. One per user.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -26,18 +29,43 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ error: 'Unauthorized' }, 401);
 
-  // Check if already claimed
+  // Parse source from body
+  let source: string = 'early_access';
+  try {
+    const body = await req.json().catch(() => ({}));
+    if (body?.source) source = body.source;
+  } catch { /* no body */ }
+
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('early_access_claimed_at, is_pro')
     .eq('user_id', user.id)
     .single();
 
+  // ── Google Play paid subscription ────────────────────────────────────────
+  if (source === 'google_play') {
+    // Pro is managed by Play Store — no expiry set here (RevenueCat webhook handles renewal/cancellation)
+    const { error: upsertError } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: user.id,
+        is_pro: true,
+        pro_expires_at: null,
+        subscription_source: 'google_play',
+      }, { onConflict: 'user_id' });
+
+    if (upsertError) {
+      console.error('upsert error:', upsertError);
+      return json({ error: 'Failed to activate Pro. Please try again.' }, 500);
+    }
+    return json({ success: true });
+  }
+
+  // ── Early access free month ───────────────────────────────────────────────
   if (profile?.early_access_claimed_at) {
     return json({
       error: 'already_claimed',
       message: 'You have already claimed your free Pro month.',
-      pro_expires_at: null,
     }, 400);
   }
 
@@ -51,6 +79,7 @@ Deno.serve(async (req: Request) => {
       is_pro: true,
       pro_expires_at: proExpiresAt.toISOString(),
       early_access_claimed_at: new Date().toISOString(),
+      subscription_source: 'early_access',
     }, { onConflict: 'user_id' });
 
   if (upsertError) {

@@ -1,33 +1,84 @@
 import { useState } from 'react';
 import { theme } from './theme';
 import { supabase, SUPABASE_URL } from './lib/supabase';
+import { isNativePlatform, purchasePro, restorePurchases } from './lib/billing';
 
 interface Props {
   onClose: () => void;
   onFeedback?: () => void;
 }
 
+const PRO_FEATURES = [
+  'Unlimited AI coaching and analysis',
+  'AI-powered session narratives',
+  'Target photo analysis & coaching',
+  'Ammo scan & OCR',
+  'AI Armory Assistant',
+];
+
 export function UpgradeModal({ onClose, onFeedback }: Props) {
+  const native = isNativePlatform();
+
+  // Native: 'upgrade' → (billing sheet) → 'success'
+  // Web:    'upgrade' → 'reveal' → 'success'
   const [step, setStep] = useState<'upgrade' | 'reveal' | 'success'>('upgrade');
-  const [revealing, setRevealing] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [claimError, setClaimError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
+  // ── Native: trigger Google Play billing sheet ─────────────────────────────
+
+  async function handleNativePurchase() {
+    setBusy(true);
+    setError('');
+    try {
+      const result = await purchasePro();
+      if (result.success) {
+        // Mark Pro in Supabase so the backend knows too
+        await activateProInSupabase();
+        setStep('success');
+      } else if (result.error === 'cancelled') {
+        // User dismissed the sheet — do nothing
+      } else {
+        setError(result.message ?? 'Purchase failed. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRestore() {
+    setRestoring(true);
+    setError('');
+    try {
+      const isPro = await restorePurchases();
+      if (isPro) {
+        await activateProInSupabase();
+        setStep('success');
+      } else {
+        setError('No active subscription found to restore.');
+      }
+    } finally {
+      setRestoring(false);
+    }
+  }
+
+  // ── Web: free claim flow ──────────────────────────────────────────────────
 
   async function startReveal() {
-    setRevealing(true);
+    setBusy(true);
     await new Promise(resolve => setTimeout(resolve, 800));
-    setRevealing(false);
+    setBusy(false);
     setStep('reveal');
   }
 
-  async function claimPro() {
-    setClaiming(true);
-    setClaimError('');
+  async function claimFreePro() {
+    setBusy(true);
+    setError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not signed in');
-
       const res = await fetch(`${SUPABASE_URL}/functions/v1/claim-pro`, {
         method: 'POST',
         headers: {
@@ -36,21 +87,37 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
         },
       });
       const data = await res.json();
-
       if (!res.ok) {
-        if (data.error === 'already_claimed') {
-          setAlreadyClaimed(true);
-        } else {
-          setClaimError(data.message ?? 'Something went wrong. Please try again.');
-        }
+        if (data.error === 'already_claimed') { setAlreadyClaimed(true); return; }
+        setError(data.message ?? 'Something went wrong. Please try again.');
         return;
       }
-
       setStep('success');
     } catch {
-      setClaimError('Something went wrong. Please try again.');
+      setError('Something went wrong. Please try again.');
     } finally {
-      setClaiming(false);
+      setBusy(false);
+    }
+  }
+
+  // ── Shared: activate Pro in Supabase after native purchase ───────────────
+
+  async function activateProInSupabase() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      // Mark Pro via the same edge function (it's idempotent)
+      // For native purchases, we pass a flag so it skips the early-access check
+      await fetch(`${SUPABASE_URL}/functions/v1/claim-pro`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ source: 'google_play' }),
+      });
+    } catch {
+      // Non-fatal — RevenueCat webhook will also sync this
     }
   }
 
@@ -58,13 +125,7 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
     if (e.target === e.currentTarget) onClose();
   }
 
-  const PRO_FEATURES = [
-    'Unlimited AI coaching and analysis',
-    'AI-powered session narratives',
-    'Target photo analysis & coaching',
-    'Ammo scan & OCR',
-    'AI Armory Assistant',
-  ];
+  // ── Shared styles ─────────────────────────────────────────────────────────
 
   const panelStyle: React.CSSProperties = {
     width: '100%',
@@ -76,334 +137,175 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
     boxSizing: 'border-box',
   };
 
-  const accentBtnStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '15px',
-    backgroundColor: theme.accent,
-    border: 'none',
-    borderRadius: '10px',
-    color: theme.bg,
-    fontFamily: 'monospace',
-    fontSize: '13px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    cursor: 'pointer',
+  const accentBtn: React.CSSProperties = {
+    width: '100%', padding: '15px',
+    backgroundColor: theme.accent, border: 'none',
+    borderRadius: '10px', color: theme.bg,
+    fontFamily: 'monospace', fontSize: '13px',
+    fontWeight: 700, letterSpacing: '1.5px', cursor: 'pointer',
   };
 
-  const disabledBtnStyle: React.CSSProperties = {
-    ...accentBtnStyle,
+  const dimBtn: React.CSSProperties = {
+    ...accentBtn,
     backgroundColor: theme.surface,
     border: '0.5px solid ' + theme.border,
-    color: theme.textMuted,
-    cursor: 'default',
+    color: theme.textMuted, cursor: 'default',
   };
 
-  const outlineBtnStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '14px',
+  const outlineBtn: React.CSSProperties = {
+    width: '100%', padding: '14px',
     backgroundColor: 'transparent',
     border: '1.5px solid ' + theme.accent,
-    borderRadius: '10px',
-    color: theme.accent,
-    fontFamily: 'monospace',
-    fontSize: '13px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    cursor: 'pointer',
+    borderRadius: '10px', color: theme.accent,
+    fontFamily: 'monospace', fontSize: '13px',
+    fontWeight: 700, letterSpacing: '1.5px', cursor: 'pointer',
   };
 
+  const ghostBtn: React.CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontFamily: 'monospace', fontSize: '12px',
+    color: theme.textMuted, textDecoration: 'underline', padding: '4px',
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div
-      onClick={handleBackdrop}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 3000,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-    >
+    <div onClick={handleBackdrop} style={{
+      position: 'fixed', inset: 0, zIndex: 3000,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'flex-end',
+    }}>
+
+      {/* ── Step 1: Features + CTA ── */}
       {step === 'upgrade' && (
         <div style={panelStyle}>
-          {/* Close button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
-            <button
-              onClick={onClose}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontSize: '20px', lineHeight: 1, padding: '4px' }}
-            >
-              ✕
-            </button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontSize: '20px', lineHeight: 1, padding: '4px' }}>✕</button>
           </div>
 
-          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{
-              fontFamily: 'monospace',
-              fontSize: '18px',
-              fontWeight: 700,
-              letterSpacing: '2px',
-              color: theme.textPrimary,
-            }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, letterSpacing: '2px', color: theme.textPrimary }}>
               LINDCOTT ARMORY PRO
             </div>
+            {native && (
+              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.accent, marginTop: '6px', letterSpacing: '0.5px' }}>
+                $7 / month
+              </div>
+            )}
           </div>
 
-          {/* Features list */}
           <div style={{ marginBottom: '32px' }}>
-            {PRO_FEATURES.map((feature, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '14px',
-              }}>
+            {PRO_FEATURES.map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
                 <span style={{ color: theme.accent, fontSize: '16px', flexShrink: 0 }}>✓</span>
-                <span style={{
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  color: theme.textSecondary,
-                  lineHeight: 1.4,
-                }}>
-                  {feature}
-                </span>
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary, lineHeight: 1.4 }}>{f}</span>
               </div>
             ))}
           </div>
 
-          {/* Unlock button */}
-          <button
-            onClick={startReveal}
-            disabled={revealing}
-            style={revealing ? disabledBtnStyle : accentBtnStyle}
-          >
-            {revealing ? 'LOADING...' : 'UNLOCK PRO'}
-          </button>
+          {native ? (
+            <>
+              <button onClick={handleNativePurchase} disabled={busy} style={busy ? dimBtn : accentBtn}>
+                {busy ? 'LOADING...' : 'START PRO — $7/MO'}
+              </button>
+              {error && <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff6b6b', marginTop: '12px', textAlign: 'center' }}>{error}</div>}
+              <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                <button onClick={handleRestore} disabled={restoring} style={ghostBtn}>
+                  {restoring ? 'Restoring...' : 'Restore previous purchase'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button onClick={startReveal} disabled={busy} style={busy ? dimBtn : accentBtn}>
+              {busy ? 'LOADING...' : 'UNLOCK PRO'}
+            </button>
+          )}
         </div>
       )}
 
+      {/* ── Step 2: Web-only free month reveal ── */}
       {step === 'reveal' && (
         <div style={panelStyle}>
-          {/* Early access chip */}
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <span style={{
-              display: 'inline-block',
-              backgroundColor: theme.accent,
-              color: theme.bg,
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '1.5px',
-              padding: '4px 12px',
-              borderRadius: '20px',
-            }}>
-              EARLY ACCESS
-            </span>
+              display: 'inline-block', backgroundColor: theme.accent, color: theme.bg,
+              fontFamily: 'monospace', fontSize: '10px', fontWeight: 700,
+              letterSpacing: '1.5px', padding: '4px 12px', borderRadius: '20px',
+            }}>EARLY ACCESS</span>
           </div>
 
-          {/* Heading */}
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '22px',
-            fontWeight: 700,
-            color: theme.textPrimary,
-            textAlign: 'center',
-            marginBottom: '16px',
-            lineHeight: 1.3,
-          }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '22px', fontWeight: 700, color: theme.textPrimary, textAlign: 'center', marginBottom: '16px', lineHeight: 1.3 }}>
             You're one of our first.
           </div>
 
-          {/* Body copy */}
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            color: theme.textSecondary,
-            lineHeight: 1.7,
-            textAlign: 'center',
-            marginBottom: '24px',
-          }}>
-            Lindcott Armory is new, and you're part of the founding group. We're giving you 30 days of Pro — no card, no catch, nothing to cancel. Just our thanks for being early.
+          <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary, lineHeight: 1.7, textAlign: 'center', marginBottom: '24px' }}>
+            Lindcott Armory is new, and you're part of the founding group. We're giving you 30 days of Pro — no card, no catch, nothing to cancel.
           </div>
 
-          {/* Bullet points */}
           <div style={{ marginBottom: '32px' }}>
-            {[
-              'Full Pro access, activated instantly',
-              'No payment required',
-              'Nothing to cancel',
-            ].map((point, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px',
-              }}>
+            {['Full Pro access, activated instantly', 'No payment required', 'Nothing to cancel'].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <span style={{ color: theme.accent, fontSize: '16px', flexShrink: 0 }}>✓</span>
-                <span style={{
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  color: theme.textSecondary,
-                }}>
-                  {point}
-                </span>
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>{p}</span>
               </div>
             ))}
           </div>
 
           {alreadyClaimed ? (
             <div>
-              <div style={{
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                color: theme.textSecondary,
-                lineHeight: 1.6,
-                textAlign: 'center',
-                marginBottom: '20px',
-                padding: '14px',
-                backgroundColor: theme.bg,
-                borderRadius: '8px',
-                border: '0.5px solid ' + theme.border,
-              }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, lineHeight: 1.6, textAlign: 'center', marginBottom: '20px', padding: '14px', backgroundColor: theme.bg, borderRadius: '8px', border: '0.5px solid ' + theme.border }}>
                 Your free month has been claimed. Reach out to support@lindcottarmory.com to extend.
               </div>
-              <button onClick={onClose} style={accentBtnStyle}>
-                DONE
-              </button>
+              <button onClick={onClose} style={accentBtn}>DONE</button>
             </div>
           ) : (
             <>
-              <button
-                onClick={claimPro}
-                disabled={claiming}
-                style={claiming ? disabledBtnStyle : accentBtnStyle}
-              >
-                {claiming ? 'ACTIVATING...' : 'CLAIM MY FREE MONTH'}
+              <button onClick={claimFreePro} disabled={busy} style={busy ? dimBtn : accentBtn}>
+                {busy ? 'ACTIVATING...' : 'CLAIM MY FREE MONTH'}
               </button>
-
-              {claimError && (
-                <div style={{
-                  fontFamily: 'monospace',
-                  fontSize: '11px',
-                  color: theme.red,
-                  marginTop: '12px',
-                  textAlign: 'center',
-                }}>
-                  {claimError}
-                </div>
-              )}
+              {error && <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff6b6b', marginTop: '12px', textAlign: 'center' }}>{error}</div>}
             </>
           )}
         </div>
       )}
 
+      {/* ── Step 3: Success ── */}
       {step === 'success' && (
         <div style={panelStyle}>
-          {/* Checkmark icon */}
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: theme.accent,
-            }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '50%', backgroundColor: theme.accent }}>
               <span style={{ fontSize: '28px', color: theme.bg }}>✓</span>
             </div>
           </div>
 
-          {/* PRO ACTIVATED heading */}
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            fontWeight: 700,
-            letterSpacing: '2px',
-            color: theme.textPrimary,
-            textAlign: 'center',
-            marginBottom: '8px',
-          }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, letterSpacing: '2px', color: theme.textPrimary, textAlign: 'center', marginBottom: '8px' }}>
             PRO ACTIVATED
           </div>
-
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color: theme.textSecondary,
-            textAlign: 'center',
-            marginBottom: '24px',
-          }}>
-            30 days of Pro access, starting now.
+          <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, textAlign: 'center', marginBottom: '24px' }}>
+            {native ? 'Welcome to Pro.' : '30 days of Pro access, starting now.'}
           </div>
 
-          {/* Divider */}
           <div style={{ borderTop: '0.5px solid ' + theme.border, marginBottom: '24px' }} />
 
-          {/* Review section */}
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            fontWeight: 700,
-            color: theme.textPrimary,
-            textAlign: 'center',
-            marginBottom: '8px',
-          }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textPrimary, textAlign: 'center', marginBottom: '8px' }}>
             Enjoying Lindcott Armory?
           </div>
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color: theme.textSecondary,
-            textAlign: 'center',
-            lineHeight: 1.6,
-            marginBottom: '20px',
-          }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, textAlign: 'center', lineHeight: 1.6, marginBottom: '20px' }}>
             A review helps others find us — and it means a lot.
           </div>
 
           <button
-            onClick={() => window.open('https://apps.apple.com/app/id6745056716', '_blank')}
-            style={outlineBtnStyle}
+            onClick={() => window.open('https://play.google.com/store/apps/details?id=com.lindcottarmory.app', '_blank')}
+            style={outlineBtn}
           >
             LEAVE A REVIEW
           </button>
 
-          {/* Feedback link */}
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <button
-              onClick={() => { onFeedback?.(); onClose(); }}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                color: theme.textMuted,
-                textDecoration: 'underline',
-                padding: '4px',
-              }}
-            >
-              Have feedback?
-            </button>
+            <button onClick={() => { onFeedback?.(); onClose(); }} style={ghostBtn}>Have feedback?</button>
           </div>
-
-          {/* Done button */}
           <div style={{ textAlign: 'center', marginTop: '12px' }}>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                color: theme.textMuted,
-                padding: '4px',
-              }}
-            >
-              Done
-            </button>
+            <button onClick={onClose} style={{ ...ghostBtn, textDecoration: 'none' }}>Done</button>
           </div>
         </div>
       )}

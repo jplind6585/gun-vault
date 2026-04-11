@@ -42,6 +42,7 @@ const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default:
 const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 import { useShooterProfile } from './useShooterProfile';
+import { initBilling } from './lib/billing';
 import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
 import './App.css';
@@ -99,12 +100,14 @@ function AppCore() {
     });
   }, []);
 
-  // Re-load guns after Supabase pull completes on sign-in
+  // Re-load guns after Supabase pull completes on sign-in; also init billing
   useEffect(() => {
     if (!user) return;
     // pullFromSupabase() in AuthProvider runs async after sign-in.
     // Give it a moment to finish, then refresh the gun list from localStorage.
     const t = setTimeout(loadGuns, 2000);
+    // Initialize RevenueCat with the authenticated user ID (no-op on web)
+    initBilling(user.id);
     return () => clearTimeout(t);
   }, [user]);
 
