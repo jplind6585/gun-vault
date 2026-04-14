@@ -4,6 +4,19 @@ body.calibers-page {
   background: var(--bg);
 }
 
+/* ── SEO INTRO ──────────────────────────────────────────────────────── */
+.seo-intro {
+  padding: 20px 0 4px;
+  border-bottom: 0.5px solid var(--border);
+}
+.seo-intro p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 10px;
+  max-width: 800px;
+}
+
 /* ── PAGE HEADER ────────────────────────────────────────────────────── */
 .calibers-header {
   padding: 96px 0 32px;
