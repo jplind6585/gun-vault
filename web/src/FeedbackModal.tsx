@@ -29,19 +29,24 @@ export function FeedbackModal({ onClose }: Props) {
     if (!message.trim()) return;
     setSending(true);
     setError('');
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+    );
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { error: insertError } = await supabase.from('feedback').insert({
+      const insertPromise = supabase.from('feedback').insert({
         user_id: session?.user?.id ?? null,
         category,
         message: message.trim(),
         email: session?.user?.email ?? null,
         app_version: '1.0',
       });
+      const { error: insertError } = await Promise.race([insertPromise, timeout]) as Awaited<typeof insertPromise>;
       if (insertError) throw insertError;
       setSent(true);
+      setTimeout(onClose, 1500);
     } catch {
-      setError('Failed to send. Please try again.');
+      setError("Couldn't send feedback. Try again.");
     } finally {
       setSending(false);
     }

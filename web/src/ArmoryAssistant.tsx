@@ -107,15 +107,25 @@ export function ArmoryAssistant() {
     setLoading(true);
     setError(null);
 
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+    );
+
     try {
       // Pass check-in trigger only on the first turn, then clear it
       const trigger = messages.length === 0 ? pendingCheckIn.current : 'none';
       if (messages.length === 0) pendingCheckIn.current = 'none';
-      const reply = await callArmoryAssistant(vaultContext, nextMessages, trigger);
+      const reply = await Promise.race([
+        callArmoryAssistant(vaultContext, nextMessages, trigger),
+        timeoutPromise,
+      ]);
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong.';
-      setError(msg);
+      const isTimeout = err instanceof Error && err.message === 'TIMEOUT';
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: isTimeout ? 'Something went wrong. Try again.' : (err instanceof Error ? err.message : 'Something went wrong.'),
+      }]);
     } finally {
       setLoading(false);
     }

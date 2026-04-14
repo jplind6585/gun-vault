@@ -289,8 +289,12 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
     return sum + (lot.quantity * price);
   }, 0);
 
-  // Task 9: Total invested (based on quantityPurchased * purchasePricePerRound)
-  const totalInvested = 12981; // TEMP: screenshot override
+  // Total invested: sum of quantityPurchased × purchasePricePerRound across all lots
+  const totalInvested = allAmmo.reduce((sum, lot) => {
+    const qty = lot.quantityPurchased ?? lot.quantity;
+    const price = lot.purchasePricePerRound ?? 0;
+    return sum + qty * price;
+  }, 0);
 
   // Price freshness: find stale lots (price data > 30 days old)
   const lotsWithPrice = allAmmo.filter(lot => lot.purchasePricePerRound != null && lot.purchasePricePerRound > 0);
@@ -976,7 +980,7 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.8px', marginBottom: '6px' }}>ADD</div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {[20, 25, 50, 500, 1000].map(n => {
+                {[50, 100, 250, 500, 1000].map(n => {
                   const val = String(n);
                   return (
                     <button
@@ -1229,7 +1233,7 @@ function LotCard({ lot, onSelect, onToggleFavorite, onUse }: LotCardProps) {
 
       {/* Single-line ballistics */}
       <div style={{ fontSize: '11px', color: theme.textSecondary, marginBottom: '4px' }}>
-        {lot.grainWeight}<AmmoAcronym term="GR" /> <BulletTypeDisplay value={lot.bulletType || ''} />{lot.advertisedFPS ? ` · ${lot.advertisedFPS} fps` : ''}
+        {lot.grainWeight}<AmmoAcronym term="GR" />{lot.bulletType ? <> · <BulletTypeDisplay value={lot.bulletType} /></> : ''}{lot.advertisedFPS ? ` · ${lot.advertisedFPS} fps` : ''}
         {lot.standardDeviation != null && (
           <span style={{
             color: lot.standardDeviation <= 10 ? theme.green : lot.standardDeviation <= 15 ? theme.orange : theme.red,
@@ -1365,6 +1369,29 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
   const [scanError, setScanError] = useState('');
   const scanInputRef = useRef<HTMLInputElement>(null);
 
+  const GRAIN_RANGES: Record<string, [number, number]> = {
+    '9mm': [115, 147], '.45 acp': [185, 230], '.40 s&w': [155, 180],
+    '10mm': [155, 220], '.380 acp': [85, 100], '.357 magnum': [110, 180],
+    '.44 magnum': [180, 300], '5.56': [40, 77], '.223': [40, 77],
+    '.308': [147, 185], '7.62x51': [147, 185], '6.5 creedmoor': [120, 147],
+    '.30-06': [150, 220], '.300 win mag': [150, 220], '12 gauge': [300, 500],
+  };
+
+  const grainWarning = (() => {
+    if (!caliber || !grainWeight) return null;
+    const gr = parseInt(grainWeight, 10);
+    if (isNaN(gr)) return null;
+    const calLower = caliber.toLowerCase();
+    const match = Object.entries(GRAIN_RANGES).find(([key]) => calLower.includes(key));
+    if (!match) return null;
+    const [label, [min, max]] = match;
+    if (gr < min || gr > max) {
+      const display = label === '5.56' || label === '.223' ? '5.56mm / .223 Rem' : label.toUpperCase();
+      return `That's outside the typical range for ${display} (${min}–${max}gr). Double-check before saving.`;
+    }
+    return null;
+  })();
+
   function handleSubmit() {
     if (!caliber || !brand || !grainWeight || !quantity) {
       setFormError('Please fill in all required fields: caliber, brand, grain weight, and quantity.');
@@ -1404,10 +1431,24 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
     setScanError('');
     try {
       const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
+      const rawDataUrl = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
+      });
+      // Resize to max 1024px before sending — camera photos are too large for Edge Function
+      const dataUrl = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1024;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = rawDataUrl;
       });
       const result = await analyzeAmmoBox(dataUrl);
       if (result.caliber) setCaliber(result.caliber);
@@ -1416,8 +1457,10 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
       if (result.grainWeight) setGrainWeight(String(result.grainWeight));
       if (result.bulletType) setBulletType(result.bulletType);
       if (result.quantity) setQuantity(String(result.quantity));
-    } catch {
-      setScanError('Could not read the box. Try a clearer photo.');
+    } catch (err: any) {
+      setScanError(err?.message === 'BUDGET_EXCEEDED'
+        ? 'AI usage limit reached.'
+        : 'Could not read the box. Try a clearer photo.');
     } finally {
       setScanning(false);
       if (scanInputRef.current) scanInputRef.current.value = '';
@@ -1515,7 +1558,15 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
           <div><label style={labelStyle}>Caliber *</label><TypeaheadInput value={caliber} onChange={setCaliber} suggestions={AMMO_CALIBERS} placeholder="9mm Luger" inputStyle={inputStyle} /></div>
           <div><label style={labelStyle}>Brand *</label><TypeaheadInput value={brand} onChange={setBrand} suggestions={AMMO_BRANDS} placeholder="Federal" inputStyle={inputStyle} /></div>
-          <div><label style={labelStyle}>Grain Weight *</label><input type="number" inputMode="numeric" placeholder="124" value={grainWeight} onChange={(e) => setGrainWeight(e.target.value)} style={inputStyle} /></div>
+          <div>
+            <label style={labelStyle}>Grain Weight *</label>
+            <input type="number" inputMode="numeric" placeholder="124" value={grainWeight} onChange={(e) => setGrainWeight(e.target.value)} style={inputStyle} />
+            {grainWarning && (
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.orange, marginTop: '5px', lineHeight: 1.4 }}>
+                {grainWarning}
+              </div>
+            )}
+          </div>
           <div><label style={labelStyle}>Quantity (rounds) *</label><input type="number" inputMode="numeric" placeholder="500" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} /></div>
           <div>
             <label style={labelStyle}>Category *</label>
@@ -2067,7 +2118,7 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
             {currentLot.brand} {currentLot.productLine}
           </div>
           <div style={{ fontSize: '12px', color: theme.textSecondary, fontFamily: 'monospace', marginBottom: '10px' }}>
-            {normalizeCaliberLabel(currentLot.caliber)}{hasPlus && <>{' '}<AmmoAcronym term="+P" /></>} · {currentLot.grainWeight}gr <BulletTypeDisplay value={currentLot.bulletType || ''} />
+            {normalizeCaliberLabel(currentLot.caliber)}{hasPlus && <>{' '}<AmmoAcronym term="+P" /></>} · {currentLot.grainWeight}gr{currentLot.bulletType ? <> · <BulletTypeDisplay value={currentLot.bulletType} /></> : ''}
           </div>
           <div style={{ fontSize: '36px', fontWeight: 700, color: theme.accent, fontFamily: 'monospace', lineHeight: 1 }}>
             {currentLot.quantity.toLocaleString()}
@@ -2103,7 +2154,7 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
           <div style={{ marginBottom: '10px' }}>
             <div style={{ fontSize: '8px', color: theme.green, fontFamily: 'monospace', letterSpacing: '0.6px', marginBottom: '5px', fontWeight: 700 }}>ADD</div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {[20, 25, 50, 500, 1000].map(n => (
+              {[50, 100, 250, 500, 1000].map(n => (
                 <button
                   key={`add-${n}`}
                   onClick={() => handleAdjust(n)}
@@ -2147,13 +2198,13 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
             <button
               onClick={() => setCustomAdjSign(s => s === 1 ? -1 : 1)}
               style={{
-                padding: '8px 10px', backgroundColor: customAdjSign === 1 ? 'rgba(81,207,102,0.08)' : 'rgba(255,107,107,0.08)',
+                padding: '6px 10px', backgroundColor: 'transparent',
                 color: customAdjSign === 1 ? theme.green : theme.red,
-                border: `0.5px solid ${customAdjSign === 1 ? theme.green : theme.red}`, borderRadius: '4px',
-                fontFamily: 'monospace', fontSize: '13px', cursor: 'pointer', fontWeight: 700, minWidth: '36px'
+                border: `0.5px solid ${customAdjSign === 1 ? theme.green : theme.red}`, borderRadius: '20px',
+                fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap',
               }}
             >
-              {customAdjSign === 1 ? '+' : '−'}
+              {customAdjSign === 1 ? 'ADD' : 'REMOVE'}
             </button>
             <input
               type="number"
@@ -2174,8 +2225,8 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
           </div>
         </div>
 
-        {/* Ballistics row — Task 10: acronym tooltips */}
-        <div style={{
+        {/* Ballistics row — only show when at least one of TYPE/FPS/FT-LBS is populated */}
+        {(currentLot.bulletType || currentLot.advertisedFPS || currentLot.muzzleEnergy) ? <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px',
           padding: '10px', backgroundColor: theme.bg, borderRadius: '4px', marginBottom: '14px'
         }}>
@@ -2203,7 +2254,7 @@ function LotDetailModal({ lot, onClose, onUpdate }: LotDetailModalProps) {
             </div>
             <div style={{ fontSize: '12px', fontWeight: 700, color: theme.textPrimary, fontFamily: 'monospace' }}>{currentLot.muzzleEnergy || '—'}</div>
           </div>
-        </div>
+        </div> : null}
 
         {/* Assigned Guns */}
         <div style={{

@@ -1,0 +1,242 @@
+{
+  "meta": {
+    "company": "Lindcott Armory LLC",
+    "appName": "Lindcott Armory",
+    "effectiveDate": "April 2026",
+    "effectiveDateFull": "April 1, 2026",
+    "contactEmail": "support@lindcottarmory.com",
+    "websiteUrl": "lindcottarmory.com"
+  },
+  "privacy": {
+    "intro": "This Privacy Policy describes how Lindcott Armory LLC (\"we\", \"our\", \"us\") handles information in connection with the Lindcott Armory application and related services.\n\nOur goal is simple: maximize your control, minimize our access.",
+    "shortVersion": "Most user data is stored locally on your device. You are not required to create an account to use core features. We do not sell, rent, or broker your data.",
+    "sections": [
+      {
+        "heading": "1. Core Principle: You Own Your Data",
+        "blocks": [
+          { "type": "p", "text": "Lindcott Armory is built on a local-first model:" },
+          { "type": "ul", "items": [
+            "Most user data is stored locally on your device",
+            "You are not required to create an account to use core features",
+            "We do not sell, rent, or broker your data"
+          ]}
+        ]
+      },
+      {
+        "heading": "2A. Information You Provide (Optional)",
+        "blocks": [
+          { "type": "p", "text": "You may choose to provide limited information if you create an account (email or SSO such as Google or Apple), contact support, or enable cloud features. This may include your email address, account identifier, and optional profile information." }
+        ]
+      },
+      {
+        "heading": "2B. Local Device Data (Default Behavior)",
+        "blocks": [
+          { "type": "p", "text": "By default, the following data remains only on your device:" },
+          { "type": "ul", "items": [
+            "Firearm records",
+            "Ammunition data",
+            "Shooting sessions and logs",
+            "Notes, configurations, and preferences"
+          ]},
+          { "type": "p", "text": "We do not have access to this data unless you explicitly enable features that require it." }
+        ]
+      },
+      {
+        "heading": "2C. Cloud Storage (Optional)",
+        "blocks": [
+          { "type": "p", "text": "If you enable cloud sync or account-based features, we may store structured app data (e.g., logs, configurations, preferences) and account-linked identifiers. This is used only for backup, sync across devices, and account recovery. You can disable cloud features at any time." }
+        ]
+      },
+      {
+        "heading": "2D. AI and Analysis Features",
+        "blocks": [
+          { "type": "p", "text": "Some features (such as advanced analysis, recommendations, or image processing) require sending limited data to external systems. This may include target images, shooting data or metrics, and configuration inputs. We use this data to generate results for you." },
+          { "type": "p", "text": "Additionally, we record limited aggregate usage data related to these features — such as number of AI requests and token or compute usage — used solely to enforce monthly usage limits and administer subscription tiers (e.g., Pro features)." },
+          { "type": "p", "text": "We aim to minimize the data sent, avoid long-term storage where possible, and use providers with strong privacy practices." }
+        ]
+      },
+      {
+        "heading": "2E. Automatically Collected Data (Minimal)",
+        "blocks": [
+          { "type": "p", "text": "We may collect limited technical data such as app version and device type. If implemented in the future, this may also include crash logs and diagnostic data. This data is used strictly to maintain performance, fix bugs, and improve reliability. We do not use advertising trackers." }
+        ]
+      },
+      {
+        "heading": "3. How We Use Information",
+        "blocks": [
+          { "type": "p", "text": "We use data only to:" },
+          { "type": "ul", "items": [
+            "Provide app functionality",
+            "Enable optional cloud features",
+            "Process AI/analysis requests",
+            "Enforce usage limits and subscriptions",
+            "Improve performance and stability",
+            "Respond to support inquiries"
+          ]},
+          { "type": "p", "text": "We do not use your data for advertising, behavioral profiling, or data resale." }
+        ]
+      },
+      {
+        "heading": "4. Data Sharing",
+        "blocks": [
+          { "type": "p", "text": "We do not sell or share your data for marketing purposes. We only share data in limited cases:" },
+          { "type": "ul", "items": [
+            "With service providers necessary to operate features, such as cloud infrastructure providers and AI processing providers",
+            "Subscription management via RevenueCat, which may process billing-related identifiers from app stores",
+            "When required by law"
+          ]}
+        ]
+      },
+      {
+        "heading": "5. Data Retention",
+        "blocks": [
+          { "type": "ul", "items": [
+            "Local data: stored on your device until you delete it",
+            "Cloud data: retained only while your account or cloud features are active",
+            "AI/processing data: retained only as needed to complete the request (varies by provider)",
+            "Usage tracking data: retained as needed to manage subscriptions and enforce limits"
+          ]}
+        ]
+      },
+      {
+        "heading": "6. Your Control",
+        "blocks": [
+          { "type": "p", "text": "You have full control over your data:" },
+          { "type": "ul", "items": [
+            "Use the app without an account",
+            "Export your data (CSV/JSON where applicable)",
+            "Delete your data at any time",
+            "Disable cloud features",
+            "Delete your account (if created)"
+          ]},
+          { "type": "p", "text": "Deleting your account will remove associated cloud data, subject to limited technical retention windows." }
+        ]
+      },
+      {
+        "heading": "7. Security",
+        "blocks": [
+          { "type": "p", "text": "We take reasonable measures to protect any data used in cloud or processing features. Because most data is stored locally, exposure risk from centralized systems is significantly reduced." }
+        ]
+      },
+      {
+        "heading": "8. Children's Privacy",
+        "blocks": [
+          { "type": "p", "text": "The app is not intended for individuals under 18. We do not knowingly collect data from minors." }
+        ]
+      },
+      {
+        "heading": "9. Changes to This Policy",
+        "blocks": [
+          { "type": "p", "text": "We may update this Privacy Policy as features evolve. If changes are significant, we will update the \"Last Updated\" date and provide notice within the app or through other reasonable means. Continued use of the app constitutes acceptance of the updated policy." }
+        ]
+      },
+      {
+        "heading": "10. Contact",
+        "blocks": [
+          { "type": "p", "text": "For questions or requests: support@lindcottarmory.com" }
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "intro": "These Terms of Service (\"Terms\") govern your use of Lindcott Armory, a firearm management application operated by Lindcott Armory LLC (\"we,\" \"us,\" or \"our\"). By using the app you agree to these Terms.",
+    "shortVersion": "You must be 18 or older and a lawful firearm owner to use this app. Use it for record-keeping only — not for anything illegal. The AI assistant will decline requests for illegal modifications. We don't facilitate firearm sales or transfers. We may disclose your data in response to valid legal process. The app is provided as-is, without warranty. Delete your account to remove cloud data within 30 days.",
+    "sections": [
+      {
+        "heading": "1. Eligibility",
+        "blocks": [
+          { "type": "p", "text": "You must be at least 18 years old and legally permitted to own or possess firearms under all applicable federal, state, and local laws in your jurisdiction. Lindcott Armory is intended solely for lawful firearm owners and collectors. By using this app you represent that your use is lawful and that you have the legal capacity to enter into a binding agreement." }
+        ]
+      },
+      {
+        "heading": "2. Permitted Use",
+        "blocks": [
+          { "type": "p", "text": "Lindcott Armory is a personal record-keeping, maintenance tracking, and educational tool for lawful firearm owners. Permitted uses include:" },
+          { "type": "ul", "items": [
+            "Recording and organizing information about legally owned firearms",
+            "Tracking maintenance history, round counts, and modification logs",
+            "Using the Field Guide for historical and educational content",
+            "Using the AI assistant for general questions about firearms, maintenance, history, and ammunition",
+            "Exporting your data for personal use"
+          ]}
+        ]
+      },
+      {
+        "heading": "3. Prohibited Use",
+        "blocks": [
+          { "type": "p", "text": "You may not use Lindcott Armory to track firearms you do not lawfully own or possess, to facilitate illegal activity, or to circumvent any legal safeguard related to firearm acquisition or ownership. Specific prohibitions include:" },
+          { "type": "ul", "items": [
+            "Using the AI assistant or any other feature to seek instructions for illegal firearm modifications, including converting semi-automatic firearms to full-automatic fire, manufacturing unregistered suppressors, or any modification prohibited under applicable law",
+            "Facilitating the sale, transfer, or disposition of firearms in any manner that violates applicable law",
+            "Creating false or fraudulent records of firearm ownership",
+            "Allowing anyone under 18 years of age to use the app",
+            "Attempting to bypass or hack any security measure in the app or our servers"
+          ]},
+          { "type": "p", "text": "Violation of these prohibitions may result in immediate account termination." }
+        ]
+      },
+      {
+        "heading": "4. Your Data",
+        "blocks": [
+          { "type": "p", "text": "You own your data. All information you enter is stored locally on your device first. Optional cloud sync stores a copy on our servers solely to enable cross-device access. We do not sell, share, or monetize your data. By enabling cloud sync, you grant us a limited license to store and transmit your data for the purpose of providing that service. This license terminates when you delete your account." },
+          { "type": "p", "text": "You acknowledge that storing sensitive information such as serial numbers in any software carries inherent risk. We cannot guarantee that your data will never be compromised, and you should maintain your own offline records for any legally critical information." }
+        ]
+      },
+      {
+        "heading": "5. AI Features",
+        "blocks": [
+          { "type": "p", "text": "Lindcott Armory includes AI-powered features to help with firearm maintenance, historical reference, and collection management. AI responses are informational only and do not constitute legal, gunsmithing, or safety advice. Always consult a licensed professional for matters of safety, legal compliance, or mechanical work." },
+          { "type": "p", "text": "The AI Assistant is configured to refuse requests related to illegal firearm modifications, circumventing legal safeguards, or any activity that would violate applicable law. Attempts to misuse the AI Assistant may result in account termination." }
+        ]
+      },
+      {
+        "heading": "6. Legal Process",
+        "blocks": [
+          { "type": "p", "text": "Lindcott Armory LLC may be compelled to disclose user data in response to a valid court order, subpoena, or other lawful legal process. We will make reasonable efforts to notify you prior to such disclosure unless prohibited by law. By using this app you acknowledge this possibility." }
+        ]
+      },
+      {
+        "heading": "7. Account Termination",
+        "blocks": [
+          { "type": "p", "text": "You may delete your account at any time from Settings → Delete Account. We may suspend or terminate accounts that violate these Terms. Upon deletion, your cloud data is removed from our servers within 30 days. Local data on your device is not affected by account deletion." }
+        ]
+      },
+      {
+        "heading": "8. Intellectual Property",
+        "blocks": [
+          { "type": "p", "text": "The Lindcott Armory app, website, Field Guide content, design, trademarks, and all associated intellectual property are owned by Lindcott Armory LLC. You may not reproduce, distribute, or create derivative works from our intellectual property without express written permission." }
+        ]
+      },
+      {
+        "heading": "9. Disclaimer of Warranties",
+        "blocks": [
+          { "type": "p", "text": "Lindcott Armory is provided \"as is\" without warranties of any kind, express or implied. We do not warrant that the app will be error-free, uninterrupted, or secure. Firearm safety is your responsibility. The app does not replace safe storage practices, training, or compliance with applicable law." }
+        ]
+      },
+      {
+        "heading": "10. Limitation of Liability",
+        "blocks": [
+          { "type": "p", "text": "To the maximum extent permitted by law, Lindcott Armory LLC shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the app, including but not limited to data loss, legal consequences related to firearm ownership, or reliance on information displayed in the app." }
+        ]
+      },
+      {
+        "heading": "11. Governing Law",
+        "blocks": [
+          { "type": "p", "text": "These Terms are governed by and construed in accordance with the laws of the State of Wyoming, United States. Any disputes shall be resolved in the courts of Laramie County, Wyoming." }
+        ]
+      },
+      {
+        "heading": "12. Changes to These Terms",
+        "blocks": [
+          { "type": "p", "text": "We may update these Terms from time to time. Continued use of the app after changes are posted constitutes your acceptance. Material changes will be communicated via in-app notice." }
+        ]
+      },
+      {
+        "heading": "13. Contact",
+        "blocks": [
+          { "type": "p", "text": "Questions about these Terms: support@lindcottarmory.com — Lindcott Armory LLC" }
+        ]
+      }
+    ]
+  }
+}

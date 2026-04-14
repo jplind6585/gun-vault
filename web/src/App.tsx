@@ -15,6 +15,7 @@ import { useUndo } from './useUndo';
 import { AddGunForm } from './AddGunForm';
 import { SessionRecaps } from './SessionRecaps';
 import { SessionLogView } from './SessionLogView';
+import { SessionAIParser } from './SessionAIParser';
 import { DevToolbar } from './DevToolbar';
 import { exportInsuranceClaim } from './GunVault';
 
@@ -43,11 +44,12 @@ const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m
 
 import { useShooterProfile } from './useShooterProfile';
 import { initBilling } from './lib/billing';
+// SplashScreen imported dynamically to avoid Android bundle export error
 import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'session-ai' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
 
 function App() {
   return (
@@ -62,6 +64,7 @@ function AppCore() {
   const [ready, setReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
+  const [skipWelcome, setSkipWelcome] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSmartSearch, setShowSmartSearch] = useState(false);
   const [showFab, setShowFab] = useState(false);
@@ -78,6 +81,7 @@ function AppCore() {
   const [showSettings, setShowSettings] = useState(false);
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [gunRefreshKey, setGunRefreshKey] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -88,15 +92,18 @@ function AppCore() {
   // Initialize seed data before first render
   useEffect(() => {
     // Safety net: never hang on the loading screen for more than 2 seconds
-    const fallback = setTimeout(() => { setReady(true); loadGuns(); }, 2000);
+    const hideSplash = () => import('@capacitor/splash-screen').then(({ SplashScreen }) => SplashScreen.hide().catch(() => {}));
+    const fallback = setTimeout(() => { setReady(true); loadGuns(); hideSplash(); }, 2000);
     ensureInitialized().then(() => {
       clearTimeout(fallback);
       setReady(true);
       loadGuns();
+      hideSplash();
     }).catch(() => {
       clearTimeout(fallback);
       setReady(true);
       loadGuns();
+      hideSplash();
     });
   }, []);
 
@@ -220,12 +227,12 @@ function AppCore() {
 
     addGun(newGun);
     loadGuns();
+    setGunRefreshKey(k => k + 1);
     setShowAddForm(false);
-    success(`${newGun.make} ${newGun.model} added`);
 
-    addUndoAction(`Add ${newGun.make} ${newGun.model}`, () => {
+    addUndoAction(`${newGun.make} ${newGun.model} added`, () => {
       loadGuns();
-      error(`Undo: Removed ${newGun.make} ${newGun.model}`);
+      setGunRefreshKey(k => k + 1);
     });
   }
 
@@ -242,6 +249,7 @@ function AppCore() {
     if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
     if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
     if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
+    if (currentView === 'session-ai')   return <AppHeader title="Describe Session" onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
     if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
@@ -251,17 +259,18 @@ function AppCore() {
     if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} backLabel="Vault" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
-    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" />;
+    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'assistant')    return <AppHeader title="AI Assistant" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'legal')        return <AppHeader title="Legal" onBack={() => setCurrentView('more')} backLabel="More" />;
     return null;
   }
 
   function renderView() {
-    if (currentView === 'home' && allGuns.length === 0) return (
+    if (currentView === 'home' && allGuns.length === 0 && !skipWelcome) return (
       <WelcomeScreen
         onAddGun={() => setShowAddForm(true)}
         onRestoreBackup={() => setShowCSVImport(true)}
+        onBrowse={() => setSkipWelcome(true)}
       />
     );
     if (currentView === 'home') return (
@@ -324,6 +333,7 @@ function AppCore() {
                 onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
                 onAddGun={() => setShowAddForm(true)}
                 onImportRequest={() => setShowCSVImport(true)}
+                refreshKey={gunRefreshKey}
               />
             : section === 'ammo'
             ? <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
@@ -343,6 +353,7 @@ function AppCore() {
     );
     if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} />;
     if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} />;
+    if (currentView === 'session-ai')  return <SessionAIParser onSaved={() => setCurrentView('sessions')} onCancel={() => setCurrentView('sessions')} />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis />;
@@ -443,6 +454,7 @@ function AppCore() {
               alignItems: 'flex-end',
             }}>
               {[
+                { label: 'Describe Session 🎤', action: () => { setShowFab(false); setCurrentView('session-ai'); } },
                 { label: 'Log Session', action: () => { setShowFab(false); openSessionLog(); } },
                 { label: 'Add Gun',     action: () => { setShowFab(false); setShowAddForm(true); } },
                 { label: 'Add Ammo',    action: () => { setShowFab(false); setVaultSection('ammo'); setCurrentView('vault'); setOpenAddAmmo(true); } },
@@ -501,17 +513,28 @@ function AppCore() {
 function UndoToast({ action, onUndo }: { action: string; onUndo: () => void }) {
   return (
     <div style={{
-      position: 'fixed', bottom: '80px', left: '24px', zIndex: 9999,
-      backgroundColor: theme.surface, border: `1px solid ${theme.accent}`,
-      borderRadius: '6px', padding: '12px 16px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      display: 'flex', alignItems: 'center', gap: '12px',
+      position: 'fixed',
+      bottom: 'calc(72px + env(safe-area-inset-bottom) + 8px)',
+      left: '16px',
+      right: '16px',
+      maxWidth: '480px',
+      margin: '0 auto',
+      zIndex: 9999,
+      backgroundColor: '#0e0e2a',
+      border: `0.5px solid ${theme.border}`,
+      borderRadius: '8px',
+      padding: '12px 16px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     }}>
-      <span style={{ fontSize: '13px', color: theme.textPrimary }}>{action}</span>
+      <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary }}>{action}</span>
       <button onClick={onUndo} style={{
-        padding: '6px 12px', backgroundColor: theme.accent,
-        color: theme.bg, border: 'none', borderRadius: '4px',
-        fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily: 'monospace',
+        background: 'none', border: 'none', padding: '4px 8px',
+        color: theme.accent, fontSize: '13px', fontWeight: 600,
+        letterSpacing: '0.05em', cursor: 'pointer', fontFamily: 'monospace',
+        flexShrink: 0,
       }}>
         UNDO
       </button>

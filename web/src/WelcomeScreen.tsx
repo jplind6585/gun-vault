@@ -6,6 +6,7 @@ import { theme } from './theme';
 interface Props {
   onAddGun: () => void;
   onRestoreBackup: () => void;
+  onBrowse?: () => void;
 }
 
 function IconVault() {
@@ -56,7 +57,7 @@ const VALUE_PROPS = [
   },
 ];
 
-export function WelcomeScreen({ onAddGun, onRestoreBackup }: Props) {
+export function WelcomeScreen({ onAddGun, onRestoreBackup, onBrowse }: Props) {
   return (
     <div style={{
       display: 'flex',
@@ -67,6 +68,29 @@ export function WelcomeScreen({ onAddGun, onRestoreBackup }: Props) {
       padding: '32px 24px 48px',
       backgroundColor: theme.bg,
     }}>
+
+      {/* Dismiss */}
+      {onBrowse && (
+        <div style={{ width: '100%', maxWidth: '360px', display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+          <button
+            onClick={onBrowse}
+            style={{
+              background: 'none', border: 'none', padding: '4px 0',
+              color: theme.textMuted, fontFamily: 'monospace',
+              fontSize: '10px', letterSpacing: '0.5px', cursor: 'pointer',
+            }}
+          >
+            BROWSE APP ›
+          </button>
+        </div>
+      )}
+
+      {/* Logo */}
+      <img
+        src="/logo.png"
+        alt="Lindcott Armory"
+        style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: '16px', borderRadius: '12px' }}
+      />
 
       {/* Wordmark */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>

@@ -1,6 +1,6 @@
 // Claude API — routed through Supabase Edge Function (production-safe)
 // Your Anthropic key lives in Supabase secrets, never in the browser.
-import type { Session, Gun, AmmoLot, TargetPhotoAnalysis } from './types';
+import type { Session, Gun, AmmoLot, TargetPhotoAnalysis, SessionPurpose, IssueType } from './types';
 import type { ShooterProfile } from './shooterProfile';
 import type { CheckInTrigger } from './profileInference';
 import { supabase, SUPABASE_URL } from './lib/supabase';
@@ -343,21 +343,30 @@ and one concrete action the shooter should take. Compare to typical patterns whe
 
 const ASSISTANT_SYSTEM_PROMPT = `You are the Lindcott Armory AI — a knowledgeable, straight-talking firearms assistant with full access to this user's personal vault data.
 
+SCOPE — you are strictly limited to:
+- The user's vault data: guns, ammo lots, optics, range sessions, and maintenance status
+- Firearms knowledge: maintenance procedures, specifications, history, ballistics, cleaning, storage, safe handling, and ammo selection
+- Reloading: component questions and load development concepts — always recommend consulting published load data, never substitute for it
+
+If the user asks about anything outside this scope — including but not limited to: politics, news, general knowledge, coding, relationships, health, legal advice, financial advice, or any topic not directly related to firearms or their vault — respond only with:
+
+"I'm scoped to your vault and firearms questions only."
+
+Do not explain why you are refusing. Do not suggest alternatives. Do not elaborate. One sentence, then stop.
+
+HARD LIMITS — refuse any request related to:
+- Illegal weapon modifications (auto conversions, bump stocks, removing serial numbers, SBR/SBS without proper NFA registration, etc.)
+- Circumventing background checks or legal transfer processes
+- Any activity that would violate federal, state, or local law
+
+For these requests, respond only with: "I can't help with that."
+
 CAPABILITIES:
 - Answer questions about firearms, cartridges, ammunition, optics, and ballistics
 - Analyze the user's personal vault data and give specific, personalized insights
 - Help with maintenance planning, ammo selection, and range performance
 - Explain historical and technical context for any firearm or cartridge
 - Assist with training planning and drill selection
-
-HARD LIMITS — never provide guidance on:
-- Converting semi-automatic firearms to fire automatically
-- Manufacturing, modifying, or acquiring NFA items (suppressors, SBR/SBS, destructive devices, machine guns) outside legal channels
-- Defeating federal, state, or local background check or transfer requirements
-- Illegal modifications of any kind in any jurisdiction
-- Methods to defeat firearm safety mechanisms for harmful purposes
-
-If a question touches these areas, briefly explain you can't help with that and suggest consulting a licensed FFL dealer or firearms attorney. Then move on.
 
 TONE: Direct and practical — like a trusted gunsmith or experienced range instructor. Not preachy. Answer the question.`;
 
@@ -556,6 +565,113 @@ Goals should be specific, actionable, first-person statements. 2–4 goals max.`
     // fall through
   }
   return { goals: [], notes: '' };
+}
+
+// ── Session AI Parser ─────────────────────────────────────────────────────────
+
+export interface ParsedSessionString {
+  gunId: string;
+  roundsExpended: number;
+  ammoLotId?: string;
+  distanceYards?: number;
+}
+
+export interface ParsedSessionData {
+  strings?: ParsedSessionString[];
+  date?: string;
+  location?: string;
+  indoorOutdoor?: 'Indoor' | 'Outdoor';
+  purpose?: SessionPurpose[];
+  issues?: boolean;
+  issueTypes?: IssueType[];
+  issueDescription?: string;
+  notes?: string;
+}
+
+export interface SessionParseResult {
+  extracted: ParsedSessionData;
+  message: string;
+  done: boolean;
+}
+
+export async function parseSessionFromText(
+  guns: Gun[],
+  ammoLots: AmmoLot[],
+  messages: { role: 'user' | 'assistant'; content: string }[],
+): Promise<SessionParseResult> {
+  const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+
+  const gunList = guns.length
+    ? guns.map(g => `  - ID:${g.id} | ${g.displayName || `${g.make} ${g.model}`} | ${g.caliber} | ${g.type}`).join('\n')
+    : '  (no firearms in vault)';
+
+  const ammoList = ammoLots.length
+    ? ammoLots.map(a => `  - ID:${a.id} | ${a.brand} ${a.productLine} ${a.grainWeight}gr ${a.caliber} | qty:${a.quantity}`).join('\n')
+    : '  (no ammo in inventory)';
+
+  const systemPrompt = `You are a session logging assistant for Lindcott Armory. Extract shooting session data from natural language.
+
+TODAY: ${today}
+
+USER'S FIREARMS:
+${gunList}
+
+USER'S AMMO INVENTORY:
+${ammoList}
+
+RESPONSE FORMAT — first line must be JSON, then a blank line, then your conversational reply:
+{"extracted": {FIELDS}, "done": BOOLEAN}
+
+Your reply here.
+
+EXTRACTED FIELDS (only include what you've identified):
+- strings: [{gunId, roundsExpended, ammoLotId?, distanceYards?}] — one per gun
+- date: "MM/DD/YYYY" (default today)
+- location: range/location name
+- indoorOutdoor: "Indoor" or "Outdoor"
+- purpose: ["Warmup","Drills","Zeroing","Qualification","Competition","Fun","Carry Eval"]
+- issues: boolean
+- issueTypes: ["FTF","FTE","Double Feed","Stovepipe","Trigger Reset","Accuracy","Sighting","Other"]
+- issueDescription: detailed issue description
+- notes: anything else
+
+Set "done":true when you have at least one string with a matched gunId and roundsExpended.
+
+RULES:
+- Fuzzy match guns (e.g. "savage mkII"→Savage Mark II, "glock"→Glock if only one)
+- Fuzzy match ammo (e.g. "CCI greendot"→CCI Green Dot)
+- Multiple guns mentioned → multiple strings
+- Default date to today if not specified
+- Ask only about what's missing and important. 1-3 sentences max.
+- When done:true, confirm what you captured and say you're ready to log.`;
+
+  const raw = await callClaude(
+    messages.map(m => ({ role: m.role, content: m.content })),
+    systemPrompt,
+    'session_parse',
+    512,
+  );
+
+  // First line is JSON, rest is the conversational message
+  const newlineIdx = raw.indexOf('\n');
+  const jsonLine = newlineIdx > 0 ? raw.slice(0, newlineIdx).trim() : raw.trim();
+  const message = newlineIdx > 0 ? raw.slice(newlineIdx).trim() : '';
+
+  try {
+    const jsonMatch = jsonLine.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        extracted: parsed.extracted || {},
+        message: message || 'Got it.',
+        done: parsed.done === true,
+      };
+    }
+  } catch {
+    // fall through to raw response
+  }
+
+  return { extracted: {}, message: raw, done: false };
 }
 
 // ── Training gap ─────────────────────────────────────────────────────────────

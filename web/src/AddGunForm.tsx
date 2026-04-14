@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import type { Gun } from './types';
-import { lookupGunSpec, getSenseCheck, suggestMakes, suggestModels } from './gunDatabase';
+import { lookupGunSpec, suggestMakes, suggestModels } from './gunDatabase';
 import { getSettings } from './SettingsPanel';
 
 const LRU_KEY = 'lru_calibers';
@@ -64,8 +64,6 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [showMakeSugg, setShowMakeSugg] = useState(false);
   const [showModelSugg, setShowModelSugg] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
-  const [senseCheckMsg, setSenseCheckMsg] = useState('');
-  const [senseCheckDismissed, setSenseCheckDismissed] = useState(false);
 
   // Condition & status
   const [condition, setCondition]   = useState<NonNullable<Gun['condition']> | null>(null);
@@ -73,6 +71,19 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
 
   // Acquisition
   const [acquiredDate, setAcquiredDate]   = useState('');
+
+  function normalizeDate(raw: string): string {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 7) {
+      // MDDYYYY → MM/DD/YYYY
+      return `0${digits[0]}/${digits[1]}${digits[2]}/${digits.slice(3)}`;
+    }
+    if (digits.length === 8) {
+      // MMDDYYYY → MM/DD/YYYY
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    }
+    return raw;
+  }
   const [acquiredPrice, setAcquiredPrice] = useState('');
   const [acquiredFrom, setAcquiredFrom]   = useState('');
 
@@ -142,15 +153,6 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     e.preventDefault();
     if (!isValid) return;
 
-    // Sense check
-    if (!senseCheckDismissed) {
-      const msg = getSenseCheck(make, model);
-      if (msg) {
-        setSenseCheckMsg(msg);
-        return; // pause for user to review
-      }
-    }
-
     // Update LRU calibers
     if (caliber.trim()) {
       saveLruCaliber(caliber.trim());
@@ -187,7 +189,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
           <button style={styles.closeBtn} onClick={onCancel} aria-label="Close">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={styles.body}>
 
             {/* ── BASIC FIELDS (always shown) ── */}
@@ -212,7 +214,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 style={styles.input}
                 placeholder="e.g. Glock, Sig Sauer, S&W..."
                 value={make}
-                onChange={e => { setMake(e.target.value); setSenseCheckDismissed(false); }}
+                onChange={e => setMake(e.target.value)
                 onBlur={() => setTimeout(() => setShowMakeSugg(false), 150)}
                 autoCapitalize="words"
                 autoComplete="off"
@@ -235,7 +237,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 style={styles.input}
                 placeholder="e.g. G19 Gen5, P320 Compact..."
                 value={model}
-                onChange={e => { setModel(e.target.value); setSenseCheckDismissed(false); }}
+                onChange={e => setModel(e.target.value)
                 onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
                 autoCapitalize="words"
                 autoComplete="off"
@@ -250,28 +252,6 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 </div>
               )}
             </div>
-
-            {/* Sense check alert */}
-            {senseCheckMsg && !senseCheckDismissed && (
-              <div style={{
-                backgroundColor: 'rgba(255,169,77,0.12)',
-                border: `0.5px solid ${theme.orange}`,
-                borderRadius: '6px',
-                padding: '10px 12px',
-                marginBottom: '14px',
-              }}>
-                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.orange, letterSpacing: '0.8px', marginBottom: '5px' }}>HEADS UP</div>
-                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textPrimary, lineHeight: '1.5', marginBottom: '8px' }}>{senseCheckMsg}</div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button type="button" onClick={() => { setSenseCheckDismissed(true); setSenseCheckMsg(''); setModel(''); }} style={{ ...styles.smallBtn, color: theme.accent, borderColor: theme.accent }}>
-                    UPDATE MODEL
-                  </button>
-                  <button type="button" onClick={() => { setSenseCheckDismissed(true); setSenseCheckMsg(''); }} style={styles.smallBtn}>
-                    LOOKS CORRECT
-                  </button>
-                </div>
-              </div>
-            )}
 
             <Field label="Caliber *">
               <div style={{ position: 'relative' }}>
@@ -352,6 +332,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   placeholder="MM/DD/YYYY"
                   value={acquiredDate}
                   onChange={e => setAcquiredDate(e.target.value)}
+                  onBlur={e => setAcquiredDate(normalizeDate(e.target.value))}
                   inputMode="numeric"
                 />
               </Field>
@@ -478,14 +459,8 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
             </>
             )} {/* end showAdvanced */}
 
-          </div>
-
-          {/* Footer */}
-          <div style={{ ...styles.footer, flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, lineHeight: '1.6', textAlign: 'center' }}>
-              Everything can be updated after adding from the gun detail page.
-            </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', width: '100%' }}>
+            {/* Action buttons — inside scroll so keyboard doesn't bury them */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', width: '100%', marginTop: 24, paddingBottom: 32 }}>
               <button type="button" style={styles.cancelBtn} onClick={onCancel}>
                 CANCEL
               </button>
@@ -503,6 +478,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 ADD TO VAULT
               </button>
             </div>
+
           </div>
         </form>
       </div>

@@ -1,0 +1,26 @@
+default_platform(:android)
+
+platform :android do
+
+  desc "Build signed AAB and upload to Play Store Internal Testing"
+  lane :deploy do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "./",
+    )
+    upload_to_play_store(
+      package_name: "com.lindcottarmory.app",
+      track: "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: ENV["PLAY_STORE_JSON_KEY"] || "./fastlane/play-store-key.json",
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+end

@@ -619,6 +619,58 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
           </div>
         </Section>
 
+        {/* ── TEST TOOLS (dev account only) ── */}
+        {user?.email === 'james@lindcottarmory.com' && (
+          <Section id="testtools" label="⚙ Test Tools" open={openSections.has('testtools')} onToggle={toggleSection}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, marginBottom: '10px' }}>
+              ONLY VISIBLE TO james@lindcottarmory.com
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  if (!confirm('Wipe ALL data (guns, sessions, ammo)?')) return;
+                  ['gunvault_guns', 'gunvault_sessions', 'gunvault_ammo', 'gunvault_initialized', 'gunvault_is_demo'].forEach(k => localStorage.removeItem(k));
+                  window.location.reload();
+                }}
+                style={{ ...btnBase, color: theme.red, borderColor: 'rgba(255,107,107,0.3)' }}
+              >
+                WIPE ALL DATA (GUNS + SESSIONS + AMMO)
+              </button>
+              <button
+                onClick={() => {
+                  if (!confirm('Wipe all sessions?')) return;
+                  localStorage.removeItem('gunvault_sessions');
+                  window.location.reload();
+                }}
+                style={{ ...btnBase }}
+              >
+                WIPE SESSIONS ONLY
+              </button>
+              <button
+                onClick={() => {
+                  if (!confirm('Wipe all ammo?')) return;
+                  localStorage.removeItem('gunvault_ammo');
+                  window.location.reload();
+                }}
+                style={{ ...btnBase }}
+              >
+                WIPE AMMO ONLY
+              </button>
+              <button
+                onClick={() => {
+                  if (!confirm('Wipe all guns (and their sessions)?')) return;
+                  localStorage.removeItem('gunvault_guns');
+                  localStorage.removeItem('gunvault_sessions');
+                  window.location.reload();
+                }}
+                style={{ ...btnBase }}
+              >
+                WIPE GUNS ONLY
+              </button>
+            </div>
+          </Section>
+        )}
+
         {/* ── DELETE ACCOUNT ── */}
         <Section id="danger" label="Delete Account" open={openSections.has('danger')} onToggle={toggleSection}>
           {deleteStep === 0 && (

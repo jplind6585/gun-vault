@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { theme } from '../theme';
+import { Capacitor } from '@capacitor/core';
+
+const OAUTH_REDIRECT = Capacitor.isNativePlatform()
+  ? 'com.lindcottarmory.app://login-callback'
+  : window.location.origin;
 
 type Step = 'menu' | 'email' | 'sent' | 'signup';
 
@@ -37,7 +42,7 @@ export function LoginScreen() {
     setError('');
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: OAUTH_REDIRECT },
     });
     if (err) { setError(err.message); setLoading(null); }
     // on success, browser redirects — no further state needed

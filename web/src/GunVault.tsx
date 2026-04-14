@@ -13,6 +13,7 @@ interface GunVaultProps {
   onGunSelect: (gun: Gun) => void;
   onAddGun: () => void;
   onImportRequest?: () => void;
+  refreshKey?: number;
 }
 
 export const typeAccent: Record<string, string> = {
@@ -26,7 +27,7 @@ export const typeAccent: Record<string, string> = {
 const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold', 'Transferred'];
 const ALL_PURPOSES: GunPurpose[] = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'];
 
-export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultProps) {
+export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }: GunVaultProps) {
   const [guns, setGuns]         = useState<Gun[]>([]);
   const [lastShotMap, setLastShotMap] = useState<Record<string, string>>({});
   const [search, setSearch]     = useState('');
@@ -52,7 +53,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest }: GunVaultPro
       if (!map[s.gunId] || s.date > map[s.gunId]) map[s.gunId] = s.date;
     }
     setLastShotMap(map);
-  }, []);
+  }, [refreshKey]);
 
   // ── Step 1: type-filtered set (used to derive cascading options) ───────────
   const typeFiltered = useMemo(() =>

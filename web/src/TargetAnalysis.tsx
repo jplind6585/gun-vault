@@ -496,6 +496,7 @@ export function TargetAnalysis() {
   };
   const [taOptions, setTaOptions] = useState<TaOptions>(loadOptions);
   const [showOptions, setShowOptions] = useState(false);
+  const [shotColorMode, setShotColorMode] = useState<'poa' | 'centroid'>('poa');
   const updateOption = <K extends keyof TaOptions>(key: K, val: TaOptions[K]) => {
     setTaOptions(prev => { const next = { ...prev, [key]: val }; localStorage.setItem('ta_options', JSON.stringify(next)); return next; });
   };
@@ -1457,28 +1458,46 @@ export function TargetAnalysis() {
 
         {/* Shot sequence timeline strip */}
         {taOptions.shotTimeline && markMode === 'shots' && marks.length >= 3 && (() => {
+          const ppi = pixelsPerInch ?? 1;
           const shots = marks.slice(1);
+          const poa = marks[0];
           const meanX = shots.reduce((a, s) => a + s.x, 0) / shots.length;
           const meanY = shots.reduce((a, s) => a + s.y, 0) / shots.length;
-          const radials = shots.map(s => Math.sqrt((s.x - meanX) ** 2 + (s.y - meanY) ** 2));
-          const meanR = radials.reduce((a, b) => a + b, 0) / radials.length;
-          const sdR = Math.sqrt(radials.map(r => (r - meanR) ** 2).reduce((a, b) => a + b, 0) / radials.length);
+          const refX = shotColorMode === 'centroid' ? meanX : poa.x;
+          const refY = shotColorMode === 'centroid' ? meanY : poa.y;
+          const radials = shots.map(s =>
+            Math.sqrt(((s.x - refX) / ppi) ** 2 + ((s.y - refY) / ppi) ** 2)
+          );
           return (
             <div style={{ flexShrink: 0, borderTop: `1px solid ${theme.border}`, background: theme.surface }}>
-              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Shot Sequence</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 2px' }}>
+                <div style={{ fontSize: 9, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Shot Sequence</div>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {(['poa', 'centroid'] as const).map(mode => (
+                    <button key={mode} onClick={() => setShotColorMode(mode)} style={{
+                      padding: '2px 7px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                      fontSize: 8, fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.5px',
+                      backgroundColor: shotColorMode === mode ? theme.accent : theme.surface,
+                      color: shotColorMode === mode ? theme.bg : theme.textMuted,
+                    }}>
+                      {mode === 'poa' ? 'POA' : 'GROUP'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ display: 'flex', overflowX: 'auto', gap: 6, padding: '4px 12px 8px', scrollbarWidth: 'none' }}>
                 {shots.map((_, i) => {
-                  const r = radials[i];
-                  const color = r <= sdR ? '#4caf50' : r <= 2 * sdR ? '#ffd43b' : '#ff5252';
+                  const moa = toMoa(radials[i], distanceYds);
+                  const color = moa <= 1 ? '#4caf50' : moa <= 2 ? '#ffd43b' : '#ff5252';
                   return (
-                    <div key={i} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: r <= sdR ? '#fff' : '#000' }}>
+                    <div key={i} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: moa <= 1 ? '#fff' : '#000' }}>
                       {i + 1}
                     </div>
                   );
                 })}
               </div>
               <div style={{ display: 'flex', gap: 10, padding: '2px 12px 4px', flexShrink: 0 }}>
-                {([['#4caf50','Within 1 SD'], ['#ffd43b','1–2 SD'], ['#ef5350','>2 SD']] as [string,string][]).map(([color, label]) => (
+                {([['#4caf50','< 1 MOA'], ['#ffd43b','1–2 MOA'], ['#ef5350','> 2 MOA']] as [string,string][]).map(([color, label]) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
                     <span style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'monospace' }}>{label}</span>

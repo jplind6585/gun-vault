@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { pullFromSupabase, pushLocalDataToSupabase } from '../lib/sync';
 import { clearDemoData } from '../storage';
+import { Capacitor } from '@capacitor/core';
 
 interface AuthContextValue {
   user: User | null;
@@ -63,13 +64,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         // Clear local data on sign out so next user starts fresh
-        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings', 'lindcott_initial_goals', 'gunvault_initialized', 'gunvault_version'];
+        // gunvault_cartridges is shared reference data (encyclopedia), not user data — preserve it
+        const keysToKeep = ['gunvault_claude_key', 'lindcott_settings', 'lindcott_initial_goals', 'gunvault_initialized', 'gunvault_version', 'gunvault_cartridges'];
         const saved: Record<string, string> = {};
         keysToKeep.forEach(k => { const v = localStorage.getItem(k); if (v) saved[k] = v; });
         localStorage.clear();
         keysToKeep.forEach(k => { if (saved[k]) localStorage.setItem(k, saved[k]); });
       }
     });
+
+    // Handle OAuth deep link callback on native (e.g. after Google SSO)
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/app').then(({ App }) => {
+        App.addListener('appUrlOpen', async ({ url }) => {
+          console.log('[auth] appUrlOpen:', url);
+          if (!url.startsWith('com.lindcottarmory.app://')) return;
+
+          // Implicit flow: tokens arrive in the URL fragment
+          const hash = url.includes('#') ? url.split('#')[1] : '';
+          const hashParams = new URLSearchParams(hash);
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          console.log('[auth] implicit tokens found:', !!accessToken, !!refreshToken);
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            return;
+          }
+
+          // PKCE fallback: exchange authorization code for session
+          const query = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
+          const queryParams = new URLSearchParams(query);
+          const code = queryParams.get('code');
+          console.log('[auth] pkce code found:', !!code);
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(url);
+          }
+        });
+      });
+    }
 
     return () => { clearTimeout(authTimeout); subscription.unsubscribe(); };
   }, []);

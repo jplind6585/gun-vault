@@ -37,8 +37,9 @@ export async function initBilling(userId: string): Promise<void> {
   if (_initialized) return;
 
   const apiKey = import.meta.env.VITE_REVENUECAT_GOOGLE_API_KEY as string | undefined;
-  if (!apiKey) {
-    console.warn('[billing] VITE_REVENUECAT_GOOGLE_API_KEY not set — billing unavailable');
+  // Skip init if no key or if it's a test key without products configured yet
+  if (!apiKey || apiKey.startsWith('test_')) {
+    console.warn('[billing] RevenueCat skipped — configure production key before launch');
     return;
   }
 
@@ -47,7 +48,6 @@ export async function initBilling(userId: string): Promise<void> {
     await Purchases.setLogLevel({ level: LOG_LEVEL.ERROR });
     await Purchases.configure({ apiKey, appUserID: userId });
     _initialized = true;
-    console.log('[billing] RevenueCat initialized for user', userId);
   } catch (err) {
     console.warn('[billing] RevenueCat init failed:', err);
   }
