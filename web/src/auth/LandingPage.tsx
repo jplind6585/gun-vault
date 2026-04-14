@@ -4,10 +4,7 @@ import { theme } from '../theme';
 import { LoginScreen } from './LoginScreen';
 
 export function LandingPage() {
-  // If there's existing vault data, this is a returning user whose session lapsed —
-  // skip the marketing page and go straight to sign-in.
-  const hasExistingData = !!localStorage.getItem('gunvault_guns') || !!localStorage.getItem('gunvault_sessions');
-  const [showLogin, setShowLogin] = useState(hasExistingData);
+  const [showLogin, setShowLogin] = useState(false);
   const [anonLoading, setAnonLoading] = useState(false);
 
   async function handleAnonymous() {
