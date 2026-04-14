@@ -276,7 +276,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 /* ── HERO ──────────────────────────────────────────────────────────── */
 .hero {
-  padding: 60px 24px 80px;
+  padding: 90px 24px 80px;
   max-width: var(--max);
   margin: 0 auto;
   position: relative;
