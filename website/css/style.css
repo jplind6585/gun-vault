@@ -994,13 +994,13 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 .hero-bg-logo {
   position: absolute;
-  width: 420px;
+  width: 600px;
   height: auto;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   mix-blend-mode: screen;
-  opacity: 0.07;
+  opacity: 0.13;
   pointer-events: none;
   user-select: none;
 }
