@@ -1,0 +1,376 @@
+const SERVICE_WEAPONS = [
+  // Service Rifles
+  {
+    id: 'sw-springfield1903', name: 'Springfield M1903', countries: ['United States'], role: 'Service Rifle', yearStart: 1903, yearEnd: 1957, caliber: '.30-06',
+    story: "The M1903 was adopted after the Spanish-American War exposed how badly the Army's Krag-Jørgensen was outclassed by Spanish Mausers at San Juan Hill — the US essentially reverse-engineered the Mauser action, paid Germany a $200,000 patent fee, and produced arguably the finest bolt-action of WWI. It served in both World Wars, with early production featuring a \"rod bayonet\" so ridiculed by President Roosevelt that he personally ordered a return to blade bayonets. After WWII it lingered as a sniper platform until the 1950s, outlasting its official replacement by nearly a decade.",
+  },
+  {
+    id: 'sw-leeen', name: 'Lee-Enfield SMLE', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'Service Rifle', yearStart: 1895, yearEnd: 1957, caliber: '.303 British',
+    story: "The Short Magazine Lee-Enfield was the product of James Paris Lee's rear-locking bolt — faster to cycle than Mauser's front-locking design, allowing trained soldiers to deliver the famous 'mad minute' of 15 accurate rounds. At Mons in 1914, German forces reportedly believed they were facing machine guns due to the volume of fire from British riflemen. Its 10-round magazine gave a significant capacity advantage in both World Wars, and the No.4 Mk I variant of WWII is widely considered the finest bolt-action service rifle ever fielded. Variations served in Commonwealth militaries into the 1990s.",
+  },
+  {
+    id: 'sw-mauser98', name: 'Gewehr 98 / K98k', countries: ['Germany'], role: 'Service Rifle', yearStart: 1898, yearEnd: 1945, caliber: '7.92×57mm',
+    story: "Peter Paul Mauser's 1898 action set the template for virtually every bolt-action sporting and military rifle for the next century. The front-locking lug design provided a stronger, safer lockup than the Lee system, and the controlled-round-feed extractor became the gold standard for reliability. The shortened Karabiner 98 kurz version armed the Wehrmacht through WWII, and captured K98k rifles were prized by Allied soldiers for their accuracy. The action was so mechanically sound that Mauser 98 derivatives are still produced today as premium hunting rifles.",
+  },
+  {
+    id: 'sw-mosin', name: 'Mosin-Nagant M91/30', countries: ['USSR', 'Russia', 'Finland'], role: 'Service Rifle', yearStart: 1891, yearEnd: 1960, caliber: '7.62×54mmR',
+    story: "Adopted by Imperial Russia in 1891, the Mosin-Nagant was a compromise between designs by Russian Colonel Mosin and Belgian Léon Nagant — each received 20,000 rubles while the other's contributions were incorporated without credit. Over 37 million were produced across its service life, making it one of the most manufactured bolt-actions in history. Soviet sniper Simo Häyhä — the 'White Death' — used an iron-sighted M28 variant to record over 500 kills in Finland's Winter War. The action's quirky interruptor and a cartridge with an archaic rimmed case made magazine feeding awkward, but Soviet industry compensated by producing the rifle in staggering quantities.",
+  },
+  {
+    id: 'sw-garand', name: 'M1 Garand', countries: ['United States'], role: 'Service Rifle', yearStart: 1936, yearEnd: 1957, caliber: '.30-06',
+    story: "John Garand spent 18 years perfecting his design before the Army adopted it in 1936, giving American infantry the world's first standard-issue semi-automatic rifle. General Patton called it 'the greatest battle implement ever devised.' The en-bloc clip ejects with a distinctive metallic ping when empty — legend says this warned enemies the shooter was reloading, but combat veterans universally dismissed this as barracks mythology. Replaced by the M14 in 1957, though the M14 proved so problematic in Vietnam that many argued the Garand's replacement was premature.",
+  },
+  {
+    id: 'sw-stg44', name: 'StG 44', countries: ['Germany'], role: 'Service Rifle', yearStart: 1944, yearEnd: 1945, caliber: '7.92×33mm',
+    story: "The Sturmgewehr 44 is arguably the most influential firearm of the 20th century — it demonstrated that an intermediate cartridge in a select-fire rifle could outperform both submachine guns and full-power rifles across most combat ranges. Hitler initially banned development of the 'assault rifle' concept, forcing engineers to disguise the MP43/MP44 as a submachine gun upgrade before he saw battlefield results and approved it. Mikhail Kalashnikov, who was wounded at the Battle of Bryansk, studied captured StG 44s while recovering, and later acknowledged they influenced his thinking. Only about 425,000 were produced before the war ended — too few and too late.",
+  },
+  {
+    id: 'sw-ak47', name: 'AK-47 / AKM', countries: ['USSR', 'Russia', 'China', 'N. Korea', 'Vietnam'], role: 'Service Rifle', yearStart: 1949, yearEnd: null, caliber: '7.62×39mm',
+    story: "Mikhail Kalashnikov designed the AK-47 in 1947 drawing on the StG 44's intermediate cartridge concept but incorporating the rotating bolt of the M1 Garand and the trigger group layout of the Remington Model 8. The AKM — a stamped-receiver redesign adopted in 1959 — is what most people actually mean by 'AK-47.' Its loose tolerances allow it to function reliably even when fouled with mud and sand, at the cost of accuracy; the design intentionally prioritizes function over precision. With an estimated 100 million produced, it is the most widely distributed weapon in human history and has appeared in nearly every armed conflict since 1950.",
+  },
+  {
+    id: 'sw-fal', name: 'FN FAL', countries: ['UK', 'Australia', 'Canada', 'Israel', 'Argentina', 'Belgium'], role: 'Service Rifle', yearStart: 1953, yearEnd: 1990, caliber: '7.62×51mm',
+    story: "The FN FAL was the standard rifle of the Western alliance during the Cold War, adopted by over 90 nations — earning it the nickname 'The Right Arm of the Free World.' FN originally designed it around an intermediate cartridge similar to the 7.92×33mm, but US pressure forced adoption of the full-power 7.62×51mm NATO round, making automatic fire essentially uncontrollable. The Falklands War created the unique spectacle of Argentine and British forces shooting at each other with the same rifle. Israel replaced it with the Galil in 1973 after Sinai desert conditions exposed maintenance challenges with the gas system.",
+  },
+  {
+    id: 'sw-m14', name: 'M14', countries: ['United States'], role: 'Service Rifle', yearStart: 1957, yearEnd: 1970, caliber: '7.62×51mm',
+    story: "The M14 replaced the Garand in 1957 after a development process so riddled with bureaucratic infighting that multiple congressional investigations were launched. It was designed as a rifle, squad automatic weapon, and sniper rifle simultaneously — and excelled at none of them. In Vietnam's jungle combat, it was heavy, long, and its full-power cartridge made it uncontrollable on automatic. By 1970 it had been largely replaced by the M16, though ironically it was brought back in the 2000s for Iraq and Afghanistan as a designated marksman rifle — exactly the role its automatic function was never suited for.",
+  },
+  {
+    id: 'sw-g3', name: 'HK G3', countries: ['Germany', 'Iran', 'Pakistan', 'Turkey', 'Norway'], role: 'Service Rifle', yearStart: 1959, yearEnd: 1997, caliber: '7.62×51mm',
+    story: "The G3 was developed from the Spanish CETME rifle, itself derived from the wartime German Sturmgewehr 45 using roller-delayed blowback — a system that avoids a gas piston entirely. Heckler & Koch licensed the design and refined it for the Bundeswehr in 1959. Its fluted chamber stamps distinctive extraction marks on brass, making fired cases identifiable — a detail intelligence agencies found useful. It was rugged and mechanically simple, but the powerful 7.62mm cartridge and delayed blowback produced brutal recoil in automatic fire. Germany replaced it with the G36 in 1997.",
+  },
+  {
+    id: 'sw-m16', name: 'M16 / M4', countries: ['United States', 'Canada', 'Israel', 'Saudi Arabia', 'Australia'], role: 'Service Rifle', yearStart: 1964, yearEnd: null, caliber: '5.56×45mm',
+    story: "Eugene Stoner's AR-15 — adopted as the M16 in 1964 — promised lightweight rifles with high-velocity ammunition, but its early Vietnam introduction was catastrophic. The Army had switched to a ball powder that fouled the action faster and eliminated the chrome bore lining to save money; the result was rifles jamming in combat with the etched instruction 'Self-Cleaning' on the barrel. A congressional investigation followed and improvements were mandated. The carbine M4 variant proved itself in Iraq and Afghanistan, and despite being 60 years old the platform continues to evolve — the US Army's adoption of the XM7 in 2023 being the first serious attempt at replacement.",
+  },
+  {
+    id: 'sw-ak74', name: 'AK-74 / AK-12', countries: ['USSR', 'Russia'], role: 'Service Rifle', yearStart: 1974, yearEnd: null, caliber: '5.45×39mm',
+    story: "The AK-74 was the Soviet answer to the M16's 5.56mm intermediate cartridge — a redesigned AKM chambered in 5.45×39mm with a distinctive muzzle brake that dramatically reduced recoil. Soviet troops in Afghanistan found the high-velocity 5.45mm 'Poison Bullet' tumbled aggressively on impact, causing severe wounds at moderate ranges. The AK-12, adopted in 2018, is a heavily modernized derivative with a full Picatinny rail system, improved ergonomics, and a foldable stock — though critics noted early versions had quality control issues and were rushed into service. It remains the standard Russian service rifle today.",
+  },
+  {
+    id: 'sw-famas', name: 'FAMAS', countries: ['France'], role: 'Service Rifle', yearStart: 1979, yearEnd: 2017, caliber: '5.56×45mm',
+    story: "The FAMAS — French acronym for 'fusil d'assaut de la manufacture d'armes de Saint-Étienne' — was one of the first bullpup rifles to enter mass service. Its lever-delayed blowback action was mechanically elegant but sensitive to ammunition; the rifle could only reliably feed French-made cartridges with a specific primer depth, which became a logistical nightmare when operating with NATO partners. France never achieved a domestic supply agreement after FAMAS production ended, and rather than upgrade the design the French Army selected the HK416 as its replacement in 2017 — a remarkably expensive solution to what was fundamentally an ammunition compatibility problem.",
+  },
+  {
+    id: 'sw-l85', name: 'L85 / SA80', countries: ['UK'], role: 'Service Rifle', yearStart: 1987, yearEnd: null, caliber: '5.56×45mm',
+    story: "The SA80 program was a bureaucratic and engineering disaster — the bullpup design was rushed into service in 1987 with known reliability problems, and British soldiers quickly nicknamed it the 'Piece of S***' or 'SA Eighty Stoppages.' The trigger, gas system, and magazine release all generated complaints. After Operation Desert Storm exposed the rifle's unreliability in sandy conditions, the MoD contracted Heckler & Koch to fix it; the resulting L85A2 variant (2002) was essentially rebuilt from the ground up and proved reliable. The latest L85A3 (2016) added Picatinny rails and improved ergonomics, transforming it into a genuinely capable service rifle.",
+  },
+  {
+    id: 'sw-hk416', name: 'HK416', countries: ['Norway', 'France', 'Germany (SOF)'], role: 'Service Rifle', yearStart: 2004, yearEnd: null, caliber: '5.56×45mm',
+    story: "The HK416 was originally developed under a classified US Army contract as an improved upper receiver for M4 rifles, replacing the direct impingement gas system with a short-stroke piston that runs cleaner and cooler. Delta Force adopted it first, and the rifle gained global fame when it was used to kill Osama bin Laden in 2011. Norway adopted it as the standard service rifle, and France selected it as a full FAMAS replacement in 2017 after a competitive evaluation. Despite being significantly more expensive than comparable rifles, its reliability under harsh conditions has made it the premium choice for tier-one units worldwide.",
+  },
+  {
+    id: 'sw-xm7', name: 'XM7 (MCX SPEAR)', countries: ['United States'], role: 'Service Rifle', yearStart: 2023, yearEnd: null, caliber: '6.8×51mm',
+    story: "The XM7 represents the Army's response to advances in body armor — the new 6.8×51mm hybrid case cartridge operates at pressures 20% higher than conventional brass would allow, thanks to a steel head, and reportedly penetrates current Russian and Chinese ceramic plates at combat ranges. The program was accelerated after the Army concluded that 5.56mm would be insufficient against near-peer adversaries wearing modern armor. Critics have raised concerns about the rifle's 9-pound weight — heavier than the M16 it's meant to replace — and whether the benefits justify equipping every infantryman versus just specialized units. Procurement is ongoing as of 2024.",
+  },
+  // Service Pistols
+  {
+    id: 'sw-colt1911', name: 'M1911 / 1911A1', countries: ['United States'], role: 'Service Pistol', yearStart: 1911, yearEnd: 1985, caliber: '.45 ACP',
+    story: "John Browning designed the M1911 in direct response to the Moro Rebellion in the Philippines, where .38 caliber revolvers repeatedly failed to stop drug-fueled Moro warriors charging at close range. The Army wanted a .45-caliber pistol that could stop a charging man reliably, and Browning delivered one of the most mechanically elegant pistol designs in history. After 74 years of service through two World Wars, Korea, and Vietnam — a record unmatched by any other standard service pistol — it was replaced by the Beretta M9 in a decision that sparked a controversy still alive in gun communities today. Millions of shooters consider it the finest production pistol ever made.",
+  },
+  {
+    id: 'sw-hp', name: 'Browning Hi-Power', countries: ['UK', 'Canada', 'Belgium', 'Australia', 'Israel'], role: 'Service Pistol', yearStart: 1935, yearEnd: 2013, caliber: '9mm',
+    story: "John Browning began designing the Hi-Power in the early 1920s in response to a French military requirement for a 15-round magazine pistol. He died in 1926 before completing it, and FN designer Dieudonné Saive finished the work — producing what became the world's first high-capacity service pistol. In the uniquely paradoxical way of WWII, the Hi-Power was simultaneously the standard sidearm of the British SAS and the German Fallschirmjäger (paratroopers), with both sides using pistols produced at the same Belgian factory under competing occupation arrangements. FN finally discontinued production in 2017, though the platform saw 78 years of continuous military service.",
+  },
+  {
+    id: 'sw-beretta92', name: 'Beretta M9 / 92FS', countries: ['United States', 'Italy', 'France', 'Brazil'], role: 'Service Pistol', yearStart: 1985, yearEnd: 2017, caliber: '9mm',
+    story: "The Beretta 92 won the US Army's XM9 pistol trials in 1985 over fierce competition — and immediately generated political controversy, with Congress questioning why the Army was replacing an American pistol (the 1911) with an Italian one. Early slide fractures in the late 1980s caused several injuries, traced to excessive hot-loaded military ammunition rather than a design flaw, though the episode damaged the M9's reputation. The pistol served 32 years through the Gulf War, Iraq, and Afghanistan before being replaced by the SIG M17. Its open-slide design and double-action/single-action trigger made it widely copied, and the 92FS remains a best-selling commercial pistol.",
+  },
+  {
+    id: 'sw-glk17', name: 'Glock 17/19', countries: ['Austria', 'Germany', 'UK', 'Australia', 'Norway', 'Netherlands'], role: 'Service Pistol', yearStart: 1982, yearEnd: null, caliber: '9mm',
+    story: "Gaston Glock had never designed a firearm when he submitted a polymer-framed pistol to the Austrian Army's 1980 trials — he was a curtain rod manufacturer with expertise in polymer injection molding. The resulting Glock 17 passed trials that required 10,000 rounds without malfunction, and its radical polymer frame cut weight by 30% versus steel competitors. American tabloids falsely claimed the 'plastic pistol' was invisible to metal detectors — a total fabrication that nonetheless drove enormous public interest. The Glock's consistent trigger pull, minimal controls, and legendary reliability made it the dominant law enforcement and military sidearm of the late 20th century, adopted by police in 65 countries.",
+  },
+  {
+    id: 'sw-p226', name: 'SIG P226', countries: ['United States', 'UK', 'Germany', 'Japan'], role: 'Service Pistol', yearStart: 1984, yearEnd: 2015, caliber: '9mm',
+    story: "The P226 narrowly lost the US Army's XM9 contract to Beretta in 1984 — not on performance, but because SIG's per-unit price was slightly higher. The Navy SEALs, unconvinced by Army procurement decisions, evaluated the pistol independently and adopted it as their standard sidearm, where it served for three decades. The P226's double-action/single-action trigger, machined aluminum frame, and meticulous Swiss-German manufacturing gave it a reputation as the most accurate and reliable 9mm service pistol of its era. It was replaced in SEAL service by the Glock 19 in 2015 after a competitive evaluation prioritized weight savings over the SIG's premium build quality.",
+  },
+  {
+    id: 'sw-m17', name: 'SIG M17 / M18 (P320)', countries: ['United States'], role: 'Service Pistol', yearStart: 2017, yearEnd: null, caliber: '9mm',
+    story: "The SIG P320 won the Army's Modular Handgun System competition in 2017 in an evaluation that was controversial from the start — critics questioned whether it offered enough improvement over the M9 to justify the $580 million contract. Shortly after announcement, reports emerged of P320 pistols discharging when dropped without the trigger being pulled, a safety issue SIG addressed with a voluntary upgrade. The Army's M17 variant includes a manual safety absent on most commercial P320s. The modular serialized chassis — allowing the same fire control unit to be installed in different sized frames — represents a genuinely new approach to service pistol architecture.",
+  },
+  // Machine Guns
+  {
+    id: 'sw-maxim', name: 'Maxim / Vickers', countries: ['UK', 'Russia', 'Germany'], role: 'Machine Gun', yearStart: 1884, yearEnd: 1968, caliber: '.303 / 7.92mm',
+    story: "Hiram Maxim invented the first fully automatic machine gun in 1884 after an American told him the best way to make money was to invent something that would help Europeans kill each other faster. The water-cooled Vickers variant fired 450–500 rpm continuously for hours. At the Somme in 1916, ten Vickers guns fired 1 million rounds over 12 hours without a mechanical failure. Replaced by air-cooled GPMGs after WWII when sustained fire doctrine gave way to mobile warfare.",
+  },
+  {
+    id: 'sw-mg42', name: 'MG42 / MG3', countries: ['Germany'], role: 'Machine Gun', yearStart: 1942, yearEnd: null, caliber: '7.92mm / 7.62×51mm',
+    story: "The MG42 was designed to be manufactured cheaply and quickly using metal stampings — a radical departure from machined steel weapons — and it fired at a then-unprecedented 1,200 rounds per minute, producing a distinctive tearing sound that Allied troops called 'Hitler's Buzzsaw.' Its barrel could be changed in under six seconds, allowing sustained fire that no Allied machine gun could match. American training films specifically instructed soldiers not to mistake the rapid cyclic rate for multiple guns. The post-war MG3, rechambered for 7.62×51mm NATO, remains in service with the Bundeswehr today — over 80 years after the original design.",
+  },
+  {
+    id: 'sw-m2', name: 'M2 Browning .50 BMG', countries: ['United States', 'UK', 'NATO'], role: 'Machine Gun', yearStart: 1933, yearEnd: null, caliber: '.50 BMG',
+    story: "John Browning designed the M2 in 1918 in direct response to a request from General Pershing for a weapon capable of defeating aircraft and light armor. The .50 BMG cartridge was literally scaled up from the .30-06 using a pantograph. The 'Ma Deuce' has been in continuous US service since 1933 — longer than any other weapon in the American arsenal — serving in WWII, Korea, Vietnam, the Gulf War, Iraq, and Afghanistan with only minor modifications. A single M2 operator, Carlos Hathcock, used one with an improvised scope to achieve a 2,500-yard sniper kill in Vietnam that stood as the record for decades.",
+  },
+  {
+    id: 'sw-m60', name: 'M60 GPMG', countries: ['United States', 'Australia'], role: 'Machine Gun', yearStart: 1957, yearEnd: 1995, caliber: '7.62×51mm',
+    story: "The M60 was developed from captured German MG42 and FG42 designs after WWII, combining the MG42's feed system with the FG42's gas operation — but the American engineers, working from incomplete documents, made several errors that produced a weapon that was heavier and less reliable than its German inspirations. Vietnam-era soldiers nicknamed it 'The Pig' for its weight and feeding problems. Barrel changes required an asbestos glove and often resulted in burns. The Army repeatedly attempted to replace it; the M240 finally succeeded in the 1990s, though the M60E4 variant persists in Navy service.",
+  },
+  {
+    id: 'sw-m240', name: 'M240 / FN MAG', countries: ['United States', 'UK', 'Belgium', 'Canada', 'Israel'], role: 'Machine Gun', yearStart: 1977, yearEnd: null, caliber: '7.62×51mm',
+    story: "The FN MAG (Mitrailleuse d'Appui Général) was designed by Ernest Vervier at FN in the early 1950s, drawing heavily on the Browning Automatic Rifle's tilting-bolt mechanism. The US Army evaluated it in the late 1970s as a coaxial tank machine gun (the M240 designation) and its superior reliability over the M60 was immediately apparent, triggering a decade-long process to replace the M60 in the infantry role as well. By the mid-1990s the M240B had largely taken over, and it proved its reliability extensively in Iraq and Afghanistan. The UK fields an identical weapon as the L7A2, and both nations consider it their most reliable GPMG ever fielded.",
+  },
+  // SAW / LMG
+  {
+    id: 'sw-bar', name: 'BAR M1918', countries: ['United States'], role: 'LMG / SAW', yearStart: 1918, yearEnd: 1957, caliber: '.30-06',
+    story: "John Browning designed the BAR in 1917 to fulfill General Pershing's concept of 'walking fire' — infantry advancing while firing from the hip to keep German heads down. It arrived at the front just weeks before the Armistice. By WWII the walking fire concept had been abandoned, but the BAR found a new role as the American squad's only automatic weapon, one per squad in the Pacific and European theaters. Its 20-round magazine was inadequate for sustained fire, and the bipod was often discarded as useless weight. Famous bank robbers Bonnie and Clyde carried stolen military BARs in the early 1930s, which contributed to the National Firearms Act of 1934.",
+  },
+  {
+    id: 'sw-lewis', name: 'Lewis Gun', countries: ['UK', 'United States', 'Canada'], role: 'LMG / SAW', yearStart: 1914, yearEnd: 1946, caliber: '.303 British',
+    story: "Colonel Isaac Lewis invented the gun but was rebuffed by the US Army — reportedly due to a personal feud with the Army's chief of ordnance — so he went to Belgium and sold it to the British. The drum magazine could hold 47 or 97 rounds, and its distinctive aluminum cooling shroud created airflow over the barrel using muzzle blast. It became the standard light machine gun of WWI British forces, appearing on aircraft before dedicated aviation versions were developed. The spade-grip aircraft Lewis gun, with the cooling shroud removed (unnecessary at altitude), was fitted on everything from Sopwith Camels to early bombers.",
+  },
+  {
+    id: 'sw-bren', name: 'Bren Gun', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'LMG / SAW', yearStart: 1938, yearEnd: 1992, caliber: '.303 / 7.62×51mm',
+    story: "The Bren was developed from the Czech ZB vz. 26 — 'Bren' being a portmanteau of Brno (the Czech city of manufacture) and Enfield (the British arsenal that adapted it). Its curved 30-round magazine curved to accommodate the rimmed .303 cartridge; when the UK adopted 7.62×51mm NATO in the 1950s, the Bren was rechambered and redesignated the L4A4 with a straight magazine. British soldiers consistently rated it the most accurate and reliable LMG of WWII, and Argentine forces using L4A4s in the Falklands in 1982 demonstrated that the 44-year-old design was still operationally viable.",
+  },
+  {
+    id: 'sw-rpk', name: 'RPK / RPK-74', countries: ['USSR', 'Russia'], role: 'LMG / SAW', yearStart: 1961, yearEnd: null, caliber: '7.62×39mm / 5.45×39mm',
+    story: "The RPK (Ruchnoy Pulemyot Kalashnikova) was designed alongside the AKM as a squad automatic weapon sharing 80% parts commonality — a Soviet logistics priority learned from WWII supply chaos. Mikhail Kalashnikov simply took his AKM, extended the barrel, added a bipod, and fitted a 75-round drum or 40-round magazine. Parts interchangeability simplified training and field repairs dramatically. The RPK-74 followed the same formula for the 5.45mm cartridge in 1974. Its major limitation is that it uses the same closed-bolt mechanism as the AKM — not designed for sustained fire — but Soviet doctrine emphasized volume of fire over barrel longevity.",
+  },
+  {
+    id: 'sw-m249', name: 'M249 SAW (FN Minimi)', countries: ['United States', 'Belgium', 'Australia', 'Canada'], role: 'LMG / SAW', yearStart: 1984, yearEnd: null, caliber: '5.56×45mm',
+    story: "The FN Minimi was designed by Ernest Vervier in the 1970s to address the gap between submachine guns and full machine guns — a light, magazine-fed weapon that could also accept belt ammunition. The US adopted it as the M249 SAW in 1984 after the M16-armed squad lacked organic automatic fire capability. In the Gulf War, M249s overheated rapidly in sustained fire due to the thin barrel profile, and in Iraq the weapon's open-bolt mechanism ingested more sand than closed-bolt rifles. A succession of product improvement programs addressed these issues. The Army has been attempting to replace the M249 with the XM250 NGSW-AR program, which uses the same 6.8mm ammunition as the XM7 rifle.",
+  },
+  // Submachine Guns
+  {
+    id: 'sw-thompson', name: 'Thompson SMG', countries: ['United States', 'UK'], role: 'Submachine Gun', yearStart: 1919, yearEnd: 1971, caliber: '.45 ACP',
+    story: "General John T. Thompson designed his 'Annihilator' during WWI to clear German trenches, but the war ended before production could begin, leaving Thompson with a warehouse of expensive firearms and a marketing problem. He tried selling to police and the Post Office; gangsters were better customers. The Thompson became synonymous with Prohibition-era organized crime — Al Capone used one in the St. Valentine's Day Massacre — giving it both notoriety and celebrity that sold enormous quantities. The WWII M1A1 variant, simplified for mass production, stripped away the Cutts compensator and drum magazine of the gangster era and served with distinction in every theater.",
+  },
+  {
+    id: 'sw-mp40', name: 'MP40', countries: ['Germany'], role: 'Submachine Gun', yearStart: 1940, yearEnd: 1945, caliber: '9mm',
+    story: "Designed by Heinrich Vollmer, the MP40 was a simplified, mass-production evolution of the MP38. Its folding stock made it ideal for paratroopers and vehicle crews. American soldiers often called any German SMG a 'Schmeisser' — despite Hugo Schmeisser having nothing to do with its design. Its 9mm open-bolt blowback action was reliable but limited to ~400 rpm, actually lower than the Thompson. Replaced by assault rifles post-WWII as the intermediate cartridge made dedicated SMGs obsolete.",
+  },
+  {
+    id: 'sw-sten', name: 'Sten Gun', countries: ['UK', 'Canada'], role: 'Submachine Gun', yearStart: 1941, yearEnd: 1960, caliber: '9mm',
+    story: "The Sten (named for its designers Shepherd and Turpin, and Enfield) was created in 1940 after Dunkirk left the British Army desperately short of infantry weapons and unable to acquire enough Thompsons from America. The Mark II cost just £2 10s to produce and could be manufactured in small workshops — simple enough that resistance fighters in occupied Europe made them from plumbing parts. The horizontal side-mounted magazine, copied from the German MP28, fed poorly and caused most stoppages; experienced soldiers carried the weapon at a 45-degree cant to improve feed. Its simplicity was both its greatest virtue and its greatest flaw: the open-bolt design made accidental discharge a known hazard.",
+  },
+  {
+    id: 'sw-mp5', name: 'HK MP5', countries: ['Germany', 'UK', 'United States', 'Many'], role: 'Submachine Gun', yearStart: 1966, yearEnd: null, caliber: '9mm',
+    story: "The MP5 applied the roller-delayed blowback system of the G3 rifle to a 9mm submachine gun — an unusual choice that allowed it to fire from a closed bolt, giving it accuracy competitive with pistols. This precision made it the preferred weapon of hostage rescue and counter-terrorism units worldwide after the GSG 9 used it in the famous 1977 Mogadishu airliner rescue. The Iranian Embassy siege in London (1980), conducted by the SAS in live television, made the MP5 a global icon. By the 2000s the rise of body armor and the need for rifle-caliber penetration began shifting SWAT teams to short-barreled rifles, but the MP5 remains standard in dozens of military and police organizations.",
+  },
+  // Sniper Rifles
+  {
+    id: 'sw-m24', name: 'M24 SWS (Rem 700)', countries: ['United States'], role: 'Sniper Rifle', yearStart: 1988, yearEnd: null, caliber: '7.62×51mm',
+    story: "The M24 Sniper Weapon System was adopted in 1988 based on the Remington 700 long action — a somewhat puzzling choice since the 7.62×51mm cartridge only requires a short action, but the Army chose the long action to allow future rechambering to .300 Win Mag. This foresight paid off in Afghanistan, where the 7.62mm's range proved inadequate against Taliban fighters engaging from 800+ meters, prompting a conversion program to .300 Win Mag designated the M24A3. The rifle has produced confirmed kills at ranges exceeding 1,000 meters in the hands of Army snipers, and the basic Remington 700 action it derives from has been the gold standard of precision bolt-actions for over 60 years.",
+  },
+  {
+    id: 'sw-m107', name: 'Barrett M82 / M107', countries: ['United States', 'UK', 'Sweden', 'Finland', 'Denmark', 'Norway', 'Jordan', 'South Korea', 'Many'], role: 'Anti-Materiel', yearStart: 1990, yearEnd: null, caliber: '.50 BMG',
+    story: "Ronnie Barrett built the first prototype of his .50 BMG rifle in 1982 using hand tools and a rented welder, despite having no formal firearms design training. The military initially showed no interest; Barrett sold to civilians first and built a reputation before Gulf War procurement officers discovered the rifle in gun shops. In Desert Storm, M82 variants were used to detonate ordnance from safe distances and disable parked aircraft — an 'anti-materiel' role that circumvented Geneva Convention restrictions on using anti-personnel sniper fire against individuals. Carlos Hathcock's Vietnam-era .50 BMG kill record stood for 35 years before being broken with a Barrett in Afghanistan at over 2,500 meters.",
+  },
+  {
+    id: 'sw-boys', name: 'Boys Anti-Tank Rifle', countries: ['UK', 'Canada', 'Australia', 'Finland'], role: 'Anti-Materiel', yearStart: 1937, yearEnd: 1945, caliber: '.55 Boys',
+    story: "Developed just before WWII as a crew-portable weapon to defeat light armor, the Boys fired a .55-caliber (13.9mm) round capable of penetrating 20mm of steel at 100 yards. By 1940 it was already obsolete against German medium tanks — armor had outpaced the round — but it remained lethal against light vehicles, aircraft, and field fortifications throughout the war. Finnish forces found it particularly effective against early Soviet armor. Its brutal 30kg recoil impulse and nickname 'elephant gun' were well-earned; soldiers dreaded firing it prone on frozen ground.",
+  },
+  {
+    id: 'sw-ptrd41', name: 'PTRD-41 / PTRS-41', countries: ['USSR', 'Russia', 'China', 'N. Korea', 'Vietnam'], role: 'Anti-Materiel', yearStart: 1941, yearEnd: 1960, caliber: '14.5×114mm',
+    story: "When German panzers rolled into the USSR in 1941, the Red Army had almost no portable anti-tank capability. The PTRD (single-shot) and PTRS (semi-automatic) were designed and put into mass production in a matter of months. The 14.5mm cartridge could defeat early German tanks' side and rear armor; by Stalingrad this was marginal against frontal armor but the rifles remained devastating against APCs, vehicles, aircraft, and field emplacements. Crews fired them in pairs from concealed positions and moved immediately — waiting meant counter-battery fire. North Korea used them against US helicopters in Korea, and the cartridge lives on in the KPV heavy machine gun.",
+  },
+  {
+    id: 'sw-pzb39', name: 'Panzerbüchse 38/39', countries: ['Germany'], role: 'Anti-Materiel', yearStart: 1938, yearEnd: 1943, caliber: '7.92×94mm',
+    story: "Germany's WWII anti-tank rifle, the PzB 38 and improved PzB 39 fired a 7.92mm tungsten-cored cartridge at over 1,200 m/s — high enough to defeat early Polish, French, and British tanks at close range. Like all WWII-era anti-tank rifles, they were rapidly outpaced by tank armor thickness. After 1941 most were rebuilt into Granatbüchse 39 grenade launchers, which proved more useful against the increasingly thick Soviet armor the Germans encountered. The cartridge's extreme velocity gave it a vicious muzzle blast and recoil, requiring a folding stock with a recoil pad.",
+  },
+  {
+    id: 'sw-osv96', name: 'OSV-96 / KSVK', countries: ['Russia'], role: 'Anti-Materiel', yearStart: 1996, yearEnd: null, caliber: '12.7×108mm',
+    story: "Russia's answer to the Barrett, the OSV-96 is a bullpup semi-automatic anti-materiel rifle chambered for the Soviet 12.7×108mm heavy machine gun cartridge — ballistically comparable to .50 BMG but not interchangeable. Used extensively by Russian forces in Chechnya to defeat vehicle engines, radar equipment, and fortified positions at ranges beyond 1,000 meters. The bullpup layout reduces overall length despite the long barrel. The KSVK is a bolt-action variant used by Russian special forces with a preference for single precision shots over rapid follow-up capability.",
+  },
+  {
+    id: 'sw-ntw20', name: 'NTW-20 / NTW-14.5', countries: ['South Africa'], role: 'Anti-Materiel', yearStart: 1998, yearEnd: null, caliber: '20×82mm / 14.5×114mm',
+    story: "Developed by Denel in South Africa, the NTW-20 is a two-man crew-portable anti-materiel rifle chambered for the 20×82mm aircraft autocannon cartridge — making it the most powerful man-portable anti-materiel rifle ever fielded. A quick-change barrel system allows switching to 14.5×114mm in the field. It disassembles into two carry loads: the receiver and the barrel/bipod. At 20mm, it can defeat light armored vehicles through their side armor and destroy radar dishes, communications equipment, and parked aircraft with a single round. Marketed widely but exported primarily within Africa.",
+  },
+  {
+    id: 'sw-m99', name: 'QBU-10 / M99 (Type 99)', countries: ['China'], role: 'Anti-Materiel', yearStart: 1999, yearEnd: null, caliber: '12.7×108mm',
+    story: "China's first dedicated semi-automatic anti-materiel rifle, the M99 was developed by NORINCO in the late 1990s using the Soviet 12.7×108mm cartridge already stockpiled in large quantities. Its bullpup layout and fluted barrel are Western-influenced departures from earlier Chinese firearms design. Exported to several African and Middle Eastern nations. A later variant, the QBU-10, is a lighter single-shot design optimized for precision over firepower. Both serve the PLA's anti-equipment role in suppressing radar, fuel trucks, and light vehicles at ranges the 7.62mm sniper rifles cannot reach.",
+  },
+  {
+    id: 'sw-steyrhs50', name: 'Steyr HS .50 / IWS 2000', countries: ['Austria', 'Germany', 'Saudi Arabia', 'UAE'], role: 'Anti-Materiel', yearStart: 2004, yearEnd: null, caliber: '.50 BMG / 15.2mm APFSDS',
+    story: "Steyr's HS .50 is a single-shot bolt-action anti-materiel rifle that has found wide export success due to its relatively light weight (12.4kg) and straightforward operation. The IWS 2000, an earlier and experimental Steyr design, fired a 15.2mm fin-stabilized discarding-sabot round that could defeat 40mm of rolled homogeneous armor at 1,000 meters — performance more associated with autocannons than rifles. The HS .50 is more conventional but effective; controversially, a shipment of Austrian HS .50s appeared in Iraqi insurgent hands in 2007, prompting an Austrian parliamentary inquiry into export licensing.",
+  },
+  {
+    id: 'sw-gepard', name: 'Gepárd M1 / M2 / M6', countries: ['Hungary', 'Bosnia', 'Iraq', 'Sudan'], role: 'Anti-Materiel', yearStart: 1991, yearEnd: null, caliber: '12.7×108mm / 14.5×114mm',
+    story: "Hungary developed the Gepárd family after the Cold War to address both the export market and domestic needs. The M1 is a single-shot bolt-action; the M2 is semi-automatic; the M6 scales up to 14.5×114mm for maximum effect against light armor. The Gepárd is notable for an integrated hydraulic recoil buffer system that allows a shooter to fire the 14.5mm cartridge from the shoulder — an otherwise impractical proposition. Exported to several Balkan and African nations, including Iraq, where they appeared in both government and insurgent hands.",
+  },
+  {
+    id: 'sw-awm', name: 'Accuracy International AWM', countries: ['UK', 'Germany', 'Netherlands'], role: 'Sniper Rifle', yearStart: 1996, yearEnd: null, caliber: '.338 Lapua / .300 Win Mag',
+    story: "Accuracy International was founded in 1978 by Olympic shooting champion Malcolm Cooper specifically to build rifles good enough to win at the highest competitive levels — the L96, the AWM's predecessor, was designed around competitive target shooting requirements rather than military ones, which accidentally produced exceptional accuracy. The AWM (Arctic Warfare Magnum) was developed in the mid-1990s for the .338 Lapua cartridge, which fills the gap between 7.62mm and .50 BMG. Corporal Craig Harrison used an AWM to achieve the world's longest confirmed sniper kill at 2,475 meters in Afghanistan in 2009, a record that stood until 2017.",
+  },
+
+  // ── UNITED STATES additions ───────────────────────────────────────────────
+  {
+    id: 'sw-trapdoor', name: 'Springfield Model 1873 (Trapdoor)', countries: ['United States'], role: 'Service Rifle', yearStart: 1873, yearEnd: 1892, caliber: '.45-70 Gov\'t',
+    story: "The Trapdoor conversion allowed the Army to retool millions of Civil War muzzle-loaders by milling off the breech and fitting a hinged single-shot breechblock — a cheap solution to a vast surplus problem. The resulting Springfield in .45-70 was the rifle carried at Little Bighorn in 1876, where Custer's 7th Cavalry was annihilated. American soldiers in the field criticized the Trapdoor's copper-cased ammunition for rupturing and jamming in sustained fire, leaving the chamber fouled. The Spanish-American War embarrassment at San Juan Hill — where troops armed with Krag-Jørgensens faced Spanish Mausers firing smokeless powder — ended the era of the single-shot service rifle permanently.",
+  },
+  {
+    id: 'sw-colt-saa', name: 'Colt Single Action Army', countries: ['United States'], role: 'Service Pistol', yearStart: 1873, yearEnd: 1892, caliber: '.45 Colt',
+    story: "The Army adopted the Colt Single Action Army in 1873, issuing the 7½-inch Cavalry model to replace the mix of Civil War revolvers still in service. It was the sidearm of every US cavalryman at Little Bighorn and through the Indian Wars. Its single-action mechanism — requiring the hammer to be manually cocked for each shot — was already considered outdated as double-action revolvers became available in Europe. The Army began transitioning to the double-action Colt M1892 in the 1890s, then abandoned revolvers entirely with the adoption of the semi-automatic M1911. The SAA endured in civilian and frontier use long after military retirement.",
+  },
+  {
+    id: 'sw-krag', name: 'Krag-Jørgensen (M1892)', countries: ['United States'], role: 'Service Rifle', yearStart: 1892, yearEnd: 1903, caliber: '.30-40 Krag',
+    story: "The US Army adopted the Norwegian Krag-Jørgensen as its first smokeless powder bolt-action, replacing the .45-70 trapdoor Springfield. It proved problematic in the Spanish-American War of 1898 — American troops with Krags were outgunned by Spanish soldiers using Mauser 1893s at San Juan Hill. The Mauser's superior stripper-clip loading and higher pressure cartridge made it objectively better. That embarrassing defeat directly drove the development of the Springfield 1903, which borrowed the Mauser action's controlled-round feed and dual-opposed locking lugs.",
+  },
+  {
+    id: 'sw-m1917', name: 'M1917 Enfield', countries: ['United States'], role: 'Service Rifle', yearStart: 1917, yearEnd: 1945, caliber: '.30-06',
+    story: "When the US entered WWI in 1917, there weren't enough Springfield 1903s to arm the rapidly expanding force. The solution was to modify the British Pattern 14 Enfield — already being produced in American factories — for the .30-06 cartridge. The resulting M1917 was actually a better rifle than the 1903: stronger action, better sights, larger magazine capacity. Over 2.2 million were made, and it armed more American troops in WWI than the 1903 did. Alvin York, the most decorated American soldier of WWI, used an M1917 to kill 28 German soldiers before capturing 132 more.",
+  },
+  {
+    id: 'sw-m1919', name: 'M1919 Browning', countries: ['United States', 'UK', 'Israel'], role: 'Machine Gun', yearStart: 1919, yearEnd: 1970, caliber: '.30-06 / 7.62×51mm',
+    story: "John Browning's air-cooled successor to the water-cooled M1917 became the backbone of American squad-level firepower from WWI through Vietnam. Mounted on jeeps, half-tracks, aircraft, and tanks, the M1919 was chambered in .30-06 and later 7.62×51mm NATO. Israel operated captured and purchased M1919s extensively through the 1948 and 1967 wars. At roughly 14 lbs without mount, it was barely portable by a single soldier — the bipod version required a crew. The design's durability was such that variants remained in limited service into the 1990s.",
+  },
+  {
+    id: 'sw-m3grease', name: 'M3 Grease Gun', countries: ['United States'], role: 'Submachine Gun', yearStart: 1942, yearEnd: 1992, caliber: '.45 ACP',
+    story: "Designed to replace the expensive Thompson, the M3 was deliberately engineered for maximum cheapness — stamped steel construction, no selector switch (the cyclic rate was slow enough to fire single shots by trigger control), and a dust cover that served as the safety. It cost $15 to make versus $45 for a Thompson. GIs called it the Grease Gun for obvious reasons. American tank crews carried it as a personal weapon from WWII through Desert Storm — it was still standard issue for armored vehicle crews when the Gulf War ended in 1991, fifty years after it was designed.",
+  },
+
+  // ── RUSSIA / SOVIET UNION additions ──────────────────────────────────────
+  {
+    id: 'sw-nagant1895', name: 'Nagant M1895 Revolver', countries: ['Russia', 'USSR'], role: 'Service Pistol', yearStart: 1895, yearEnd: 1950, caliber: '7.62×38mmR',
+    story: "The Nagant M1895 had one of the strangest design features of any revolver: a gas-seal mechanism. When cocked, the cylinder moved forward to seal against the barrel, eliminating the cylinder gap and making it — uniquely among revolvers — suppressible. The cartridge's bullet was recessed inside the case mouth, completing the seal. Despite being completely obsolete by WWII, production continued through 1944 due to the Soviet Union's desperate shortage of pistols. NKVD executioners used it extensively during the Stalinist purges. Examples remained in limited police use through the 1960s.",
+  },
+  {
+    id: 'sw-tt33', name: 'TT-33 Tokarev', countries: ['USSR', 'China', 'N. Korea', 'Yugoslavia'], role: 'Service Pistol', yearStart: 1933, yearEnd: 1952, caliber: '7.62×25mm Tokarev',
+    story: "Fedor Tokarev's pistol was a stripped-down Browning tilting-barrel action chambered in the bottlenecked 7.62×25mm cartridge — a round that could penetrate early body armor and achieved 1,400 fps from a pistol barrel. The TT-33 eliminated the manual safety (Soviet doctrine held that soldiers couldn't be trusted to remember to disengage it under fire), leaving only a half-cock notch. It was replaced by the Makarov in Soviet service but was produced under license in China as the Type 54, in Yugoslavia as the M57, and in North Korea. Millions remain in circulation globally.",
+  },
+  {
+    id: 'sw-makarov', name: 'Makarov PM', countries: ['USSR', 'Russia', 'East Germany', 'China'], role: 'Service Pistol', yearStart: 1951, yearEnd: null, caliber: '9×18mm Makarov',
+    story: "The Makarov replaced the TT-33 and was deliberately designed around a cartridge that was the most powerful a simple blowback action could safely handle — eliminating the complexity of a locked-breech design. The 9×18mm Makarov cartridge (slightly larger than 9mm Parabellum, making the guns incompatible) was a deliberate choice to prevent captured weapons from being resupplied with NATO ammunition. Simple, reliable, compact — it became the standard Warsaw Pact sidearm and remained Russia's service pistol into the 2000s. East German Stasi officers carried them. They're still issued to some Russian units today.",
+  },
+  {
+    id: 'sw-svt40', name: 'SVT-40', countries: ['USSR'], role: 'Service Rifle', yearStart: 1940, yearEnd: 1945, caliber: '7.62×54mmR',
+    story: "Fyodor Tokarev's semi-automatic rifle was the Soviet answer to the M1 Garand race — and it arguably came first. The SVT-40 was a gas-operated tilting-bolt design that proved too complex for poorly trained conscripts; the Red Army's catastrophic losses in 1941-42 meant rifles were often handled by soldiers with minimal training. German troops captured large numbers and prized them as sniper rifles. Finnish snipers used captured SVTs extensively. The design directly influenced the FN FAL's tilting-bolt mechanism, making it one of the most influential rifle designs of the 20th century despite its reputation for unreliability.",
+  },
+  {
+    id: 'sw-sks', name: 'SKS', countries: ['USSR', 'Russia', 'China', 'Vietnam', 'Yugoslavia'], role: 'Service Rifle', yearStart: 1945, yearEnd: 1970, caliber: '7.62×39mm',
+    story: "Sergei Simonov's carbine was the first military rifle chambered in the 7.62×39mm intermediate cartridge — predating the AK-47 by four years. Though quickly superseded by the AK-47 in Soviet service, the SKS was produced in enormous quantities and exported or licensed to nearly every Communist-aligned nation. China produced tens of millions as the Type 56. North Vietnam issued them widely throughout the Vietnam War. Unlike the AK, the SKS has a fixed 10-round magazine loaded by stripper clips. Tens of millions remain in civilian ownership worldwide, making it one of the most common military surplus rifles in existence.",
+  },
+  {
+    id: 'sw-ppsh41', name: 'PPSh-41', countries: ['USSR', 'China', 'N. Korea'], role: 'Submachine Gun', yearStart: 1941, yearEnd: 1960, caliber: '7.62×25mm Tokarev',
+    story: "The PPSh-41 was the Soviet answer to a single problem: how do you arm millions of soldiers quickly and cheaply? The answer was stampings, welding, and a drum magazine. Over 6 million were produced by 1945 — workers at the ZIS automobile factory could produce one in under four hours. Some entire Soviet infantry companies were equipped with nothing but PPSh-41s, creating devastating short-range firepower. At 900 rpm from a 71-round drum, a full platoon of PPSh-41s unleashed a wall of steel. German troops prized captured examples so highly that some units rechambered them to accept 9mm MP40 magazines.",
+  },
+  {
+    id: 'sw-dragunov', name: 'SVD Dragunov', countries: ['USSR', 'Russia', 'China', 'Iraq', 'Iran'], role: 'Sniper Rifle', yearStart: 1963, yearEnd: null, caliber: '7.62×54mmR',
+    story: "The SVD was designed not as a precision rifle in the Western sense but as a 'designated marksman rifle' — a squad support weapon to extend the squad's effective range to 800m, not a true 1,000m+ sniper system. Yevgeny Dragunov designed it around a modified AK operating system with a short-stroke piston, making it faster and easier to train on than a bolt-action. The distinctive cutaway stock was engineered to allow use while wearing heavy winter clothing. China produces it as the Type 79/85. It remains in service in virtually every former Soviet client state and has seen combat in every major conflict since Vietnam.",
+  },
+  {
+    id: 'sw-dp27', name: 'DP-27 / DPM', countries: ['USSR', 'China', 'Finland'], role: 'LMG / SAW', yearStart: 1928, yearEnd: 1960, caliber: '7.62×54mmR',
+    story: "Vasily Degtyaryov's light machine gun was the Soviet squad's primary automatic weapon from the 1930s through WWII. Its distinctive 47-round pan magazine mounted on top gave it an alien appearance — and caused problems, as the flat disc was prone to damage and difficult to carry. The gas-operated mechanism was innovative for its time, using a flap-locking bolt that was simpler than competing designs. Finnish forces captured significant numbers during the Winter War and used them throughout WWII. The DPM (1944) moved the recoil spring outside the barrel to prevent heat-induced failures — a fix that should have been in the original.",
+  },
+
+  // ── CHINA additions ───────────────────────────────────────────────────────
+  {
+    id: 'sw-type56rifle', name: 'Type 56 Carbine (SKS)', countries: ['China', 'Vietnam', 'Cambodia'], role: 'Service Rifle', yearStart: 1956, yearEnd: 1980, caliber: '7.62×39mm',
+    story: "China licensed the SKS from the Soviet Union and produced it as the Type 56 Carbine — coincidentally giving the same designation to its AK-47 copy, causing endless confusion. The Type 56 carbine served as China's primary infantry weapon through the 1960s before being gradually replaced by the Type 56 assault rifle (AK variant). It was exported in vast quantities to North Vietnam, the Viet Cong, and other Soviet/Chinese client states. American soldiers encountered it throughout Vietnam. Surplus examples flooded the US civilian market in the 1980s-90s, making it one of the most common military surplus carbines in American gun safes.",
+  },
+  {
+    id: 'sw-qbz95', name: 'QBZ-95 (Type 95)', countries: ['China'], role: 'Service Rifle', yearStart: 1995, yearEnd: null, caliber: '5.8×42mm',
+    story: "The QBZ-95 was China's first indigenously designed service rifle and its adoption of the bullpup layout — placing the action behind the trigger group. Chambered in the proprietary 5.8×42mm cartridge, China deliberately avoided adopting 5.56mm NATO or 5.45×39mm Soviet to maintain ammunition independence. The 5.8mm cartridge is claimed to exceed both NATO rounds in penetration at range. The bullpup design was controversial in Chinese service — traditional bolt-action habits died hard. The improved QBZ-03 (conventional layout) was fielded simultaneously, and the QBZ-191 (2019) has begun replacing both with a more conventional design.",
+  },
+  {
+    id: 'sw-type54', name: 'Type 54 Pistol (Tokarev)', countries: ['China', 'N. Korea'], role: 'Service Pistol', yearStart: 1954, yearEnd: 2010, caliber: '7.62×25mm Tokarev',
+    story: "China's direct copy of the Soviet TT-33 Tokarev, the Type 54 became the PLA's standard sidearm for over five decades. Like its Soviet counterpart, it featured no manual safety — only a half-cock notch — and fired the bottlenecked 7.62×25mm cartridge capable of defeating early body armor. China exported it to virtually every nation it supported militarily: North Vietnam, North Korea, various African liberation movements. Civilian versions flooded into the US in the 1980s as 'Norinco' imports. Despite being officially replaced by the QSZ-92, Type 54s remained in active PLA service well into the 2000s.",
+  },
+  {
+    id: 'sw-qsz92', name: 'QSZ-92', countries: ['China'], role: 'Service Pistol', yearStart: 1997, yearEnd: null, caliber: '9mm / 5.8×21mm',
+    story: "China's first modern service pistol was designed in two variants: a 9mm version for export and elite units, and a 5.8×21mm version for standard PLA issue — again maintaining ammunition independence from Western standards. The polymer-framed, striker-fired design represents a significant modernization from the Type 54. Chinese special operations forces and officers carry the 9mm variant. The 5.8mm variant's cartridge offers higher velocity and better penetration than 9mm Parabellum from the same barrel length, though at the cost of a proprietary round found nowhere outside China.",
+  },
+
+  // ── FRANCE additions ──────────────────────────────────────────────────────
+  {
+    id: 'sw-chassepot', name: 'Chassepot M1866', countries: ['France'], role: 'Service Rifle', yearStart: 1866, yearEnd: 1874, caliber: '11mm',
+    story: "The Chassepot was arguably the most advanced military rifle in the world at its adoption — a needle-fire bolt-action with a rubber obturator that sealed propellant gases far more effectively than the rival Dreyse Needle Gun. In the Franco-Prussian War of 1870, French infantry with Chassepots consistently outranged Prussian soldiers armed with Dreyse rifles. The problem was artillery: Krupp's steel breech-loading field guns were decisively superior to French bronze muzzle-loaders, and French tactical doctrine couldn't compensate. France lost the war despite having the better rifle, a lesson that haunted military planners for decades.",
+  },
+  {
+    id: 'sw-lebel', name: 'Lebel M1886', countries: ['France'], role: 'Service Rifle', yearStart: 1886, yearEnd: 1940, caliber: '8mm Lebel',
+    story: "The Lebel holds a unique place in history as the world's first rifle to use smokeless powder in military service — adopted the same year Paul Vieille invented Poudre B. The tubular magazine was already obsolete at adoption (Mauser's box magazine was superior) but French politics prevented redesign. The 8mm Lebel cartridge with its rimmed, bottle-necked case and flat-nosed bullet (to prevent chain detonation in the tubular magazine) was so entrenched in the French system that it prevented France from adopting better magazine designs for decades. Despite its obsolescence, Lebels were still being issued in 1940 — 54 years after adoption.",
+  },
+  {
+    id: 'sw-mas36', name: 'MAS-36', countries: ['France'], role: 'Service Rifle', yearStart: 1936, yearEnd: 1978, caliber: '7.5×54mm French',
+    story: "France's attempt to replace the Lebel produced a workmanlike but quirky bolt-action — the bolt handle angled forward toward the shooter (the opposite of every other bolt-action) to allow faster operation with a shorter throw. The MAS-36 had no manual safety whatsoever: French designers considered it an unnecessary complication. Adopted just four years before France fell in WWII, it barely saw the war. French forces used it through the Indochina War and Algeria, where the demanding conditions of jungle and desert fighting proved its basic reliability. It remained in French service until the late 1970s, making it one of the longest-serving bolt-actions of the post-WWII era.",
+  },
+  {
+    id: 'sw-mas49', name: 'MAS-49 / 56', countries: ['France'], role: 'Service Rifle', yearStart: 1949, yearEnd: 1979, caliber: '7.5×54mm French',
+    story: "France's first successful semi-automatic service rifle used a unique direct gas impingement system — gas tapped from the barrel impinged directly on the bolt carrier, a design that predated Stoner's AR-15 by a decade. The MAS-49/56 was the compact variant optimized for parachutists and colonial service. Both variants saw extensive combat in Indochina and Algeria. The rifle's integral grenade launcher and detachable scope mount made it surprisingly versatile for its era. It was replaced by the FAMAS in 1979 but remained in reserve stocks through the 1990s.",
+  },
+  {
+    id: 'sw-mle1892', name: 'Revolver Modèle 1892', countries: ['France'], role: 'Service Pistol', yearStart: 1892, yearEnd: 1945, caliber: '8mm Lebel',
+    story: "The French service revolver of both World Wars was a solid-frame, swing-out cylinder design notable for one dangerous feature: the cylinder could be loaded from either side, but the side-plate could be removed entirely for cleaning — and accidentally during combat. The 8mm Lebel pistol cartridge was anemic even by 1892 standards: contemporary American .38 S&W revolvers were significantly more powerful. French officers carried it through WWI and WWII for lack of alternatives. Despite its weaknesses, it was mechanically reliable — the same gun that went to war in 1914 was still being issued in 1944.",
+  },
+  {
+    id: 'sw-mac50', name: 'MAC Mle 1950', countries: ['France'], role: 'Service Pistol', yearStart: 1950, yearEnd: 1990, caliber: '9mm',
+    story: "France finally standardized on 9mm Parabellum with the MAC 50, a locked-breech single-action pistol that bears obvious similarities to the Browning Hi-Power. Manufactured at the state arsenal Manufacture d'Armes de Châtellerault, it served through the Algerian War, Indochina, and numerous French foreign interventions. Reliable if unremarkable, it was issued to all branches including the Foreign Legion. The French national police (Gendarmerie) and military carried it for four decades before transitioning to the PAMAS G1 (licensed Beretta 92) in the 1990s.",
+  },
+  {
+    id: 'sw-pamas', name: 'PAMAS G1 / Beretta 92', countries: ['France'], role: 'Service Pistol', yearStart: 1990, yearEnd: null, caliber: '9mm',
+    story: "France adopted the Beretta 92 under license as the PAMAS G1 — PAMAS standing for Pistolet Automatique MAS. The decision to license a foreign design rather than develop an indigenous replacement reflected France's pragmatic post-Cold War defense procurement. The PAMAS G1 is virtually identical to the Beretta 92F/92FS, with the same DA/SA trigger and open-slide design. It serves the French Army, Navy, and Gendarmerie. France is in the process of transitioning to the SIG Sauer P320 (the same platform as the US M17), selected as the 'Pistolet Semi-Automatique nouvelle génération' in 2022.",
+  },
+
+  // ── GERMANY additions ─────────────────────────────────────────────────────
+  {
+    id: 'sw-luger', name: 'Luger P08', countries: ['Germany', 'Switzerland'], role: 'Service Pistol', yearStart: 1908, yearEnd: 1942, caliber: '9mm Parabellum',
+    story: "Georg Luger's pistol gave the world its most common pistol cartridge: 9mm Parabellum was literally named for the gun, from the Latin 'Si vis pacem, para bellum' (if you want peace, prepare for war). The toggle-lock action was mechanically brilliant but sensitive to dirt — a serious problem on WWI's muddy Western Front and WWII's Eastern Front. Despite its mechanical complexity, the P08 was so well made that most examples still function today. American GIs prized captured Lugers as trophies to such an extent that the US Army had to issue directives discouraging soldiers from accepting surrenders motivated by desire for the pistol.",
+  },
+  {
+    id: 'sw-p38', name: 'Walther P38 / P1', countries: ['Germany'], role: 'Service Pistol', yearStart: 1938, yearEnd: 1994, caliber: '9mm',
+    story: "The P38 was developed specifically to replace the Luger with something simpler, cheaper, and more reliable. Carl Walther's double-action/single-action trigger was a genuine innovation — the first successful DA/SA military pistol, allowing a safer first shot without cocking the hammer. The P38 worked reliably in the mud and cold that broke Lugers. West Germany re-adopted it as the P1 in 1957 with an aluminum alloy frame, and it served the Bundeswehr until 1994 — 56 years of continuous service across two different Germanys. The DA/SA trigger it pioneered became the template for the Beretta 92, SIG P226, and most Western service pistols through the 1990s.",
+  },
+  {
+    id: 'sw-mp18', name: 'MP18 / MP28', countries: ['Germany'], role: 'Submachine Gun', yearStart: 1918, yearEnd: 1945, caliber: '9mm',
+    story: "The MP18 was the world's first practical submachine gun — a weapon class it essentially invented. Hugo Schmeisser designed it for German Stormtrooper tactics in 1918: close-quarters trench clearing where volume of fire mattered more than accuracy. The Treaty of Versailles specifically banned Germany from producing it, which only ensured the design was copied and improved across Europe. The improved MP28 influenced the Sten, the Sterling, and virtually every WWII-era SMG design. When Americans said 'Schmeisser' to describe the MP40 in WWII, they were technically referring to Hugo Schmeisser's earlier, more influential weapon.",
+  },
+  {
+    id: 'sw-mg34', name: 'MG34', countries: ['Germany'], role: 'Machine Gun', yearStart: 1934, yearEnd: 1945, caliber: '7.92×57mm',
+    story: "The MG34 introduced the concept of the General Purpose Machine Gun — one weapon that could serve as both a light squad weapon on a bipod and a sustained-fire weapon on a tripod. Its 800-900 rpm rate of fire was unprecedented; Allied machine guns fired 400-600 rpm. The MG34 could accept both 50-round belt segments and 75-round drum magazines. It was expensive to manufacture (over 100 precision parts requiring skilled machining), which drove the development of the cheaper MG42. The MG34 remained in production throughout WWII because the MG42 couldn't match its dual-feed flexibility, making both guns essential.",
+  },
+  {
+    id: 'sw-g36', name: 'HK G36', countries: ['Germany', 'Spain', 'Latvia', 'Lithuania'], role: 'Service Rifle', yearStart: 1997, yearEnd: 2021, caliber: '5.56×45mm',
+    story: "The G36 replaced the G3 as the Bundeswehr's service rifle and was widely considered a major advance: polymer construction, integral optics (a 3x scope and red dot combined), and reliable gas-operated rotating bolt. The problem emerged in Afghanistan: under sustained fire in hot conditions, the polymer receiver and barrel housing conducted heat differently, causing point of impact to shift significantly. A German parliamentary investigation in 2014 confirmed the accuracy degradation under realistic combat conditions. HK maintained the design was within spec; the Bundeswehr disagreed and replaced it with the HK416 A7, ending a 24-year service life.",
+  },
+
+  // ── UNITED KINGDOM additions ──────────────────────────────────────────────
+  {
+    id: 'sw-martinih', name: 'Martini-Henry', countries: ['UK', 'India', 'Egypt'], role: 'Service Rifle', yearStart: 1871, yearEnd: 1889, caliber: '.577/450 Martini-Henry',
+    story: "The Martini-Henry combined Friedrich von Martini's falling-block action with Alexander Henry's seven-groove rifling to produce the rifle that built the British Empire. The lever-operated falling block allowed faster reloading than any bolt-action of its era. It fired a heavy .45-caliber bullet at relatively low velocity, creating devastating tissue damage at close range. At Rorke's Drift in 1879, 150 British soldiers with Martini-Henrys held off 3,000-4,000 Zulu warriors for 12 hours, firing so many rounds that the rifles became too hot to hold. The action's limitation was single-shot loading — box magazines would have to wait for the Lee-Metford.",
+  },
+  {
+    id: 'sw-leemetford', name: 'Lee-Metford', countries: ['UK', 'Canada', 'Australia'], role: 'Service Rifle', yearStart: 1888, yearEnd: 1902, caliber: '.303 British',
+    story: "The Lee-Metford bridged the gap between single-shot black powder rifles and the modern bolt-action era. James Paris Lee's detachable box magazine held 8 rounds — a revolution in battlefield firepower. William Metford's polygonal rifling was optimized for black powder; the switch to cordite propellant in 1891 eroded the soft rifling rapidly, necessitating the transition to the Lee-Enfield's square-cut Enfield rifling. Despite its short service life (superseded by the SMLE in 1895-1903), the Lee-Metford established the fundamental architecture — rear-locking bolt, detachable magazine, cock-on-closing action — that defined British service rifles for the next 60 years.",
+  },
+  {
+    id: 'sw-webley', name: 'Webley Revolver', countries: ['UK', 'Canada', 'Australia', 'India'], role: 'Service Pistol', yearStart: 1887, yearEnd: 1947, caliber: '.455 Webley / .38 S&W',
+    story: "The Webley was the standard British service revolver through both World Wars — a top-break design that simultaneously ejected all spent cases when the frame hinge was released, allowing very fast reloading. The .455 Webley cartridge was a large, slow, heavy bullet designed to stop men reliably at close range; by WWI standards it was considered adequate. During WWI, British officers often preferred German P08 Lugers taken as trophies. The .455 was replaced by the .38/200 (essentially .38 S&W) in 1932, traded stopping power for lighter recoil, a trade the War Office would regret in actual combat. Webleys served through WWII despite being officially replaced.",
+  },
+  {
+    id: 'sw-sterling', name: 'Sterling SMG (L2)', countries: ['UK', 'Canada', 'India'], role: 'Submachine Gun', yearStart: 1944, yearEnd: 1994, caliber: '9mm',
+    story: "The Sterling replaced the Sten in British service and addressed virtually every complaint about its predecessor: better reliability, side-folding stock, improved 34-round magazine with rollers to reduce feed jams, and a vastly superior trigger. Developed during WWII but not adopted until 1953, it served British forces through the Falklands War and Northern Ireland. The silenced L34A1 variant was used by SAS and special operations forces throughout the Cold War. Industrial designer's note: the Sterling's curved magazine and distinctive ribbed barrel gave it a visual identity that George Lucas directly copied for the E-11 blaster in Star Wars.",
+  },
+  {
+    id: 'sw-l96', name: 'L96 / Arctic Warfare (AW)', countries: ['UK', 'Sweden', 'Germany', 'Netherlands', 'Finland'], role: 'Sniper Rifle', yearStart: 1982, yearEnd: null, caliber: '.308 / 7.62×51mm',
+    story: "Accuracy International's L96 won the British Army's sniper rifle competition in 1982, designed around competitive target shooting requirements — a philosophy that produced exceptional accuracy. The folding chassis could be adjusted to precisely fit any shooter. The Arctic Warfare variant was specifically tested at -40°C in Sweden, its bolt designed to function when conventional actions froze solid. The AW family spawned the AWM (.338 Lapua), used to set multiple confirmed long-range kill records. The fundamental design — aluminium chassis, adjustable everything, weatherproof — became the template for virtually every modern military precision rifle.",
+  },
+
+  // ── JAPAN additions ───────────────────────────────────────────────────────
+  {
+    id: 'sw-murata', name: 'Murata Type 13 / Type 18', countries: ['Japan'], role: 'Service Rifle', yearStart: 1880, yearEnd: 1897, caliber: '8×53mmR Murata',
+    story: "Japan's first domestically designed military rifle, the Murata emerged from the Meiji government's drive to end dependence on imported European arms. Major Tsuneyoshi Murata studied French and German designs in Europe before producing a single-shot black-powder rifle that could be manufactured by Japanese industry. The Type 18 (1885) added a tubular magazine. Both variants were already behind the curve — European armies were adopting box-magazine repeaters with smokeless powder — but the Murata represented something more significant than its specifications: Japan went from importing European muskets to designing its own service rifles in under twenty years. The pace of Meiji-era military modernization between 1868 and the Russo-Japanese War of 1904 is without parallel in 19th-century history.",
+  },
+  {
+    id: 'sw-arisaka', name: 'Arisaka (Type 38 / Type 99)', countries: ['Japan'], role: 'Service Rifle', yearStart: 1897, yearEnd: 1945, caliber: '6.5×50mm / 7.7×58mm',
+    story: "Colonel Nariakira Arisaka designed Japan's service rifle on Mauser principles, producing an action that American ordnance experts after WWII rated as the strongest military bolt-action ever built — stronger than the Springfield 1903, the K98k, or the Lee-Enfield. The Type 38 (6.5mm) had mild recoil ideal for smaller-statured soldiers. The Type 99 (7.7mm) adopted a more powerful cartridge as Japan entered full-scale war in China. Late-war examples showed catastrophic quality decline — unfinished metal, missing parts — as Japan's industrial capacity collapsed. Emperor Hirohito's surrender announcement specifically mentioned the 'cruel bomb' but also acknowledged that Japan's forces could no longer fight effectively.",
+  },
+  {
+    id: 'sw-nambu', name: 'Nambu Type 14', countries: ['Japan'], role: 'Service Pistol', yearStart: 1925, yearEnd: 1945, caliber: '8mm Nambu',
+    story: "Kijiro Nambu designed Japan's service pistol around a proprietary 8mm cartridge available nowhere else on earth. The external hammer, Luger-like toggle-lock action, and complicated takedown made it a maintenance challenge. The grip angle was nearly vertical, creating poor natural pointing. The trigger guard was large enough for a gloved hand — a concession to Manchurian winters. American soldiers who captured them often discarded them immediately in favor of Japanese Nambu ammunition being unavailable for resupply. Post-war analysis by American ordnance found the 8mm Nambu significantly inferior to 9mm Parabellum in both velocity and terminal performance. It is remembered primarily as an example of what not to do in military pistol design.",
+  },
+  {
+    id: 'sw-type89', name: 'Howa Type 89', countries: ['Japan'], role: 'Service Rifle', yearStart: 1989, yearEnd: null, caliber: '5.56×45mm',
+    story: "Japan's indigenous 5.56mm service rifle replaced the 7.62mm Type 64 and was designed within strict constitutional constraints: Japan's Self-Defense Forces are prohibited from exporting weapons, making the Type 89 one of the world's only modern service rifles never sold or licensed to any other nation. The rotating-bolt, gas-operated design uses a modified AR-18 operating system rather than direct impingement. The JGSDF issues one rifle per soldier — ammunition resupply is tightly controlled by doctrine. Despite being considered adequate, Japan is transitioning to the Type 20 (HOWA 5.56) with Picatinny rails and improved ergonomics as threats in the Indo-Pacific evolve.",
+  },
+
+  // ── ISRAEL additions ──────────────────────────────────────────────────────
+  {
+    id: 'sw-galil', name: 'Galil (AR/ARM)', countries: ['Israel', 'South Africa', 'Colombia'], role: 'Service Rifle', yearStart: 1972, yearEnd: 2003, caliber: '5.56×45mm / 7.62×51mm',
+    story: "The 1967 Six-Day War exposed a fatal weakness: Israeli soldiers were abandoning their Uzis and FN FALs to pick up Egyptian AK-47s, which functioned reliably in the Sinai's sand. Israel Military Industries studied the AK's gas system and the Finnish Valmet M62 (itself an AK derivative), producing the Galil — an AK action feeding from NATO-standard magazines, with a folding stock and bipod. The ARM variant's bipod also served as a bottle opener, because Israeli soldiers kept breaking the optics with bottle caps. The Galil was expensive to manufacture and was largely replaced by the M16A1 and M4, which the US supplied cheaply. It's now primarily found in IDF reserve units and in several South American militaries.",
+  },
+  {
+    id: 'sw-tavor', name: 'Tavor TAR-21 / X95', countries: ['Israel', 'India', 'Ukraine'], role: 'Service Rifle', yearStart: 2001, yearEnd: null, caliber: '5.56×45mm',
+    story: "Israel Weapon Industries developed the Tavor to solve a specific operational problem: the M4's barrel length was inadequate for vehicle operations, close-quarters combat in Gaza's urban terrain, and operations in armored vehicles — but a standard carbine was too long. The bullpup solution placed the action behind the trigger, allowing a full 18.1-inch barrel in an overall package shorter than an M4. The rotating-bolt, gas-operated design was engineered for left-hand conversion in the field (a common bullpup weakness). India licensed it as the MTAR-21 and selected it for special forces. The X95 variant replaced the TAR-21 as Israel's standard issue in 2009 and is now the primary IDF rifle.",
+  },
+];

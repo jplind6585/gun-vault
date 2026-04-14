@@ -1,0 +1,173 @@
+/* ── FIELD GUIDE PAGE ─────────────────────────────────────────────── */
+
+body.field-guide-page {
+  background: var(--bg);
+}
+
+/* ── HEADER ─────────────────────────────────────────────────────────── */
+.fg-header {
+  padding: 96px 0 56px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.fg-title {
+  font-size: clamp(26px, 3.5vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  line-height: 1.2;
+  max-width: 600px;
+}
+
+.fg-sub {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 560px;
+}
+
+/* ── BODY ────────────────────────────────────────────────────────────── */
+.fg-body {
+  padding: 56px 0 80px;
+}
+
+.fg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ── CARD ────────────────────────────────────────────────────────────── */
+.fg-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+  min-height: 200px;
+}
+
+.fg-card-live {
+  border-color: rgba(255,212,59,0.2);
+  cursor: pointer;
+}
+
+.fg-card-live:hover {
+  border-color: rgba(255,212,59,0.5);
+  transform: translateY(-2px);
+}
+
+.fg-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.fg-card-tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.fg-card-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #2ecc71;
+  background: rgba(46,204,113,0.1);
+  border: 0.5px solid rgba(46,204,113,0.25);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.fg-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.fg-card-desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.fg-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--border);
+}
+
+.fg-card-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.3px;
+}
+
+.fg-card-cta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+}
+
+/* ── CTA ────────────────────────────────────────────────────────────── */
+.fg-cta {
+  background: var(--bg2);
+  border-top: 0.5px solid var(--border);
+  padding: 56px 0;
+}
+
+.fg-cta .cta-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 40px;
+  align-items: center;
+}
+
+.fg-cta .cta-content h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.fg-cta .cta-content p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .fg-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-cta .cta-content {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-cta .email-capture {
+    flex-direction: column;
+  }
+
+  .fg-cta .email-input,
+  .fg-cta .btn-primary {
+    width: 100%;
+  }
+}

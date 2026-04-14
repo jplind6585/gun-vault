@@ -1,12 +1,2 @@
 [build]
   publish = "."
-
-[[redirects]]
-  from = "/field-guide"
-  to   = "/field-guide.html"
-  status = 200
-
-[[redirects]]
-  from = "/privacy"
-  to   = "/privacy.html"
-  status = 200

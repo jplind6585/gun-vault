@@ -45,3 +45,6 @@ yarn-error.*
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Local Netlify folder
+.netlify
