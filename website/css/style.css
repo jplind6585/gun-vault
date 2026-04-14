@@ -231,8 +231,8 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 
 .nav-logo-img {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   mix-blend-mode: screen;
 }
@@ -988,12 +988,21 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 
 /* ── HERO ADDITIONS ────────────────────────────────────────────────── */
-.hero-logo {
-  width: 150px;
+.hero-phone {
+  position: relative;
+}
+
+.hero-bg-logo {
+  position: absolute;
+  width: 420px;
   height: auto;
-  display: block;
-  margin: 40px 0 28px 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   mix-blend-mode: screen;
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
 }
 
 .what-it-is {
