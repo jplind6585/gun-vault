@@ -214,7 +214,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 style={styles.input}
                 placeholder="e.g. Glock, Sig Sauer, S&W..."
                 value={make}
-                onChange={e => setMake(e.target.value)
+                onChange={e => setMake(e.target.value)}
                 onBlur={() => setTimeout(() => setShowMakeSugg(false), 150)}
                 autoCapitalize="words"
                 autoComplete="off"
@@ -237,7 +237,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 style={styles.input}
                 placeholder="e.g. G19 Gen5, P320 Compact..."
                 value={model}
-                onChange={e => setModel(e.target.value)
+                onChange={e => setModel(e.target.value)}
                 onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
                 autoCapitalize="words"
                 autoComplete="off"

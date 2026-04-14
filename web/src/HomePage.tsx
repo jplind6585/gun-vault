@@ -102,12 +102,12 @@ export function HomePage({
   const monthsActive      = new Set(sessions.map(s => s.date.slice(0, 7))).size || 1;
   const sessionsPerMonth  = (sessions.length / monthsActive).toFixed(1);
 
-  // ── Top 3 guns (period-filtered) ─────────────────────────────────────────
-  // TEMP: screenshot override — restore after screenshots
-  const top3 = [
-    { gun: { id: '__tmp1__', make: 'Glock', model: '19', caliber: '9mm', type: 'Pistol' as const, action: 'Semi-Auto' as const, status: 'Active' as const, displayName: 'Glock 19', roundCount: 860 }, rounds: 860 },
-    { gun: { id: '__tmp2__', make: 'Sig Sauer', model: 'P365 Macro', caliber: '9mm', type: 'Pistol' as const, action: 'Semi-Auto' as const, status: 'Active' as const, displayName: 'P365 Macro', roundCount: 335 }, rounds: 335 },
-  ];
+  // ── Top 3 guns by all-time round count ───────────────────────────────────
+  const top3 = [...guns]
+    .filter(g => g.status !== 'Sold' && g.status !== 'Transferred' && (g.roundCount ?? 0) > 0)
+    .sort((a, b) => (b.roundCount ?? 0) - (a.roundCount ?? 0))
+    .slice(0, 3)
+    .map(g => ({ gun: g, rounds: g.roundCount ?? 0 }));
 
   // ── Top caliber ───────────────────────────────────────────────────────────
   const roundsByCal = sessions.reduce((acc, s) => {

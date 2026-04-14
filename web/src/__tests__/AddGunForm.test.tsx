@@ -10,7 +10,6 @@ import { AddGunForm } from '../AddGunForm';
 // Disable autocomplete and sense-check so tests aren't affected by gun database lookups
 vi.mock('../gunDatabase', () => ({
   lookupGunSpec:  () => null,
-  getSenseCheck:  () => '',
   suggestMakes:   () => [],
   suggestModels:  () => [],
 }));
