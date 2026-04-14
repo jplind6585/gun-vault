@@ -276,8 +276,8 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
                 <th onClick={() => handleSort('year')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'year' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '50px' }}>
                   YEAR {sortField === 'year' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                 </th>
-                <th onClick={() => handleSort('bulletDia')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'bulletDia' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '55px' }}>
-                  DIA {sortField === 'bulletDia' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                <th onClick={() => handleSort('bulletDia')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'bulletDia' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '75px' }}>
+                  BULLET DIA {sortField === 'bulletDia' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                 </th>
                 <th onClick={() => handleSort('velocity')} style={{ padding: '7px 8px', textAlign: 'left', color: sortField === 'velocity' ? theme.caliberRed : theme.textMuted, fontSize: '9px', letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 700, width: '95px' }}>
                   FPS {sortField === 'velocity' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
@@ -371,10 +371,10 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
                     <td style={{ padding: '8px 8px', color: theme.textSecondary, fontSize: '10px' }}>
                       {cart.bulletDiameterInch}"
                     </td>
-                    <td style={{ padding: '8px 8px', color: theme.textPrimary, fontSize: '10px' }}>
+                    <td style={{ padding: '8px 8px', color: theme.textPrimary, fontSize: '10px', whiteSpace: 'nowrap' }}>
                       {cart.velocityRangeFPS.min}–{cart.velocityRangeFPS.max}
                     </td>
-                    <td style={{ padding: '8px 8px', color: theme.caliberRed, fontWeight: 600, fontSize: '10px' }}>
+                    <td style={{ padding: '8px 8px', color: theme.caliberRed, fontWeight: 600, fontSize: '10px', whiteSpace: 'nowrap' }}>
                       {cart.energyRangeFTLBS.min}–{cart.energyRangeFTLBS.max}
                     </td>
                     <td style={{ padding: '8px 8px', fontSize: '10px' }}>
@@ -907,13 +907,13 @@ function SpecsTab({ cartridge }: { cartridge: Cartridge }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', fontSize: '10px' }}>
           <div>
             <span style={{ color: theme.textMuted }}>Velocity Range:</span>
-            <div style={{ fontWeight: 600, marginTop: '2px', fontFamily: 'monospace' }}>
+            <div style={{ fontWeight: 600, marginTop: '2px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
               {cartridge.velocityRangeFPS.min} - {cartridge.velocityRangeFPS.max} fps
             </div>
           </div>
           <div>
             <span style={{ color: theme.textMuted }}>Muzzle Energy Range:</span>
-            <div style={{ fontWeight: 600, marginTop: '2px', fontFamily: 'monospace', color: theme.caliberRed }}>
+            <div style={{ fontWeight: 600, marginTop: '2px', fontFamily: 'monospace', color: theme.caliberRed, whiteSpace: 'nowrap' }}>
               {cartridge.energyRangeFTLBS.min} - {cartridge.energyRangeFTLBS.max} ft-lbs
             </div>
           </div>
