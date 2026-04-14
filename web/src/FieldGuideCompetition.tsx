@@ -12,7 +12,7 @@ interface CompFormat {
   description: string[];
 }
 
-const HISTORICAL_FORMATS: CompFormat[] = [
+export const HISTORICAL_FORMATS: CompFormat[] = [
   {
     id: 'palma',
     name: 'Palma Match',
@@ -123,7 +123,7 @@ const HISTORICAL_FORMATS: CompFormat[] = [
   },
 ];
 
-const MODERN_FORMATS: CompFormat[] = [
+export const MODERN_FORMATS: CompFormat[] = [
   {
     id: 'uspsa',
     name: 'USPSA',

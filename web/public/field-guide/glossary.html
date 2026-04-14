@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firearms Glossary — Lindcott Armory Field Guide</title>
+  <meta name="description" content="76 firearms terms, acronyms, and definitions — from MOA and BCG to NFA, DOPE, JHP, and zero." />
+  <link rel="canonical" href="https://lindcottarmory.com/field-guide/glossary" />
+  <meta property="og:title" content="Firearms Glossary — Lindcott Armory Field Guide" />
+  <meta property="og:description" content="76 firearms terms, acronyms, and definitions — from MOA and BCG to NFA, DOPE, JHP, and zero." />
+  <meta property="og:url" content="https://lindcottarmory.com/field-guide/glossary" />
+  <meta property="og:image" content="https://lindcottarmory.com/icon-1024.png" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f4f8;
+    --surface2: #eaeaf0;
+    --border: #e0e0ea;
+    --text: #1a1a2e;
+    --secondary: #44446a;
+    --muted: #88889a;
+    --accent: #2f5fe8;
+    --accent-dim: rgba(47,95,232,0.1);
+    --green: #2f9e44;
+    --red: #c92a2a;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #07071a;
+      --surface: #0e0e2a;
+      --surface2: #14143a;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e8f0;
+      --secondary: #9090b0;
+      --muted: #5a5a7a;
+      --accent: #5b8cff;
+      --accent-dim: rgba(91,140,255,0.1);
+      --green: #51cf66;
+      --red: #ff6b6b;
+    }
+  }
+  body { background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .nav-brand { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--text); }
+  .nav-section { font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .nav-cta {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 5px 12px; border-radius: 4px;
+  }
+  .nav-cta:hover { background: var(--accent-dim); text-decoration: none; }
+
+  /* Page header */
+  .page-header { padding: 40px 24px 24px; max-width: 800px; margin: 0 auto; }
+  .breadcrumb { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-bottom: 12px; }
+  .breadcrumb a { color: var(--muted); }
+  .page-title { font-size: clamp(22px,4vw,32px); font-weight: 800; letter-spacing: -.01em; margin-bottom: 8px; }
+  .page-desc { font-size: 14px; color: var(--secondary); line-height: 1.7; }
+
+  /* Filter bar */
+  .filter-bar {
+    max-width: 800px; margin: 0 auto; padding: 0 24px 20px;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .search-input {
+    flex: 1; min-width: 200px; padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit;
+    font-size: 13px; outline: none;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 12px; font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--secondary);
+    cursor: pointer; transition: all .15s;
+  }
+  .chip:hover, .chip.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+  }
+  .sort-select {
+    padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit; font-size: 12px;
+    cursor: pointer; outline: none;
+  }
+
+  /* Results count */
+  .count { font-size: 11px; color: var(--muted); padding: 0 24px 12px; max-width: 800px; margin: 0 auto; }
+
+  /* Cards */
+  .cards { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; display: grid; gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 700; letter-spacing: .03em; color: var(--text); }
+  .card-subtitle { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-top: 2px; }
+  .card-body { font-size: 13px; color: var(--secondary); line-height: 1.7; }
+  .card-body p + p { margin-top: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 3px 8px;
+    border-radius: 4px; background: var(--accent-dim); color: var(--accent);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .05em;
+    padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border);
+    color: var(--muted); margin: 2px;
+  }
+
+  /* Expandable */
+  .expand-toggle { cursor: pointer; list-style: none; }
+  .expand-toggle::-webkit-details-marker { display: none; }
+  details > summary { cursor: pointer; }
+  details[open] .expand-icon::after { content: '▲'; }
+  .expand-icon::after { content: '▼'; font-size: 9px; color: var(--muted); margin-left: 8px; }
+
+  /* Pros/cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 500px) { .pros-cons { grid-template-columns: 1fr; } }
+  .pros-cons-head { font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: 6px; }
+  .pros-cons-head.pro { color: var(--green); }
+  .pros-cons-head.con { color: var(--red); }
+  .pros-cons li { font-size: 12px; color: var(--secondary); margin-left: 14px; margin-bottom: 3px; }
+
+  /* Spec table */
+  .spec-table { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 12px; }
+  .spec-row { display: contents; }
+  .spec-key { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .spec-val { font-size: 11px; color: var(--text); font-weight: 600; }
+
+  /* Steps list */
+  .steps { margin-top: 10px; }
+  .step { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+  .step-num {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-text { font-size: 13px; color: var(--secondary); line-height: 1.6; }
+
+  /* No results */
+  .no-results { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; display: none; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border); padding: 24px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 11px; color: var(--muted); letter-spacing: .05em;
+  }
+  .footer a { color: var(--muted); }
+  .footer-links { display: flex; gap: 20px; }
+
+  /* Section nav */
+  .section-nav { max-width: 800px; margin: 0 auto; padding: 0 24px 32px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .section-link {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: 4px; color: var(--secondary);
+  }
+  .section-link:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav-brand" href="/">LINDCOTT ARMORY</a>
+    <span class="nav-section">FIELD GUIDE</span>
+    <a class="nav-cta" href="/">OPEN APP →</a>
+  </nav>
+  
+  
+  <div class="page-header">
+    <div class="breadcrumb"><a href="/field-guide/">Field Guide</a> › Glossary</div>
+    <h1 class="page-title">Firearms Glossary</h1>
+    <p class="page-desc">76 terms, acronyms, and definitions for shooters of every level.</p>
+  </div>
+  <div class="filter-bar">
+    <input class="search-input" id="search" placeholder="Search terms…" type="search" />
+    <div class="chip-group">
+      <button class="chip" data-filter="A" data-filter-attr="group">A</button><button class="chip" data-filter="B" data-filter-attr="group">B</button><button class="chip" data-filter="C" data-filter-attr="group">C</button><button class="chip" data-filter="D" data-filter-attr="group">D</button><button class="chip" data-filter="E" data-filter-attr="group">E</button><button class="chip" data-filter="F" data-filter-attr="group">F</button><button class="chip" data-filter="G" data-filter-attr="group">G</button><button class="chip" data-filter="H" data-filter-attr="group">H</button><button class="chip" data-filter="I" data-filter-attr="group">I</button><button class="chip" data-filter="J" data-filter-attr="group">J</button><button class="chip" data-filter="L" data-filter-attr="group">L</button><button class="chip" data-filter="M" data-filter-attr="group">M</button><button class="chip" data-filter="N" data-filter-attr="group">N</button><button class="chip" data-filter="O" data-filter-attr="group">O</button><button class="chip" data-filter="P" data-filter-attr="group">P</button><button class="chip" data-filter="R" data-filter-attr="group">R</button><button class="chip" data-filter="S" data-filter-attr="group">S</button><button class="chip" data-filter="T" data-filter-attr="group">T</button><button class="chip" data-filter="W" data-filter-attr="group">W</button><button class="chip" data-filter="Z" data-filter-attr="group">Z</button>
+    </div>
+  </div>
+  <p class="count"></p>
+  <div class="cards">
+    
+    <div class="card" data-text="+P Overpressure Ammunition Ammunition loaded to higher pressure than the standard SAAMI specification. Marked +P. Produces higher velocity but accelerates wear. Only use in firearms rated for +P." data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">+P</div>
+          <div class="card-subtitle">Overpressure Ammunition</div>
+        </div>
+      </div>
+      <div class="card-body">Ammunition loaded to higher pressure than the standard SAAMI specification. Marked +P. Produces higher velocity but accelerates wear. Only use in firearms rated for +P.</div>
+    </div>
+    <div class="card" data-text="+P+ Over-Overpressure Ammunition Loaded even higher than +P. No SAAMI standard exists for this designation; it is manufacturer-defined. Treat as non-standard and verify firearm compatibility before use." data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">+P+</div>
+          <div class="card-subtitle">Over-Overpressure Ammunition</div>
+        </div>
+      </div>
+      <div class="card-body">Loaded even higher than +P. No SAAMI standard exists for this designation; it is manufacturer-defined. Treat as non-standard and verify firearm compatibility before use.</div>
+    </div>
+    <div class="card" data-text="Action Operating Mechanism The mechanical system that loads, fires, and ejects cartridges. Common types: Semi-Automatic (auto-loads next round after each shot), Bolt-Action (manually cycle a bolt handle between shots), Lever-Action (work a lever under the receiver), Revolver (rotating cylinder), Pump (slide a fore-end), Single-Shot (one round at a time)." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Action</div>
+          <div class="card-subtitle">Operating Mechanism</div>
+        </div>
+      </div>
+      <div class="card-body">The mechanical system that loads, fires, and ejects cartridges. Common types: Semi-Automatic (auto-loads next round after each shot), Bolt-Action (manually cycle a bolt handle between shots), Lever-Action (work a lever under the receiver), Revolver (rotating cylinder), Pump (slide a fore-end), Single-Shot (one round at a time).</div>
+    </div>
+    <div class="card" data-text="ACU Army Combat Uniform The US Army uniform platform that replaced BDUs in 2004, initially paired with the UCP pattern." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">ACU</div>
+          <div class="card-subtitle">Army Combat Uniform</div>
+        </div>
+      </div>
+      <div class="card-body">The US Army uniform platform that replaced BDUs in 2004, initially paired with the UCP pattern.</div>
+    </div>
+    <div class="card" data-text="AIWB Appendix Inside the Waistband IWB holster worn at the 12 o'clock (front) position. Allows fast draw but requires discipline and quality holster." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">AIWB</div>
+          <div class="card-subtitle">Appendix Inside the Waistband</div>
+        </div>
+      </div>
+      <div class="card-body">IWB holster worn at the 12 o'clock (front) position. Allows fast draw but requires discipline and quality holster.</div>
+    </div>
+    <div class="card" data-text="AOW Any Other Weapon NFA catch-all category for concealable firearms that don't fit other regulated categories. Includes pen guns, cane guns, and some pistol-gripped shotguns." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">AOW</div>
+          <div class="card-subtitle">Any Other Weapon</div>
+        </div>
+      </div>
+      <div class="card-body">NFA catch-all category for concealable firearms that don't fit other regulated categories. Includes pen guns, cane guns, and some pistol-gripped shotguns.</div>
+    </div>
+    <div class="card" data-text="AP Armor Piercing Hardened core (typically tungsten or steel) for penetrating armor. Heavily regulated under the Gun Control Act; most rifle AP and all handgun AP is banned for civilian sale." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">AP</div>
+          <div class="card-subtitle">Armor Piercing</div>
+        </div>
+      </div>
+      <div class="card-body">Hardened core (typically tungsten or steel) for penetrating armor. Heavily regulated under the Gun Control Act; most rifle AP and all handgun AP is banned for civilian sale.</div>
+    </div>
+    <div class="card" data-text="APCR Armor Piercing Composite Rigid WWII-era anti-armor round featuring a tungsten carbide core inside a lighter carrier body. Higher velocity than conventional AP but less effective at oblique angles." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">APCR</div>
+          <div class="card-subtitle">Armor Piercing Composite Rigid</div>
+        </div>
+      </div>
+      <div class="card-body">WWII-era anti-armor round featuring a tungsten carbide core inside a lighter carrier body. Higher velocity than conventional AP but less effective at oblique angles.</div>
+    </div>
+    <div class="card" data-text="API Armor Piercing Incendiary AP round with an incendiary compound behind the penetrator. Ignites on impact. Largely prohibited for civilian use." data-group="A">
+      <div class="card-head">
+        <div>
+          <div class="card-title">API</div>
+          <div class="card-subtitle">Armor Piercing Incendiary</div>
+        </div>
+      </div>
+      <div class="card-body">AP round with an incendiary compound behind the penetrator. Ignites on impact. Largely prohibited for civilian use.</div>
+    </div>
+    <div class="card" data-text="Barrel Length Barrel Length Distance from the chamber to the muzzle, measured in inches. Longer barrels produce higher velocity and are easier to aim accurately at distance. Shorter barrels are more compact. Legally significant: rifles must have a barrel of 16&quot;+ and shotguns 18&quot;+ to avoid NFA regulation." data-group="B">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Barrel Length</div>
+          <div class="card-subtitle">Barrel Length</div>
+        </div>
+      </div>
+      <div class="card-body">Distance from the chamber to the muzzle, measured in inches. Longer barrels produce higher velocity and are easier to aim accurately at distance. Shorter barrels are more compact. Legally significant: rifles must have a barrel of 16&quot;+ and shotguns 18&quot;+ to avoid NFA regulation.</div>
+    </div>
+    <div class="card" data-text="BC Ballistic Coefficient A number describing how efficiently a bullet resists air drag. Higher BC = less drop and wind drift at distance. G1 and G7 are the two common drag models." data-group="B">
+      <div class="card-head">
+        <div>
+          <div class="card-title">BC</div>
+          <div class="card-subtitle">Ballistic Coefficient</div>
+        </div>
+      </div>
+      <div class="card-body">A number describing how efficiently a bullet resists air drag. Higher BC = less drop and wind drift at distance. G1 and G7 are the two common drag models.</div>
+    </div>
+    <div class="card" data-text="BCG Bolt Carrier Group The reciprocating assembly in an AR-pattern rifle: bolt, carrier, firing pin, cam pin, and retaining pin. The heart of the gas-operated action." data-group="B">
+      <div class="card-head">
+        <div>
+          <div class="card-title">BCG</div>
+          <div class="card-subtitle">Bolt Carrier Group</div>
+        </div>
+      </div>
+      <div class="card-body">The reciprocating assembly in an AR-pattern rifle: bolt, carrier, firing pin, cam pin, and retaining pin. The heart of the gas-operated action.</div>
+    </div>
+    <div class="card" data-text="BDC Bullet Drop Compensator Reticle subtensions or a turret cam designed to compensate for bullet drop at set distances. Only accurate for the specific ammo the scope was calibrated with." data-group="B">
+      <div class="card-head">
+        <div>
+          <div class="card-title">BDC</div>
+          <div class="card-subtitle">Bullet Drop Compensator</div>
+        </div>
+      </div>
+      <div class="card-body">Reticle subtensions or a turret cam designed to compensate for bullet drop at set distances. Only accurate for the specific ammo the scope was calibrated with.</div>
+    </div>
+    <div class="card" data-text="Bolt-Action Bolt-Action Firearm A firearm type where the shooter manually lifts and pulls back a bolt handle to eject the fired case, then pushes it forward to chamber a new round. Simple, reliable, and extremely accurate. The standard choice for hunting rifles and precision long-range shooting." data-group="B">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Bolt-Action</div>
+          <div class="card-subtitle">Bolt-Action Firearm</div>
+        </div>
+      </div>
+      <div class="card-body">A firearm type where the shooter manually lifts and pulls back a bolt handle to eject the fired case, then pushes it forward to chamber a new round. Simple, reliable, and extremely accurate. The standard choice for hunting rifles and precision long-range shooting.</div>
+    </div>
+    <div class="card" data-text="Caliber Cartridge / Bore Diameter The size designation of a firearm and the ammunition it fires — usually the bullet's diameter in inches or millimeters (e.g., 9mm, .45 ACP, .308 Win). A firearm can only safely fire the specific caliber it is chambered for." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Caliber</div>
+          <div class="card-subtitle">Cartridge / Bore Diameter</div>
+        </div>
+      </div>
+      <div class="card-body">The size designation of a firearm and the ammunition it fires — usually the bullet's diameter in inches or millimeters (e.g., 9mm, .45 ACP, .308 Win). A firearm can only safely fire the specific caliber it is chambered for.</div>
+    </div>
+    <div class="card" data-text="Capacity Magazine or Cylinder Capacity The maximum number of rounds a magazine (semi-automatic) or cylinder (revolver) can hold before requiring a reload. May be legally restricted to 10 rounds or fewer in some states." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Capacity</div>
+          <div class="card-subtitle">Magazine or Cylinder Capacity</div>
+        </div>
+      </div>
+      <div class="card-body">The maximum number of rounds a magazine (semi-automatic) or cylinder (revolver) can hold before requiring a reload. May be legally restricted to 10 rounds or fewer in some states.</div>
+    </div>
+    <div class="card" data-text="CCW Concealed Carry Weapon A firearm carried in a concealed manner on the person. Also refers to the permit itself in states that require one." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">CCW</div>
+          <div class="card-subtitle">Concealed Carry Weapon</div>
+        </div>
+      </div>
+      <div class="card-body">A firearm carried in a concealed manner on the person. Also refers to the permit itself in states that require one.</div>
+    </div>
+    <div class="card" data-text="CEP Circular Error Probable Radius of a circle within which 50% of shots will land. A standard military accuracy metric; smaller CEP = more accurate system." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">CEP</div>
+          <div class="card-subtitle">Circular Error Probable</div>
+        </div>
+      </div>
+      <div class="card-body">Radius of a circle within which 50% of shots will land. A standard military accuracy metric; smaller CEP = more accurate system.</div>
+    </div>
+    <div class="card" data-text="Chamber Cartridge Chamber The cavity at the rear of the barrel where a cartridge sits when ready to fire. &quot;Chambered&quot; means a round is loaded and ready. &quot;Clearing the chamber&quot; means verifying it is empty — a core safety step." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Chamber</div>
+          <div class="card-subtitle">Cartridge Chamber</div>
+        </div>
+      </div>
+      <div class="card-body">The cavity at the rear of the barrel where a cartridge sits when ready to fire. &quot;Chambered&quot; means a round is loaded and ready. &quot;Clearing the chamber&quot; means verifying it is empty — a core safety step.</div>
+    </div>
+    <div class="card" data-text="CIP Commission Internationale Permanente The European standards body for cartridge dimensions and pressures, equivalent to SAAMI. Most European and many Asian firearms are CIP-proofed." data-group="C">
+      <div class="card-head">
+        <div>
+          <div class="card-title">CIP</div>
+          <div class="card-subtitle">Commission Internationale Permanente</div>
+        </div>
+      </div>
+      <div class="card-body">The European standards body for cartridge dimensions and pressures, equivalent to SAAMI. Most European and many Asian firearms are CIP-proofed.</div>
+    </div>
+    <div class="card" data-text="DA Double Action Trigger mechanism where pulling the trigger both cocks and releases the hammer or striker. Longer, heavier pull than SA but can fire from a decocked state." data-group="D">
+      <div class="card-head">
+        <div>
+          <div class="card-title">DA</div>
+          <div class="card-subtitle">Double Action</div>
+        </div>
+      </div>
+      <div class="card-body">Trigger mechanism where pulling the trigger both cocks and releases the hammer or striker. Longer, heavier pull than SA but can fire from a decocked state.</div>
+    </div>
+    <div class="card" data-text="DA/SA Double Action / Single Action Hybrid system: first shot fires DA (long heavy pull from decocked), subsequent shots fire SA (short light pull with hammer cocked). Common in Beretta, SIG, and CZ designs." data-group="D">
+      <div class="card-head">
+        <div>
+          <div class="card-title">DA/SA</div>
+          <div class="card-subtitle">Double Action / Single Action</div>
+        </div>
+      </div>
+      <div class="card-body">Hybrid system: first shot fires DA (long heavy pull from decocked), subsequent shots fire SA (short light pull with hammer cocked). Common in Beretta, SIG, and CZ designs.</div>
+    </div>
+    <div class="card" data-text="DAO Double Action Only Always fires in double action; no external hammer to cock manually. Consistent trigger pull for every shot. Common in DAO revolvers and some compact semi-autos." data-group="D">
+      <div class="card-head">
+        <div>
+          <div class="card-title">DAO</div>
+          <div class="card-subtitle">Double Action Only</div>
+        </div>
+      </div>
+      <div class="card-body">Always fires in double action; no external hammer to cock manually. Consistent trigger pull for every shot. Common in DAO revolvers and some compact semi-autos.</div>
+    </div>
+    <div class="card" data-text="DOPE Data On Previous Engagements A shooter's recorded scope adjustments (elevation and windage) for a specific rifle, ammunition, and distance combination. The foundation of precision long-range shooting." data-group="D">
+      <div class="card-head">
+        <div>
+          <div class="card-title">DOPE</div>
+          <div class="card-subtitle">Data On Previous Engagements</div>
+        </div>
+      </div>
+      <div class="card-body">A shooter's recorded scope adjustments (elevation and windage) for a specific rifle, ammunition, and distance combination. The foundation of precision long-range shooting.</div>
+    </div>
+    <div class="card" data-text="Double Feed Double Feed Malfunction Two rounds attempting to enter the chamber simultaneously. Typically caused by a failure to extract. Requires an emergency reload procedure: lock bolt back, strip magazine, rack three times, reload." data-group="D">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Double Feed</div>
+          <div class="card-subtitle">Double Feed Malfunction</div>
+        </div>
+      </div>
+      <div class="card-body">Two rounds attempting to enter the chamber simultaneously. Typically caused by a failure to extract. Requires an emergency reload procedure: lock bolt back, strip magazine, rack three times, reload.</div>
+    </div>
+    <div class="card" data-text="EDC Every Day Carry A firearm (or gear loadout) that a person carries daily for personal protection. EDC philosophy emphasizes balancing concealability with capability." data-group="E">
+      <div class="card-head">
+        <div>
+          <div class="card-title">EDC</div>
+          <div class="card-subtitle">Every Day Carry</div>
+        </div>
+      </div>
+      <div class="card-body">A firearm (or gear loadout) that a person carries daily for personal protection. EDC philosophy emphasizes balancing concealability with capability.</div>
+    </div>
+    <div class="card" data-text="Elevation Vertical Scope / Sight Adjustment The up/down adjustment on a scope or iron sight. Dialing elevation up raises the bullet's point of impact. Used to compensate for bullet drop at longer distances." data-group="E">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Elevation</div>
+          <div class="card-subtitle">Vertical Scope / Sight Adjustment</div>
+        </div>
+      </div>
+      <div class="card-body">The up/down adjustment on a scope or iron sight. Dialing elevation up raises the bullet's point of impact. Used to compensate for bullet drop at longer distances.</div>
+    </div>
+    <div class="card" data-text="ES Extreme Spread The difference between the fastest and slowest velocity in a string of shots, measured by chronograph. Also used to describe the largest distance between any two shots in a group." data-group="E">
+      <div class="card-head">
+        <div>
+          <div class="card-title">ES</div>
+          <div class="card-subtitle">Extreme Spread</div>
+        </div>
+      </div>
+      <div class="card-body">The difference between the fastest and slowest velocity in a string of shots, measured by chronograph. Also used to describe the largest distance between any two shots in a group.</div>
+    </div>
+    <div class="card" data-text="FFL Federal Firearms License Required to commercially manufacture, import, or deal in firearms in the United States. Multiple license types exist; Type 01 is the common dealer FFL." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FFL</div>
+          <div class="card-subtitle">Federal Firearms License</div>
+        </div>
+      </div>
+      <div class="card-body">Required to commercially manufacture, import, or deal in firearms in the United States. Multiple license types exist; Type 01 is the common dealer FFL.</div>
+    </div>
+    <div class="card" data-text="FFP First Focal Plane Scope reticle mounted in the front focal plane; scales with magnification. MOA/MIL holds and measurements are correct at any power setting. Preferred for variable-power precision scopes." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FFP</div>
+          <div class="card-subtitle">First Focal Plane</div>
+        </div>
+      </div>
+      <div class="card-body">Scope reticle mounted in the front focal plane; scales with magnification. MOA/MIL holds and measurements are correct at any power setting. Preferred for variable-power precision scopes.</div>
+    </div>
+    <div class="card" data-text="FMJ Full Metal Jacket Bullet with a soft lead core fully enclosed in a harder metal jacket (usually gilding metal or copper-washed steel). Does not expand. Standard practice and range ammunition; required by Hague Convention for military use." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FMJ</div>
+          <div class="card-subtitle">Full Metal Jacket</div>
+        </div>
+      </div>
+      <div class="card-body">Bullet with a soft lead core fully enclosed in a harder metal jacket (usually gilding metal or copper-washed steel). Does not expand. Standard practice and range ammunition; required by Hague Convention for military use.</div>
+    </div>
+    <div class="card" data-text="FTE Failure to Eject A fired case that fails to leave the action after extraction. Often caused by a weak or dirty extractor, or low-pressure ammunition in a gas-operated system." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FTE</div>
+          <div class="card-subtitle">Failure to Eject</div>
+        </div>
+      </div>
+      <div class="card-body">A fired case that fails to leave the action after extraction. Often caused by a weak or dirty extractor, or low-pressure ammunition in a gas-operated system.</div>
+    </div>
+    <div class="card" data-text="FTF Failure to Feed A malfunction where a round fails to chamber from the magazine. Causes include damaged magazine lips, weak recoil spring, or improper ammunition seating." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FTF</div>
+          <div class="card-subtitle">Failure to Feed</div>
+        </div>
+      </div>
+      <div class="card-body">A malfunction where a round fails to chamber from the magazine. Causes include damaged magazine lips, weak recoil spring, or improper ammunition seating.</div>
+    </div>
+    <div class="card" data-text="FTFire Failure to Fire The primer was struck by the firing pin but the round did not fire. Causes: light primer strike, hard primer, wet or degraded powder, or a squib condition. Wait 30 seconds before opening the action." data-group="F">
+      <div class="card-head">
+        <div>
+          <div class="card-title">FTFire</div>
+          <div class="card-subtitle">Failure to Fire</div>
+        </div>
+      </div>
+      <div class="card-body">The primer was struck by the firing pin but the round did not fire. Causes: light primer strike, hard primer, wet or degraded powder, or a squib condition. Wait 30 seconds before opening the action.</div>
+    </div>
+    <div class="card" data-text="G1/G7 Ballistic Drag Function Models Reference projectile shapes used to calculate BC. G1 (flat-base blunt nose) is traditional but less accurate for long-range. G7 (boat-tail spitzer) is more accurate for modern boat-tail rifle bullets beyond 400 yards." data-group="G">
+      <div class="card-head">
+        <div>
+          <div class="card-title">G1/G7</div>
+          <div class="card-subtitle">Ballistic Drag Function Models</div>
+        </div>
+      </div>
+      <div class="card-body">Reference projectile shapes used to calculate BC. G1 (flat-base blunt nose) is traditional but less accurate for long-range. G7 (boat-tail spitzer) is more accurate for modern boat-tail rifle bullets beyond 400 yards.</div>
+    </div>
+    <div class="card" data-text="Grain (gr) Grain — Unit of Bullet Weight The standard unit for measuring bullet and powder weight. 1 grain = 1/7000th of a pound. Common pistol bullets are 115–230 gr; rifle bullets 55–175 gr. Heavier bullets are slower but carry more energy at distance; lighter bullets are faster and shoot flatter." data-group="G">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Grain (gr)</div>
+          <div class="card-subtitle">Grain — Unit of Bullet Weight</div>
+        </div>
+      </div>
+      <div class="card-body">The standard unit for measuring bullet and powder weight. 1 grain = 1/7000th of a pound. Common pistol bullets are 115–230 gr; rifle bullets 55–175 gr. Heavier bullets are slower but carry more energy at distance; lighter bullets are faster and shoot flatter.</div>
+    </div>
+    <div class="card" data-text="HPBT Hollow Point Boat Tail A boat-tail bullet with a small open tip formed by the jacketing process. Functionally identical to OTM; the open tip improves manufacturing uniformity, not expansion. The standard precision match bullet form." data-group="H">
+      <div class="card-head">
+        <div>
+          <div class="card-title">HPBT</div>
+          <div class="card-subtitle">Hollow Point Boat Tail</div>
+        </div>
+      </div>
+      <div class="card-body">A boat-tail bullet with a small open tip formed by the jacketing process. Functionally identical to OTM; the open tip improves manufacturing uniformity, not expansion. The standard precision match bullet form.</div>
+    </div>
+    <div class="card" data-text="IWB Inside the Waistband A holster style worn inside the waistband, between the body and pants. Provides better concealment than OWB but requires slightly larger clothing." data-group="I">
+      <div class="card-head">
+        <div>
+          <div class="card-title">IWB</div>
+          <div class="card-subtitle">Inside the Waistband</div>
+        </div>
+      </div>
+      <div class="card-body">A holster style worn inside the waistband, between the body and pants. Provides better concealment than OWB but requires slightly larger clothing.</div>
+    </div>
+    <div class="card" data-text="JHP Jacketed Hollow Point A jacketed bullet with a hollow cavity in the tip that causes controlled expansion on impact. Transfers more energy to the target and reduces over-penetration. The standard defensive ammunition choice." data-group="J">
+      <div class="card-head">
+        <div>
+          <div class="card-title">JHP</div>
+          <div class="card-subtitle">Jacketed Hollow Point</div>
+        </div>
+      </div>
+      <div class="card-body">A jacketed bullet with a hollow cavity in the tip that causes controlled expansion on impact. Transfers more energy to the target and reduces over-penetration. The standard defensive ammunition choice.</div>
+    </div>
+    <div class="card" data-text="JSP Jacketed Soft Point A partial-jacket bullet with an exposed lead tip that promotes controlled expansion. Better feeding in semi-automatic actions than a plain soft point. Common in hunting and some defensive loads." data-group="J">
+      <div class="card-head">
+        <div>
+          <div class="card-title">JSP</div>
+          <div class="card-subtitle">Jacketed Soft Point</div>
+        </div>
+      </div>
+      <div class="card-body">A partial-jacket bullet with an exposed lead tip that promotes controlled expansion. Better feeding in semi-automatic actions than a plain soft point. Common in hunting and some defensive loads.</div>
+    </div>
+    <div class="card" data-text="LRBHO Last Round Bolt Hold Open A feature that automatically locks the bolt back when the magazine is empty. Signals the shooter to reload and speeds the reload process. Standard on most modern semi-automatic pistols and rifles." data-group="L">
+      <div class="card-head">
+        <div>
+          <div class="card-title">LRBHO</div>
+          <div class="card-subtitle">Last Round Bolt Hold Open</div>
+        </div>
+      </div>
+      <div class="card-body">A feature that automatically locks the bolt back when the magazine is empty. Signals the shooter to reload and speeds the reload process. Standard on most modern semi-automatic pistols and rifles.</div>
+    </div>
+    <div class="card" data-text="Magazine Detachable Magazine A spring-loaded container that holds and feeds cartridges into a semi-automatic firearm. Not a &quot;clip&quot; — magazines are self-contained feeding devices. Revolvers use a rotating cylinder instead. Magazines are typically made of metal or polymer." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Magazine</div>
+          <div class="card-subtitle">Detachable Magazine</div>
+        </div>
+      </div>
+      <div class="card-body">A spring-loaded container that holds and feeds cartridges into a semi-automatic firearm. Not a &quot;clip&quot; — magazines are self-contained feeding devices. Revolvers use a rotating cylinder instead. Magazines are typically made of metal or polymer.</div>
+    </div>
+    <div class="card" data-text="MEP Mean Point of Impact The statistical center point of a shot group — the average X/Y coordinate of all impacts. Distinct from the tightest cluster; used when evaluating zero and ammo consistency." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">MEP</div>
+          <div class="card-subtitle">Mean Point of Impact</div>
+        </div>
+      </div>
+      <div class="card-body">The statistical center point of a shot group — the average X/Y coordinate of all impacts. Distinct from the tightest cluster; used when evaluating zero and ammo consistency.</div>
+    </div>
+    <div class="card" data-text="MIL / MRAD Milliradian An angular unit of measure. 1 MIL = 3.6 inches at 100 yards (10cm at 100m). Common in military and precision rifle optics. A MIL-based system allows direct range estimation and holdover calculation without unit conversion." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">MIL / MRAD</div>
+          <div class="card-subtitle">Milliradian</div>
+        </div>
+      </div>
+      <div class="card-body">An angular unit of measure. 1 MIL = 3.6 inches at 100 yards (10cm at 100m). Common in military and precision rifle optics. A MIL-based system allows direct range estimation and holdover calculation without unit conversion.</div>
+    </div>
+    <div class="card" data-text="MOA Minute of Angle An angular unit equal to 1/60th of a degree, or approximately 1.047 inches at 100 yards. Used to measure group size and to specify scope adjustment. Most scopes click in 1/4 MOA or 1/8 MOA increments." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">MOA</div>
+          <div class="card-subtitle">Minute of Angle</div>
+        </div>
+      </div>
+      <div class="card-body">An angular unit equal to 1/60th of a degree, or approximately 1.047 inches at 100 yards. Used to measure group size and to specify scope adjustment. Most scopes click in 1/4 MOA or 1/8 MOA increments.</div>
+    </div>
+    <div class="card" data-text="MTP Multi-Terrain Pattern British armed forces camouflage pattern developed by Crye Precision, replacing DPM. A modified MultiCam tuned for British requirements. Adopted in 2010 after Afghanistan combat experience." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">MTP</div>
+          <div class="card-subtitle">Multi-Terrain Pattern</div>
+        </div>
+      </div>
+      <div class="card-body">British armed forces camouflage pattern developed by Crye Precision, replacing DPM. A modified MultiCam tuned for British requirements. Adopted in 2010 after Afghanistan combat experience.</div>
+    </div>
+    <div class="card" data-text="Muzzle Muzzle — Front of the Barrel The open front end of the barrel where the bullet exits. Rule #2 of firearm safety: never point the muzzle at anything you are not willing to destroy. Muzzle devices (suppressors, flash hiders, muzzle brakes) thread onto the muzzle." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Muzzle</div>
+          <div class="card-subtitle">Muzzle — Front of the Barrel</div>
+        </div>
+      </div>
+      <div class="card-body">The open front end of the barrel where the bullet exits. Rule #2 of firearm safety: never point the muzzle at anything you are not willing to destroy. Muzzle devices (suppressors, flash hiders, muzzle brakes) thread onto the muzzle.</div>
+    </div>
+    <div class="card" data-text="Muzzle Velocity Bullet Speed at the Muzzle (fps) The speed of a bullet as it exits the barrel, measured in feet per second (fps). Higher velocity = flatter trajectory and more energy delivered to the target. Affected by barrel length, powder charge, bullet weight, and temperature." data-group="M">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Muzzle Velocity</div>
+          <div class="card-subtitle">Bullet Speed at the Muzzle (fps)</div>
+        </div>
+      </div>
+      <div class="card-body">The speed of a bullet as it exits the barrel, measured in feet per second (fps). Higher velocity = flatter trajectory and more energy delivered to the target. Affected by barrel length, powder charge, bullet weight, and temperature.</div>
+    </div>
+    <div class="card" data-text="NATO North Atlantic Treaty Organization NATO-spec ammunition meets STANAG standardization agreements for pressure, dimensions, and interchangeability. NATO 5.56mm runs at higher pressure than SAAMI .223 Rem; use caution in .223-only chambers." data-group="N">
+      <div class="card-head">
+        <div>
+          <div class="card-title">NATO</div>
+          <div class="card-subtitle">North Atlantic Treaty Organization</div>
+        </div>
+      </div>
+      <div class="card-body">NATO-spec ammunition meets STANAG standardization agreements for pressure, dimensions, and interchangeability. NATO 5.56mm runs at higher pressure than SAAMI .223 Rem; use caution in .223-only chambers.</div>
+    </div>
+    <div class="card" data-text="NFA National Firearms Act (1934) Federal law regulating machine guns, suppressors, short-barreled rifles, short-barreled shotguns, AOWs, and destructive devices. Requires registration, $200 tax stamp (for most items), and ATF approval." data-group="N">
+      <div class="card-head">
+        <div>
+          <div class="card-title">NFA</div>
+          <div class="card-subtitle">National Firearms Act (1934)</div>
+        </div>
+      </div>
+      <div class="card-body">Federal law regulating machine guns, suppressors, short-barreled rifles, short-barreled shotguns, AOWs, and destructive devices. Requires registration, $200 tax stamp (for most items), and ATF approval.</div>
+    </div>
+    <div class="card" data-text="OC Open Carry Carrying a firearm in a visible, unconcealed manner. Legality varies widely by state and jurisdiction. Some states are permissive; others require a permit even for open carry." data-group="O">
+      <div class="card-head">
+        <div>
+          <div class="card-title">OC</div>
+          <div class="card-subtitle">Open Carry</div>
+        </div>
+      </div>
+      <div class="card-body">Carrying a firearm in a visible, unconcealed manner. Legality varies widely by state and jurisdiction. Some states are permissive; others require a permit even for open carry.</div>
+    </div>
+    <div class="card" data-text="OTM Open Tip Match A boat-tail bullet with a small opening at the tip formed by drawing the jacket from the base. The open tip is an artifact of manufacturing, not designed for expansion. Preferred for its manufacturing consistency in precision shooting." data-group="O">
+      <div class="card-head">
+        <div>
+          <div class="card-title">OTM</div>
+          <div class="card-subtitle">Open Tip Match</div>
+        </div>
+      </div>
+      <div class="card-body">A boat-tail bullet with a small opening at the tip formed by drawing the jacket from the base. The open tip is an artifact of manufacturing, not designed for expansion. Preferred for its manufacturing consistency in precision shooting.</div>
+    </div>
+    <div class="card" data-text="OWB Outside the Waistband A holster worn on the outside of the belt. Easier to draw from and more comfortable than IWB, but requires a cover garment for concealment." data-group="O">
+      <div class="card-head">
+        <div>
+          <div class="card-title">OWB</div>
+          <div class="card-subtitle">Outside the Waistband</div>
+        </div>
+      </div>
+      <div class="card-body">A holster worn on the outside of the belt. Easier to draw from and more comfortable than IWB, but requires a cover garment for concealment.</div>
+    </div>
+    <div class="card" data-text="Par Time Par Time — Training Benchmark The target completion time for a shooting drill, measured with a shot timer. Finishing under par = pass; over par = more practice needed. A structured way to track improvement over time without just &quot;shooting for fun.&quot;" data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Par Time</div>
+          <div class="card-subtitle">Par Time — Training Benchmark</div>
+        </div>
+      </div>
+      <div class="card-body">The target completion time for a shooting drill, measured with a shot timer. Finishing under par = pass; over par = more practice needed. A structured way to track improvement over time without just &quot;shooting for fun.&quot;</div>
+    </div>
+    <div class="card" data-text="Plinking Casual Informal Shooting Informal, recreational shooting at cans, bottles, or paper targets — just for fun, no training structure or scoring. Great way for new shooters to build comfort and confidence with a firearm." data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Plinking</div>
+          <div class="card-subtitle">Casual Informal Shooting</div>
+        </div>
+      </div>
+      <div class="card-body">Informal, recreational shooting at cans, bottles, or paper targets — just for fun, no training structure or scoring. Great way for new shooters to build comfort and confidence with a firearm.</div>
+    </div>
+    <div class="card" data-text="POA Point of Aim Where the sights or reticle are directed. The difference between POA and POI is the offset the shooter must account for at any given range." data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">POA</div>
+          <div class="card-subtitle">Point of Aim</div>
+        </div>
+      </div>
+      <div class="card-body">Where the sights or reticle are directed. The difference between POA and POI is the offset the shooter must account for at any given range.</div>
+    </div>
+    <div class="card" data-text="POI Point of Impact Where the bullet actually strikes. A properly zeroed rifle has POA = POI at the zero distance; the two diverge at other distances due to bullet drop and wind drift." data-group="P">
+      <div class="card-head">
+        <div>
+          <div class="card-title">POI</div>
+          <div class="card-subtitle">Point of Impact</div>
+        </div>
+      </div>
+      <div class="card-body">Where the bullet actually strikes. A properly zeroed rifle has POA = POI at the zero distance; the two diverge at other distances due to bullet drop and wind drift.</div>
+    </div>
+    <div class="card" data-text="Reticle Scope Crosshair / Aiming Pattern The aiming pattern visible inside a scope or reflex sight. Can be a simple crosshair (+), dot, mil-dot grid, or complex BDC pattern. Illuminated reticles glow for low-light use. The reticle is what you align on the target before pressing the trigger." data-group="R">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Reticle</div>
+          <div class="card-subtitle">Scope Crosshair / Aiming Pattern</div>
+        </div>
+      </div>
+      <div class="card-body">The aiming pattern visible inside a scope or reflex sight. Can be a simple crosshair (+), dot, mil-dot grid, or complex BDC pattern. Illuminated reticles glow for low-light use. The reticle is what you align on the target before pressing the trigger.</div>
+    </div>
+    <div class="card" data-text="Round Count Total Rounds Fired The cumulative number of rounds (bullets) fired through a specific firearm. Tracked to monitor wear, plan maintenance intervals, and determine when components like recoil springs should be replaced. Similar to mileage on a car." data-group="R">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Round Count</div>
+          <div class="card-subtitle">Total Rounds Fired</div>
+        </div>
+      </div>
+      <div class="card-body">The cumulative number of rounds (bullets) fired through a specific firearm. Tracked to monitor wear, plan maintenance intervals, and determine when components like recoil springs should be replaced. Similar to mileage on a car.</div>
+    </div>
+    <div class="card" data-text="SA Single Action Trigger mechanism that only releases the hammer or striker; the action must be pre-cocked externally. Short, light trigger pull. Standard on 1911s, revolvers in SA mode, and many competition pistols." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SA</div>
+          <div class="card-subtitle">Single Action</div>
+        </div>
+      </div>
+      <div class="card-body">Trigger mechanism that only releases the hammer or striker; the action must be pre-cocked externally. Short, light trigger pull. Standard on 1911s, revolvers in SA mode, and many competition pistols.</div>
+    </div>
+    <div class="card" data-text="SAAMI Sporting Arms and Ammunition Manufacturers' Institute The US standards body that sets specifications for cartridge dimensions, pressures, and performance. If a cartridge is SAAMI-spec, any SAAMI-spec firearm in that caliber should safely chamber it." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SAAMI</div>
+          <div class="card-subtitle">Sporting Arms and Ammunition Manufacturers' Institute</div>
+        </div>
+      </div>
+      <div class="card-body">The US standards body that sets specifications for cartridge dimensions, pressures, and performance. If a cartridge is SAAMI-spec, any SAAMI-spec firearm in that caliber should safely chamber it.</div>
+    </div>
+    <div class="card" data-text="SAO Single Action Only Firearm that can only fire in single action — the striker or hammer must be cocked before firing. Requires manual cocking or a cycling action to prepare. Common on 1911-pattern pistols." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SAO</div>
+          <div class="card-subtitle">Single Action Only</div>
+        </div>
+      </div>
+      <div class="card-body">Firearm that can only fire in single action — the striker or hammer must be cocked before firing. Requires manual cocking or a cycling action to prepare. Common on 1911-pattern pistols.</div>
+    </div>
+    <div class="card" data-text="SBR Short Barreled Rifle A rifle with a barrel under 16&quot; or overall length under 26&quot;. An NFA item in the United States; requires a $200 tax stamp and ATF approval. Penalties for unregistered SBRs are severe." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SBR</div>
+          <div class="card-subtitle">Short Barreled Rifle</div>
+        </div>
+      </div>
+      <div class="card-body">A rifle with a barrel under 16&quot; or overall length under 26&quot;. An NFA item in the United States; requires a $200 tax stamp and ATF approval. Penalties for unregistered SBRs are severe.</div>
+    </div>
+    <div class="card" data-text="SBS Short Barreled Shotgun A shotgun with a barrel under 18&quot; or overall length under 26&quot;. NFA item, same registration process as SBRs." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SBS</div>
+          <div class="card-subtitle">Short Barreled Shotgun</div>
+        </div>
+      </div>
+      <div class="card-body">A shotgun with a barrel under 18&quot; or overall length under 26&quot;. NFA item, same registration process as SBRs.</div>
+    </div>
+    <div class="card" data-text="SD Sectional Density Bullet weight (in pounds) divided by the square of its diameter (in inches). Higher SD = better penetration for a given bullet construction. A key metric for hunting and barrier penetration." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SD</div>
+          <div class="card-subtitle">Sectional Density</div>
+        </div>
+      </div>
+      <div class="card-body">Bullet weight (in pounds) divided by the square of its diameter (in inches). Higher SD = better penetration for a given bullet construction. A key metric for hunting and barrier penetration.</div>
+    </div>
+    <div class="card" data-text="SD (velocity) Standard Deviation of Velocity A statistical measure of velocity consistency across a string of shots. Lower is better. Under 10 fps is excellent; over 20 fps suggests a handloading or quality issue affecting precision at distance." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SD (velocity)</div>
+          <div class="card-subtitle">Standard Deviation of Velocity</div>
+        </div>
+      </div>
+      <div class="card-body">A statistical measure of velocity consistency across a string of shots. Lower is better. Under 10 fps is excellent; over 20 fps suggests a handloading or quality issue affecting precision at distance.</div>
+    </div>
+    <div class="card" data-text="Semi-Automatic Semi-Automatic Action A firearm that automatically ejects the spent case and chambers the next round after each shot — but requires a separate trigger pull for each bullet fired. Not &quot;fully automatic&quot; (which fires continuously while the trigger is held). The most common action in modern pistols, many rifles, and some shotguns." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Semi-Automatic</div>
+          <div class="card-subtitle">Semi-Automatic Action</div>
+        </div>
+      </div>
+      <div class="card-body">A firearm that automatically ejects the spent case and chambers the next round after each shot — but requires a separate trigger pull for each bullet fired. Not &quot;fully automatic&quot; (which fires continuously while the trigger is held). The most common action in modern pistols, many rifles, and some shotguns.</div>
+    </div>
+    <div class="card" data-text="SFP Second Focal Plane Scope reticle mounted behind the erector assembly; stays the same apparent size regardless of magnification. MOA/MIL values on the reticle are only correct at one specific power (usually max). Common in budget and medium-tier scopes." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SFP</div>
+          <div class="card-subtitle">Second Focal Plane</div>
+        </div>
+      </div>
+      <div class="card-body">Scope reticle mounted behind the erector assembly; stays the same apparent size regardless of magnification. MOA/MIL values on the reticle are only correct at one specific power (usually max). Common in budget and medium-tier scopes.</div>
+    </div>
+    <div class="card" data-text="SOT Special Occupational Taxpayer A Federal Firearms Licensee who has paid the Special Occupational Tax to deal in, manufacture, or import NFA items as a business. SOTs can transfer NFA items on a dealer sample basis without the standard $200 tax." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SOT</div>
+          <div class="card-subtitle">Special Occupational Taxpayer</div>
+        </div>
+      </div>
+      <div class="card-body">A Federal Firearms Licensee who has paid the Special Occupational Tax to deal in, manufacture, or import NFA items as a business. SOTs can transfer NFA items on a dealer sample basis without the standard $200 tax.</div>
+    </div>
+    <div class="card" data-text="SP Soft Point A bullet with an exposed lead tip and partial metal jacket. The exposed lead promotes controlled expansion on impact. A traditional hunting bullet design, effective across a wide range of game." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">SP</div>
+          <div class="card-subtitle">Soft Point</div>
+        </div>
+      </div>
+      <div class="card-body">A bullet with an exposed lead tip and partial metal jacket. The exposed lead promotes controlled expansion on impact. A traditional hunting bullet design, effective across a wide range of game.</div>
+    </div>
+    <div class="card" data-text="Stovepipe Stovepipe Malfunction (FTE Variant) A failure to eject where the empty case stands upright in the ejection port, resembling a stovepipe. Cleared with a tap-rack or a swipe of the firing hand. Often caused by a limp wrist grip or dirty extractor." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Stovepipe</div>
+          <div class="card-subtitle">Stovepipe Malfunction (FTE Variant)</div>
+        </div>
+      </div>
+      <div class="card-body">A failure to eject where the empty case stands upright in the ejection port, resembling a stovepipe. Cleared with a tap-rack or a swipe of the firing hand. Often caused by a limp wrist grip or dirty extractor.</div>
+    </div>
+    <div class="card" data-text="Suppressor Sound Suppressor / Silencer A device threaded onto the muzzle that reduces the sound of a gunshot by trapping and cooling expanding gases. Often called a &quot;silencer&quot; — but real suppressors reduce, not eliminate, the sound. Regulated as NFA items in the US: $200 tax stamp, ATF approval, months-long wait." data-group="S">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Suppressor</div>
+          <div class="card-subtitle">Sound Suppressor / Silencer</div>
+        </div>
+      </div>
+      <div class="card-body">A device threaded onto the muzzle that reduces the sound of a gunshot by trapping and cooling expanding gases. Often called a &quot;silencer&quot; — but real suppressors reduce, not eliminate, the sound. Regulated as NFA items in the US: $200 tax stamp, ATF approval, months-long wait.</div>
+    </div>
+    <div class="card" data-text="TMJ Total Metal Jacket A bullet fully encased in metal jacket including the base, unlike standard FMJ. Eliminates base exposure that vaporizes lead under high heat. Preferred for indoor ranges to reduce airborne lead contamination." data-group="T">
+      <div class="card-head">
+        <div>
+          <div class="card-title">TMJ</div>
+          <div class="card-subtitle">Total Metal Jacket</div>
+        </div>
+      </div>
+      <div class="card-body">A bullet fully encased in metal jacket including the base, unlike standard FMJ. Eliminates base exposure that vaporizes lead under high heat. Preferred for indoor ranges to reduce airborne lead contamination.</div>
+    </div>
+    <div class="card" data-text="Turret Scope Adjustment Turret The knobs on the top and side of a scope used to adjust point of impact. The elevation turret adjusts up/down; the windage turret adjusts left/right. Each click moves impact by a specific MOA or MIL increment. &quot;Capping the turrets&quot; protects them from accidental adjustment." data-group="T">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Turret</div>
+          <div class="card-subtitle">Scope Adjustment Turret</div>
+        </div>
+      </div>
+      <div class="card-body">The knobs on the top and side of a scope used to adjust point of impact. The elevation turret adjusts up/down; the windage turret adjusts left/right. Each click moves impact by a specific MOA or MIL increment. &quot;Capping the turrets&quot; protects them from accidental adjustment.</div>
+    </div>
+    <div class="card" data-text="Windage Horizontal Scope / Sight Adjustment The left/right adjustment on a scope or iron sight, used to correct for wind drift or zero error. Turning windage right moves the point of impact right. Paired with elevation (up/down), windage completes the two-axis adjustment system of all modern optics." data-group="W">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Windage</div>
+          <div class="card-subtitle">Horizontal Scope / Sight Adjustment</div>
+        </div>
+      </div>
+      <div class="card-body">The left/right adjustment on a scope or iron sight, used to correct for wind drift or zero error. Turning windage right moves the point of impact right. Paired with elevation (up/down), windage completes the two-axis adjustment system of all modern optics.</div>
+    </div>
+    <div class="card" data-text="Zero / Zeroing Sight Alignment at a Specific Distance The process of adjusting a scope or iron sights so the point of aim (where the crosshair points) matches the point of impact (where the bullet lands) at a specific distance. A &quot;100-yard zero&quot; means the gun is sighted in to hit exactly where you aim at 100 yards. Bullets drop beyond that distance due to gravity." data-group="Z">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Zero / Zeroing</div>
+          <div class="card-subtitle">Sight Alignment at a Specific Distance</div>
+        </div>
+      </div>
+      <div class="card-body">The process of adjusting a scope or iron sights so the point of aim (where the crosshair points) matches the point of impact (where the bullet lands) at a specific distance. A &quot;100-yard zero&quot; means the gun is sighted in to hit exactly where you aim at 100 yards. Bullets drop beyond that distance due to gravity.</div>
+    </div>
+  </div>
+  <div class="no-results">No terms match your search.</div>
+  <div class="section-nav"><a class="section-link" href="/field-guide/calibers">Calibers</a><a class="section-link" href="/field-guide/optics">Optics</a><a class="section-link" href="/field-guide/competition">Competition</a><a class="section-link" href="/field-guide/platforms">Platforms</a><a class="section-link" href="/field-guide/camos">Camos</a><a class="section-link" href="/field-guide/ballistics">Ballistics</a><a class="section-link" href="/field-guide/maintenance">Maintenance</a><a class="section-link" href="/field-guide/marksmanship">Marksmanship</a></div>
+  <footer class="footer">
+    <span>© 2026 LINDCOTT FARMS</span>
+    <div class="footer-links">
+      <a href="/field-guide/">Field Guide</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/support">Support</a>
+    </div>
+  </footer>
+  <script>
+function filterCards(searchId, cardClass, filterAttr) {
+  const input = document.getElementById(searchId);
+  const cards = document.querySelectorAll('.' + cardClass);
+  const noResults = document.querySelector('.no-results');
+  const countEl = document.querySelector('.count');
+  let activeFilters = {};
+
+  function update() {
+    const q = input ? input.value.toLowerCase().trim() : '';
+    let shown = 0;
+    cards.forEach(card => {
+      let show = true;
+      if (q) {
+        const text = (card.dataset.text || card.textContent || '').toLowerCase();
+        if (!text.includes(q)) show = false;
+      }
+      Object.entries(activeFilters).forEach(([attr, val]) => {
+        if (val && val !== 'all') {
+          const cardVal = (card.dataset[attr] || '').toLowerCase();
+          if (!cardVal.includes(val.toLowerCase())) show = false;
+        }
+      });
+      card.style.display = show ? '' : 'none';
+      if (show) shown++;
+    });
+    if (noResults) noResults.style.display = shown === 0 ? 'block' : 'none';
+    if (countEl) countEl.textContent = shown + ' of ' + cards.length + ' entries';
+  }
+
+  if (input) input.addEventListener('input', update);
+
+  document.querySelectorAll('.chip[data-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const attr = chip.dataset.filterAttr;
+      const val = chip.dataset.filter;
+      activeFilters[attr] = (activeFilters[attr] === val) ? 'all' : val;
+      document.querySelectorAll('.chip[data-filter-attr="' + attr + '"]').forEach(c => c.classList.remove('active'));
+      if (activeFilters[attr] !== 'all') chip.classList.add('active');
+      update();
+    });
+  });
+
+  update();
+}
+filterCards('search','card',null);</script>
+</body>
+</html>

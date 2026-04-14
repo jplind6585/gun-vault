@@ -13,7 +13,7 @@ interface OpticType {
   examples: string[];
 }
 
-const OPTIC_TYPES: OpticType[] = [
+export const OPTIC_TYPES: OpticType[] = [
   {
     id: 'iron-sights',
     name: 'Iron Sights',

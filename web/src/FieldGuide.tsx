@@ -16,7 +16,7 @@ interface GlossaryTerm {
   group: string;
 }
 
-const GLOSSARY_TERMS: GlossaryTerm[] = [
+export const GLOSSARY_TERMS: GlossaryTerm[] = [
   // A
   { acronym: 'ACU', expansion: 'Army Combat Uniform', definition: 'The US Army uniform platform that replaced BDUs in 2004, initially paired with the UCP pattern.', group: 'A' },
   { acronym: 'AIWB', expansion: 'Appendix Inside the Waistband', definition: 'IWB holster worn at the 12 o\'clock (front) position. Allows fast draw but requires discipline and quality holster.', group: 'A' },
@@ -155,7 +155,7 @@ interface CamoPattern {
   region: string;
 }
 
-const CAMO_PATTERNS: CamoPattern[] = [
+export const CAMO_PATTERNS: CamoPattern[] = [
   {
     id: 'erdl',
     name: 'ERDL (Leaf Pattern)',
@@ -412,7 +412,7 @@ interface Platform {
   body: string;
 }
 
-const PLATFORMS: Platform[] = [
+export const PLATFORMS: Platform[] = [
   {
     id: 'flintlock-musket',
     name: 'Flintlock Musket',
@@ -1309,7 +1309,7 @@ interface BallisticConcept {
   body: string;
 }
 
-const BALLISTIC_CONCEPTS: BallisticConcept[] = [
+export const BALLISTIC_CONCEPTS: BallisticConcept[] = [
   {
     title: 'Trajectory & Bullet Drop',
     category: 'External Ballistics',
@@ -1375,7 +1375,7 @@ interface MaintenanceGuide {
   tips: string[];
 }
 
-const MAINTENANCE_GUIDES: MaintenanceGuide[] = [
+export const MAINTENANCE_GUIDES: MaintenanceGuide[] = [
   {
     title: 'AR-15 Field Strip & Cleaning',
     steps: [
