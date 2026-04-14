@@ -1,143 +1,716 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07071a" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lindcott Armory — Your complete firearms record. Private by design.</title>
+  <meta name="description" content="Track your guns, sessions, ammo, and gear. The firearms app built by a competitive shooter who got tired of spreadsheets." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png" />
+</head>
+<body>
 
-    <!-- Primary SEO -->
-    <title>Lindcott Armory — Gun Vault & Firearm Management App</title>
-    <meta name="description" content="Lindcott Armory is a personal firearm management app. Track your gun vault, log range sessions, manage ammo inventory, and analyze shot groups — on Android and the web." />
-    <meta name="keywords" content="gun vault app, firearm management app, ammo tracker, range session log, gun collection tracker, shooting log, Lindcott Armory" />
-    <link rel="canonical" href="https://lindcottarmory.com/" />
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://lindcottarmory.com/" />
-    <meta property="og:title" content="Lindcott Armory — Gun Vault & Firearm Management App" />
-    <meta property="og:description" content="Track your gun vault, log range sessions, manage ammo inventory, and analyze shot groups. Available on Android and the web." />
-    <meta property="og:image" content="https://lindcottarmory.com/assets/icon-1024.png" />
-    <meta property="og:image:alt" content="Lindcott Armory app icon" />
-    <meta property="og:site_name" content="Lindcott Armory" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Lindcott Armory — Gun Vault & Firearm Management App" />
-    <meta name="twitter:description" content="Track your gun vault, log range sessions, manage ammo inventory, and analyze shot groups." />
-    <meta name="twitter:image" content="https://lindcottarmory.com/assets/icon-1024.png" />
-
-    <!-- JSON-LD structured data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Lindcott Armory",
-      "url": "https://lindcottarmory.com",
-      "description": "Personal firearm management app. Track your gun vault, log range sessions, manage ammo inventory, and analyze shot groups.",
-      "applicationCategory": "UtilitiesApplication",
-      "operatingSystem": "Android, Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Lindcott Farms",
-        "url": "https://lindcottarmory.com"
-      }
-    }
-    </script>
-
-    <link rel="icon" type="image/png" href="/assets/icon-192.png" />
-    <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  </head>
-  <body>
-    <div style="font-family:ui-monospace,monospace;background:#07071a;color:#e8e8f0;min-height:100vh;padding:0;margin:0;box-sizing:border-box;">
-
-      <!-- Nav -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid rgba(255,255,255,0.07);">
-        <span style="font-size:15px;font-weight:700;letter-spacing:0.08em;color:#e8e8f0;">LINDCOTT ARMORY</span>
-        <div style="display:flex;gap:12px;align-items:center;">
-          <a href="https://app.lindcottarmory.com" style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:#9090b0;text-decoration:none;">WEB APP</a>
-          <a href="https://play.google.com/store/apps/details?id=com.lindcottarmory.app" style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:#5b8cff;text-decoration:none;border:1px solid #5b8cff;padding:6px 14px;border-radius:4px;">GET THE APP</a>
-        </div>
-      </div>
-
-      <!-- Hero -->
-      <div style="max-width:560px;margin:0 auto;padding:64px 28px 48px;">
-        <p style="font-size:11px;letter-spacing:0.15em;color:#5b8cff;margin:0 0 16px;text-transform:uppercase;">Firearm Management</p>
-        <h1 style="font-size:clamp(28px,6vw,42px);font-weight:800;line-height:1.15;margin:0 0 20px;color:#e8e8f0;letter-spacing:-0.01em;">
-          Your guns, ammo, and<br/>range sessions — all in one place.
-        </h1>
-        <p style="font-size:15px;line-height:1.7;color:#9090b0;margin:0 0 36px;">
-          Lindcott Armory is a free firearm management app for Android and the web.
-          Catalog your collection, track every round downrange, manage your ammo inventory,
-          and analyze your shot groups — all from your phone.
-        </p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <a href="https://play.google.com/store/apps/details?id=com.lindcottarmory.app" style="display:inline-block;background:#5b8cff;color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;padding:13px 24px;border-radius:6px;text-decoration:none;">DOWNLOAD FOR ANDROID</a>
-          <a href="#features" style="display:inline-block;background:transparent;color:#9090b0;font-size:13px;font-weight:600;letter-spacing:0.08em;padding:13px 24px;border-radius:6px;text-decoration:none;border:1px solid rgba(255,255,255,0.1);">SEE FEATURES ↓</a>
-        </div>
-      </div>
-
-      <!-- Features -->
-      <div id="features" style="max-width:560px;margin:0 auto;padding:0 28px 64px;">
-        <h2 style="font-size:11px;letter-spacing:0.15em;color:#5b8cff;margin:0 0 32px;text-transform:uppercase;">What's inside</h2>
-
-        <div style="display:grid;gap:24px;">
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Gun Vault</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">Catalog every firearm in your collection — make, model, caliber, action, status, photos, and notes. Tracks all-time round count automatically as you log sessions.</p>
-          </div>
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Range Session Log</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">Log every range trip with rounds fired, location, date, and notes. See your activity over the past week, month, or year at a glance.</p>
-          </div>
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Ammo Inventory</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">Track every ammo lot by caliber, brand, grain weight, bullet type, quantity on hand, and purchase price. Know exactly what you have and what it cost.</p>
-          </div>
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Target Analysis</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">Upload a target photo and plot your shots. The app calculates MOA, extreme spread, CEP, and standard deviation — the same metrics competitive shooters use to measure precision.</p>
-          </div>
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Armory Assistant</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">An AI assistant scoped to your vault data and general firearms questions. Ask about your gear, get load recommendations, or look up cartridge specs.</p>
-          </div>
-
-          <div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:#e8e8f0;margin:0 0 8px;">Field Guide</h3>
-            <p style="font-size:13px;line-height:1.6;color:#9090b0;margin:0;">Reference library covering calibers, optics, competition formats (USPSA, IDPA, PRS), marksmanship fundamentals, and ballistics. <a href="/field-guide/" style="color:#5b8cff;text-decoration:none;">Browse the Field Guide →</a></p>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- CTA -->
-      <div style="border-top:1px solid rgba(255,255,255,0.07);padding:48px 28px;text-align:center;">
-        <h2 style="font-size:20px;font-weight:700;color:#e8e8f0;margin:0 0 12px;">Free. No subscription. Always improving.</h2>
-        <p style="font-size:13px;color:#9090b0;margin:0 0 28px;line-height:1.6;">Available for Android on Google Play. Also runs as a web app on any device.</p>
-        <a href="https://play.google.com/store/apps/details?id=com.lindcottarmory.app" style="display:inline-block;background:#5b8cff;color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;padding:14px 28px;border-radius:6px;text-decoration:none;">DOWNLOAD ON GOOGLE PLAY</a>
-      </div>
-
-      <!-- Footer -->
-      <div style="border-top:1px solid rgba(255,255,255,0.07);padding:24px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-        <span style="font-size:11px;color:#5a5a7a;letter-spacing:0.05em;">© 2026 LINDCOTT FARMS</span>
-        <div style="display:flex;gap:20px;">
-          <a href="/privacy.html" style="font-size:11px;color:#5a5a7a;text-decoration:none;letter-spacing:0.05em;">PRIVACY</a>
-          <a href="/support.html" style="font-size:11px;color:#5a5a7a;text-decoration:none;letter-spacing:0.05em;">SUPPORT</a>
-          <a href="/field-guide/" style="font-size:11px;color:#5a5a7a;text-decoration:none;letter-spacing:0.05em;">FIELD GUIDE</a>
-        </div>
-      </div>
-
+  <!-- ── NAV ──────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="nav-logo-img">LINDCOTT ARMORY</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href='/field-guide'>Field Guide</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#email-cta" class="nav-cta">Get Early Access</a>
     </div>
-  </body>
+    <button class="nav-mobile-cta" onclick="document.getElementById('email-cta').scrollIntoView({behavior:'smooth'})">Get Early Access</button>
+  </nav>
+
+  <!-- ── HERO ─────────────────────────────────────────────────────── -->
+  <section class="hero" id="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="what-it-is">Free mobile app for iOS &amp; Android — no account required to start.</div>
+        <div class="eyebrow">Built by a competitive shooter, reloader, and aspiring gunsmith</div>
+        <h1 class="hero-headline">Your complete firearms record.<br><span class="accent">Private by design.</span></h1>
+
+        <p class="hero-pain">Most gun owners track round counts in their head, maintenance dates in a notes app, and serial numbers in a spreadsheet they can never find. That system breaks — and it always breaks at the wrong time.</p>
+        <p class="hero-sub">Track every gun, every round, every session — privately, in one place.</p>
+
+        <div class="hero-data-pull">
+          <div class="data-row"><span class="data-gun">Glock 19 Gen 5</span><span class="data-vals">4,380 rounds &nbsp;·&nbsp; Cleaned 18 days ago &nbsp;·&nbsp; Maintenance in 620 rounds</span></div>
+          <div class="data-row"><span class="data-gun">Tikka T3x &nbsp;·&nbsp; 6.5 CM</span><span class="data-vals">Fed 175gr &nbsp;·&nbsp; .4 MOA @ 100 yd &nbsp;·&nbsp; Best load logged</span></div>
+          <div class="data-row"><span class="data-gun">AR-15 &nbsp;·&nbsp; 5.56</span><span class="data-vals">Vortex Strike Eagle &nbsp;·&nbsp; Zeroed June 3rd &nbsp;·&nbsp; 847 rounds</span></div>
+          <span class="data-note">The kind of detail you'll never have to guess again.</span>
+        </div>
+
+        <div class="trust-inline">
+          <span>No ads</span><span class="strip-dot">·</span>
+          <span>No data brokers</span><span class="strip-dot">·</span>
+          <span>No account required</span><span class="strip-dot">·</span>
+          <span>Works offline</span>
+        </div>
+
+        <div class="charter-offer">
+          <span class="charter-badge">CHARTER MEMBER OFFER</span>
+          <span class="charter-text">Sign up for early access and get <strong>3 months of Pro free</strong> at launch.</span>
+        </div>
+        <form class='email-capture hero-email' id='hero-email-form' method='post' name='early-access'>
+          <input type="hidden" name="form-name" value="early-access" />
+          <input type="hidden" name="bot-field" style="display:none" />
+          <input type="email" name="email" placeholder="your@email.com" class="email-input" required />
+          <button type="submit" class="btn-primary">Get Early Access</button>
+        </form>
+        <p class="email-note">Free to download. No spam. Unsubscribe any time.</p>
+      </div>
+      <div class="hero-phone">
+        <div class="phone-mockup">
+          <div class="phone-frame">
+            <img class="screen-shot" src="assets/images/screenshots/dashboard.png" alt="Lindcott Armory dashboard" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AI ASSISTANT DEMO ─────────────────────────────────────────── -->
+  <section class="ai-demo" id="ai-demo">
+    <div class="container">
+      <div class="section-label">AI ASSISTANT</div>
+      <h2 class="section-title">Ask your vault anything.</h2>
+      <p class="section-sub">Your AI assistant reads your entire history — every gun, every session, every round — and gives you answers that are actually relevant to you. Not generic advice. Your data.</p>
+      <div class="ai-chat-mockup">
+        <div class="chat-header">
+          <div class="chat-dot"></div>
+          <span>Lindcott AI</span>
+        </div>
+        <div class="chat-body">
+
+          <div class="chat-exchange">
+            <div class="chat-bubble user">"What optic is mounted on my AR-15?"</div>
+            <div class="chat-bubble ai">
+              Vortex Strike Eagle 1-8x, mounted 14 months ago. Last zero: 100 yards, June 3rd, Federal 55gr. Your most recent note on that rifle: <em>"groups opening up at 200 — may need to re-torque rings."</em>
+            </div>
+          </div>
+
+          <div class="chat-exchange">
+            <div class="chat-bubble user">"What haven't I cleaned in over 6 months?"</div>
+            <div class="chat-bubble ai">
+              Your Sig P365 SAS — last cleaned October 14th, 847 rounds ago. Your Ruger Precision Rifle is also at 6 months with no maintenance logged. Both are overdue.
+            </div>
+          </div>
+
+          <div class="chat-exchange">
+            <div class="chat-bubble user">"Which ammo grouped best in my Tikka?"</div>
+            <div class="chat-bubble ai">
+              Federal Gold Medal Match 175gr — you logged ".4 MOA at 100 yards" twice in March. You've tested 4 loads total. Hornady 168gr was next at ".6–.7 MOA" per your notes.
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="vault-questions">
+        <div class="vault-q-label">YOUR VAULT CAN ANSWER</div>
+        <div class="vault-q-grid">
+          <div class="vault-q">"Which gun has the most rounds through it?"</div>
+          <div class="vault-q">"What haven't I cleaned in 6 months?"</div>
+          <div class="vault-q">"Which ammo grouped best in my Tikka?"</div>
+          <div class="vault-q">"What optic is on my AR-15?"</div>
+          <div class="vault-q">"Which setups haven't I shot this year?"</div>
+          <div class="vault-q">"What should I bring for a 200-yard trip?"</div>
+        </div>
+      </div>
+      <p class="ai-note">Powered by your data — not generic advice. Every answer comes from your actual vault.</p>
+    </div>
+  </section>
+
+  <!-- ── APP SELECTOR ──────────────────────────────────────────────── -->
+  <section class="app-selector" id="app-selector">
+    <div class="container">
+      <div class="section-label">WHAT DO YOU DO?</div>
+      <div class="selector-tabs" id="selector-tabs">
+        <button class="selector-tab active" data-tab="shoot">SHOOT</button>
+        <button class="selector-tab" data-tab="collect">COLLECT</button>
+        <button class="selector-tab" data-tab="carry">CARRY</button>
+        <button class="selector-tab" data-tab="reload">AMMO</button>
+        <button class="selector-tab" data-tab="compete">COMPETE</button>
+      </div>
+      <div class="selector-content">
+
+        <div class="selector-panel active" data-panel="shoot">
+          <div class="selector-phone">
+            <div class="phone-mockup small">
+              <div class="phone-frame">
+                <img class="screen-shot" src="assets/images/screenshots/sessions-year.png" alt="Range session tracking" />
+              </div>
+            </div>
+          </div>
+          <div class="selector-copy">
+            <h3>Track every trigger pull.</h3>
+            <p>Log sessions in seconds. Round counts, distances, what you worked on. The AI reads your history and tells you what's getting sharper — and what needs more reps.</p>
+            <ul class="check-list">
+              <li>Session log with round count &amp; distance</li>
+              <li>Per-gun shooting history</li>
+              <li>Trends and improvement insights</li>
+              <li>Works offline, syncs when ready</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="selector-panel" data-panel="collect">
+          <div class="selector-phone">
+            <div class="phone-mockup small">
+              <div class="phone-frame">
+                <img class="screen-shot" src="assets/images/screenshots/gun-vault.png" alt="Gun vault" />
+              </div>
+            </div>
+          </div>
+          <div class="selector-copy">
+            <h3>Your vault, catalogued.</h3>
+            <p>Every firearm in one place. Serial numbers, acquisition dates, valuations, service records. Export a clean report when you need it for insurance or estate planning.</p>
+            <ul class="check-list">
+              <li>Full gun records with serial numbers</li>
+              <li>Collection valuation</li>
+              <li>Insurance-ready PDF export</li>
+              <li>Private — your data never leaves your device unless you sync</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="selector-panel" data-panel="carry">
+          <div class="selector-phone">
+            <div class="phone-mockup small">
+              <div class="phone-frame">
+                <img class="screen-shot" src="assets/images/screenshots/gun-detail.png" alt="Gun detail and maintenance" />
+              </div>
+            </div>
+          </div>
+          <div class="selector-copy">
+            <h3>Know your carry is ready.</h3>
+            <p>Track round count since last cleaning. Log every maintenance event. Get alerts when your carry gun is due for service. No guessing, no assuming it's fine.</p>
+            <ul class="check-list">
+              <li>Round count since last cleaning</li>
+              <li>Maintenance log with full service history</li>
+              <li>Cleaning alerts based on your round count</li>
+              <li>Carry-specific session tracking</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="selector-panel" data-panel="reload">
+          <div class="selector-phone">
+            <div class="phone-mockup small">
+              <div class="phone-frame">
+                <img class="screen-shot" src="assets/images/screenshots/ammo-vault.png" alt="Ammo inventory tracking" />
+              </div>
+            </div>
+          </div>
+          <div class="selector-copy">
+            <h3>Never run dry at the range.</h3>
+            <p>Track your inventory by caliber. Log ammo spent each session. See your days of supply at a glance. Know exactly what to order before you're standing at the bench with nothing to load.</p>
+            <ul class="check-list">
+              <li>Inventory by caliber</li>
+              <li>Auto-deduct rounds per session</li>
+              <li>Low-stock alerts</li>
+              <li>Cost tracking (optional)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="selector-panel" data-panel="compete">
+          <div class="selector-phone">
+            <div class="phone-mockup small">
+              <div class="phone-frame">
+                <img class="screen-shot" src="assets/images/screenshots/target-results.png" alt="Target analysis results" />
+              </div>
+            </div>
+          </div>
+          <div class="selector-copy">
+            <h3>Build a record worth competing with.</h3>
+            <p>Your shooter profile evolves as you train. Log competition results, track which stages you crushed, and let the AI flag the gaps you should be drilling before your next match.</p>
+            <ul class="check-list">
+              <li>Shooter profile with skill tracking</li>
+              <li>Milestone achievements</li>
+              <li>AI match-prep insights</li>
+              <li>Discipline-specific session tagging</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ──────────────────────────────────────────────── -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-label">HOW IT WORKS</div>
+      <h2 class="section-title">Add a gun. Log a session. Ask anything.</h2>
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h4>Add your first gun.</h4>
+          <p>Make, model, caliber, serial number. Done in under 60 seconds. Your round count starts at zero and never lies again.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h4>Log your first session.</h4>
+          <p>Tap the gun, enter rounds fired, add a note. 30 seconds at the range. Rounds auto-deduct from your ammo inventory. Your history starts building.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h4>Ask it anything.</h4>
+          <p>Which gun needs cleaning? What optic is on your AR? Which ammo grouped best? The AI reads your entire vault and actually knows the answer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── COMPARISON ────────────────────────────────────────────────── -->
+  <section class="comparison" id="comparison">
+    <div class="container">
+      <div class="section-label">WHY LINDCOTT ARMORY</div>
+      <h2 class="section-title">Other gun trackers vs. Lindcott Armory.</h2>
+      <div class="comparison-table">
+        <div class="comparison-header">
+          <div class="col-feature"></div>
+          <div class="col-other">Other Gun Apps</div>
+          <div class="col-lindcott">Lindcott Armory</div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">"When did I last clean this?"</div>
+          <div class="col-other"><span class="x">Dig through notes or guess</span></div>
+          <div class="col-lindcott"><span class="check">One tap — exact date + round count</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Per-gun round count</div>
+          <div class="col-other"><span class="x">Manual math, if at all</span></div>
+          <div class="col-lindcott"><span class="check">Auto-tracked every session</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Works at the range without signal</div>
+          <div class="col-other"><span class="x">App won't load, data inaccessible</span></div>
+          <div class="col-lindcott"><span class="check">Full functionality offline, always</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Ammo inventory</div>
+          <div class="col-other"><span class="x">Counted by hand</span></div>
+          <div class="col-lindcott"><span class="check">Auto-deducted per session</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Asks what to drill next</div>
+          <div class="col-other"><span class="x">No</span></div>
+          <div class="col-lindcott"><span class="check">AI reads your full history</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Insurance export</div>
+          <div class="col-other"><span class="x">Rebuild it from scratch</span></div>
+          <div class="col-lindcott"><span class="check">One-tap PDF, every gun listed</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Built for firearms specifically</div>
+          <div class="col-other"><span class="x">Generic note/list app adapted</span></div>
+          <div class="col-lindcott"><span class="check">Purpose-built for shooters</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Your data stays private</div>
+          <div class="col-other"><span class="neutral">Varies — read the ToS</span></div>
+          <div class="col-lindcott"><span class="check">Local-first, no ad model, no data sales</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="col-feature">Free to use</div>
+          <div class="col-other"><span class="neutral">Often subscription or freemium</span></div>
+          <div class="col-lindcott"><span class="check">Free to download, no subscription required</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── WHAT MOST APPS GET WRONG ─────────────────────────────────── -->
+  <section class="apps-wrong" id="apps-wrong">
+    <div class="container">
+      <div class="section-label">WHAT MOST APPS GET WRONG</div>
+      <h2 class="section-title">Your armory. Your data. Built for the range.</h2>
+      <p class="section-sub">Most gun apps are fine for storing data. They're bad for using it. Here's what we built differently.</p>
+      <div class="wrong-grid">
+        <div class="wrong-card">
+          <div class="wrong-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <h4>They feel like forms, not tools.</h4>
+          <p>Built for data entry — not for the 30 seconds between shooting stages when you actually want to log something.</p>
+        </div>
+        <div class="wrong-card">
+          <div class="wrong-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18.364 5.636a9 9 0 1 1-12.728 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 2v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h4>They die at the range.</h4>
+          <p>No signal means no app. The one time you need your maintenance history or round count, it's inaccessible.</p>
+        </div>
+        <div class="wrong-card">
+          <div class="wrong-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 7V12C4 16.4 7.4 20.5 12 21C16.6 20.5 20 16.4 20 12V7L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h4>Privacy is an afterthought.</h4>
+          <p>Your firearms data ends up in a cloud database with terms of service you didn't read. We designed privacy in from day one.</p>
+        </div>
+        <div class="wrong-card">
+          <div class="wrong-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="10" r="1" fill="currentColor"/></svg>
+          </div>
+          <h4>They can't answer questions.</h4>
+          <p>Your data goes in but nothing useful comes out. You can't search your history, spot trends, or get recommendations. It's just storage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BUILT FOR ─────────────────────────────────────────────────── -->
+  <section class="built-for" id="built-for">
+    <div class="container">
+      <div class="section-label">BUILT FOR</div>
+      <h2 class="section-title">PRS. USPSA. EDC. Hunting. Built for all of it.</h2>
+      <div class="persona-grid">
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.2"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <line x1="12" y1="3" x2="12" y2="1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="12" y1="23" x2="12" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="3" y1="12" x2="1" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="23" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="persona-name">The Competitor</div>
+          <div class="persona-desc">Can't pull up last week's splits or their round count going into a match. Tracks everything now — because data wins stages.</div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L4 7V12C4 16.4 7.4 20.5 12 21C16.6 20.5 20 16.4 20 12V7L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="persona-name">The CCW Carrier</div>
+          <div class="persona-desc">Assumed their carry gun was fine until it had 2,000 rounds through it uncleaned. Now they know the number — exactly.</div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7v10l10 5 10-5V7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M12 22V12M2 7l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="persona-name">The Collector</div>
+          <div class="persona-desc">Had serial numbers in three different spreadsheets and still couldn't tell the insurance agent what they owned. Not anymore.</div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="16" r="3" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M11 16l1-1 1 1" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="persona-name">The Weekend Warrior</div>
+          <div class="persona-desc">Shoots twice a month and wants to see real improvement over time — not just feel like they're getting better.</div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="9" width="16" height="7" rx="3.5" stroke="currentColor" stroke-width="1.5"/>
+              <ellipse cx="18" cy="12.5" rx="2" ry="4" stroke="currentColor" stroke-width="1.2"/>
+              <circle cx="22" cy="12.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+              <line x1="6" y1="12.5" x2="14" y2="12.5" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+              <circle cx="10" cy="12.5" r="2" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <div class="persona-name">The Hunter</div>
+          <div class="persona-desc">Forgot when they last sighted in their rifle and wasn't sure how old their hunting ammo was. Now they know before they head out.</div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3C7.02944 3 3 7.02944 3 12H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 21C16.9706 21 21 16.9706 21 12H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M3 12L6 9M3 12L6 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12L18 15M21 12L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="9" y="9" width="6" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <line x1="12" y1="9" x2="12" y2="16" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="persona-name">The Reloader</div>
+          <div class="persona-desc">Tracks components by caliber, wants die settings and charge weights logged somewhere other than a sticky note on the bench. Knows the difference between ammo that works and ammo that groups.</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRIVACY PROMISE ───────────────────────────────────────────── -->
+  <section class="privacy" id="privacy">
+    <div class="container">
+      <div class="section-label">PRIVACY PROMISE</div>
+      <h2 class="section-title">Your data stays on your device. Full stop.</h2>
+      <div class="privacy-grid">
+        <div class="privacy-card">
+          <div class="privacy-num">01</div>
+          <h4>Your data lives on your device.</h4>
+          <p>Lindcott Armory stores everything locally first. Cloud sync is optional — not required to use the app.</p>
+        </div>
+        <div class="privacy-card">
+          <div class="privacy-num">02</div>
+          <h4>We never sell your data.</h4>
+          <p>No advertisers. No data brokers. No "partners." Your firearms records are not a product.</p>
+        </div>
+        <div class="privacy-card">
+          <div class="privacy-num">03</div>
+          <h4>No account required.</h4>
+          <p>Use the full app without creating an account. Sign up only if you want backup and cross-device sync.</p>
+        </div>
+        <div class="privacy-card">
+          <div class="privacy-num">04</div>
+          <h4>Delete is delete.</h4>
+          <p>When you delete your data, it's gone. No 30-day holds, no soft deletes retained for analytics.</p>
+        </div>
+      </div>
+      <div class="trust-bullets">
+        <div class="trust-bullet">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="#ffd43b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          No account required to use core features
+        </div>
+        <div class="trust-bullet">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="#ffd43b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Your firearm data is never sold or shared
+        </div>
+        <div class="trust-bullet">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="#ffd43b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export or delete your data anytime
+        </div>
+        <div class="trust-bullet">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="#ffd43b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Offline-first — full access with no signal
+        </div>
+        <div class="trust-bullet">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="#ffd43b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          No ads, no tracking, no behavioral data collection
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURE HIGHLIGHTS ────────────────────────────────────────── -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-label">FEATURES</div>
+      <h2 class="section-title">Guns, sessions, ammo, and gear — all connected.</h2>
+
+      <!-- Top 4 — full weight -->
+      <div class="features-primary">
+        <div class="feature-primary">
+          <div class="feature-icon-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7v10l10 5 10-5V7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 22V12M2 7l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <h4>Every gun. Every detail. Always yours.</h4>
+            <p>Make, model, caliber, serial number, acquisition date, valuation — organized in one place that actually stays accurate because you log every session.</p>
+          </div>
+        </div>
+        <div class="feature-primary">
+          <div class="feature-icon-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 15h3M8 18h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <h4>Log a session in 30 seconds. Never forget a range trip.</h4>
+            <p>Tap the gun, enter rounds, add a note. Done. Round counts auto-track, ammo auto-deducts. Your history builds itself every time you shoot.</p>
+          </div>
+        </div>
+        <div class="feature-primary">
+          <div class="feature-icon-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <h4>Ask anything. Get answers from your actual data.</h4>
+            <p>Not a chatbot. Not generic advice. An assistant that reads your entire vault — every gun, every session, every note — and gives you real answers.</p>
+          </div>
+        </div>
+        <div class="feature-primary">
+          <div class="feature-icon-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <h4>One tap. Full PDF. Every serial number.</h4>
+            <p>Insurance-ready export of your entire collection. Everything your agent needs — make, model, serial, value, photos — in seconds, not hours.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary features -->
+      <div class="features-secondary-label">Also included</div>
+      <div class="features-secondary">
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Ammo tracking with auto-deduct
+        </div>
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Shooter profile &amp; milestones
+        </div>
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18.364 5.636a9 9 0 1 1-12.728 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 2v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Full offline access, always
+        </div>
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Field Guide reference library
+        </div>
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Maintenance &amp; cleaning alerts
+        </div>
+        <div class="feature-secondary-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Local-first privacy model
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOUNDER NOTE ──────────────────────────────────────────────── -->
+  <section class="founder" id="founder">
+    <div class="container">
+      <div class="founder-inner">
+        <div class="founder-label">WHY THIS EXISTS</div>
+        <blockquote class="founder-quote">
+          "I compete in multiple disciplines, reload my own ammo, and do most of my own gunsmithing. I had round counts in one spreadsheet, serial numbers in another, maintenance notes in a notes app, and ammo inventory in my head. That system broke constantly — and it always broke at the wrong time.<br><br>
+          I built Lindcott Armory because nothing else was made for how gun owners actually live. Every app I tried was either too generic to be useful or too complicated to actually use at the range."
+        </blockquote>
+        <div class="founder-name">— James, Founder · Lindcott Armory</div>
+        <div class="founder-creds">Competitive shooter · Reloader · Aspiring gunsmith</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FIELD GUIDE PREVIEW ───────────────────────────────────────── -->
+  <section class="field-guide-preview" id="field-guide">
+    <div class="container">
+      <div class="section-label">FIELD GUIDE</div>
+      <h2 class="section-title">Reference that actually helps.</h2>
+      <p class="section-sub">The in-app Field Guide covers calibers, cartridge specs, maintenance procedures, and firearms reference — written for shooters, not engineers.</p>
+      <div class="guide-cards">
+        <a class='guide-card guide-card-link' href='/field-guide'>
+          <div class="guide-card-tag">CARTRIDGE DATABASE</div>
+          <h4>198 Cartridges. Searchable. Sortable.</h4>
+          <p>Ballistics, history, military timelines, and specs for every major cartridge — from .22 LR to .50 BMG.</p>
+          <div class="guide-card-cta">Browse the database →</div>
+        </a>
+        <a class='guide-card guide-card-link' href='/military'>
+          <div class="guide-card-tag">MILITARY SERVICE RECORDS</div>
+          <h4>Military Firearms Timeline</h4>
+          <p>85 service weapons across every major military — rifles, pistols, machine guns, and anti-materiel rifles with full service histories.</p>
+          <div class="guide-card-cta">Explore →</div>
+        </a>
+        <a class='guide-card guide-card-link' href='/stolen'>
+          <div class="guide-card-tag">INCIDENT RESPONSE</div>
+          <h4>Stolen, Lost &amp; Destroyed</h4>
+          <p>What to do when firearms go missing or are destroyed. Step-by-step checklists for law enforcement, insurance, and the documentation gaps that make bad situations worse.</p>
+          <div class="guide-card-cta">Read →</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ROADMAP ───────────────────────────────────────────────────── -->
+  <section class="roadmap" id="roadmap">
+    <div class="container">
+      <div class="section-label">WHAT'S NEXT</div>
+      <h2 class="section-title">The roadmap.</h2>
+      <p class="section-sub">Lindcott Armory launched with the core features shooters actually need. We ship regularly — here's what's coming next.</p>
+      <div class="roadmap-grid">
+        <div class="roadmap-item launched">
+          <div class="roadmap-status">AVAILABLE NOW</div>
+          <ul>
+            <li>Gun Vault &amp; session log</li>
+            <li>AI Assistant</li>
+            <li>Shooter profile &amp; milestones</li>
+            <li>Ammo tracking</li>
+            <li>Insurance export</li>
+            <li>Field Guide</li>
+            <li>Works offline</li>
+          </ul>
+        </div>
+        <div class="roadmap-item soon">
+          <div class="roadmap-status">COMING NEXT</div>
+          <ul>
+            <li>Ballistics calculator</li>
+            <li>Reloading log</li>
+            <li>Gear Locker &amp; Wishlist</li>
+            <li>Training programs</li>
+            <li>Competition tracking</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── EMAIL CAPTURE (FOOTER CTA) ───────────────────────────────── -->
+  <section class="email-cta" id="email-cta">
+    <div class="container">
+      <div class="section-label">GET EARLY ACCESS</div>
+      <h2 class="cta-headline">Track every round.<br><span class="accent">Own your data.</span></h2>
+      <p class="cta-sub">Track your firearms the right way from day one. Charter Members get <strong>3 months of Pro free at launch</strong> — plus early access to new modules, direct input on the roadmap, and the free <strong>Firearm Maintenance Log PDF</strong>.</p>
+      <form class='email-capture' id='footer-email-form' method='post' name='early-access'>
+        <input type="hidden" name="form-name" value="early-access" />
+        <input type="hidden" name="bot-field" style="display:none" />
+        <input type="email" name="email" placeholder="your@email.com" class="email-input" required />
+        <button type="submit" class="btn-primary">Get Early Access</button>
+      </form>
+      <p class="email-note">Free to download. No spam. Unsubscribe any time.</p>
+      <!-- PLACEHOLDER: App Store and Play Store badges — add once app is approved in both stores -->
+      <div class="store-badges">
+        <div class="badge-placeholder">
+          <span>[ App Store Badge ]</span>
+          <small>Add after Apple approval</small>
+        </div>
+        <div class="badge-placeholder">
+          <span>[ Google Play Badge ]</span>
+          <small>Add when Play listing is live</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="footer-logo-img">LINDCOTT ARMORY</div>
+          <div class="footer-sub">Part of the <a href="#" style="color:inherit;opacity:0.6;">Lindcott family of firearms tools</a></div>
+        </div>
+        <div class="footer-links">
+          <a href='/field-guide'>Field Guide</a>
+          <a href='/privacy'>Privacy Policy</a>
+          <a href='/privacy#terms'>Terms of Service</a>
+          <a href="mailto:support@lindcottarmory.com">Support</a>
+        </div>
+      </div>
+      <div class="footer-copy">© 2026 Lindcott Armory LLC. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
 </html>

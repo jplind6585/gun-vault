@@ -3,22 +3,10 @@
 
 [[redirects]]
   from = "/field-guide"
-  to   = "/field-guide/index.html"
+  to   = "/field-guide.html"
   status = 200
 
 [[redirects]]
   from = "/privacy"
   to   = "/privacy.html"
   status = 200
-
-[[redirects]]
-  from = "/support"
-  to   = "/support.html"
-  status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"

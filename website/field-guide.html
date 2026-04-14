@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Field Guide — Lindcott Armory</title>
+  <meta name="description" content="The Lindcott Armory Field Guide — searchable cartridge database, ballistics reference, maintenance guides, and firearms knowledge for serious shooters." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/field-guide.css" />
+</head>
+<body class="field-guide-page">
+
+  <!-- ── NAV ── -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="nav-logo-img">LINDCOTT ARMORY</a>
+    <div class="nav-links">
+      <a href='/#features'>Features</a>
+      <a class='nav-active' href='/field-guide'>Field Guide</a>
+      <a href='/#privacy'>Privacy</a>
+      <a class='nav-cta' href='/#email-cta'>Get Early Access</a>
+    </div>
+    <button class="nav-mobile-cta" onclick="location.href='index.html#email-cta'">Get Early Access</button>
+  </nav>
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="fg-header">
+    <div class="container">
+      <div class="section-label">FIELD GUIDE</div>
+      <h1 class="fg-title">Reference that doesn't require a search engine.</h1>
+      <p class="fg-sub">In-depth modules on cartridges, maintenance, ballistics, and firearms knowledge — written for shooters, not engineers. The full Field Guide lives in the app; the database is here too.</p>
+    </div>
+  </div>
+
+  <!-- ── CARD GRID ── -->
+  <div class="fg-body">
+    <div class="container">
+      <div class="fg-grid">
+
+        <a class='fg-card fg-card-live' href='/calibers'>
+          <div class="fg-card-top">
+            <div class="fg-card-tag">CARTRIDGE DATABASE</div>
+            
+          </div>
+          <h3 class="fg-card-title">Cartridge Library</h3>
+          <p class="fg-card-desc">198 cartridges — ballistics, history, military timelines, and full specs. Searchable, sortable, and comparable. From .22 LR to .50 BMG.</p>
+          <div class="fg-card-footer">
+            <span class="fg-card-meta">198 cartridges</span>
+            <span class="fg-card-cta">Browse →</span>
+          </div>
+        </a>
+
+        <a class='fg-card fg-card-live' href='/history'>
+          <div class="fg-card-top">
+            <div class="fg-card-tag">VISUAL TIMELINE</div>
+            
+          </div>
+          <h3 class="fg-card-title">History of Firearms</h3>
+          <p class="fg-card-desc">45 landmark weapons — from the flintlock musket to the XM7. Six eras of firearms history, with the context behind each milestone.</p>
+          <div class="fg-card-footer">
+            <span class="fg-card-meta">45 milestones · 1630–2023</span>
+            <span class="fg-card-cta">Explore →</span>
+          </div>
+        </a>
+
+        <a class='fg-card fg-card-live' href='/military'>
+          <div class="fg-card-top">
+            <div class="fg-card-tag">MILITARY SERVICE RECORDS</div>
+            
+          </div>
+          <h3 class="fg-card-title">Military Firearms Timeline</h3>
+          <p class="fg-card-desc">85 service weapons across every major military — rifles, pistols, machine guns, and anti-materiel rifles with full service histories and stories.</p>
+          <div class="fg-card-footer">
+            <span class="fg-card-meta">85 weapons · 7 roles</span>
+            <span class="fg-card-cta">Explore →</span>
+          </div>
+        </a>
+
+        <a class='fg-card fg-card-live' href='/stolen'>
+          <div class="fg-card-top">
+            <div class="fg-card-tag">INCIDENT RESPONSE</div>
+            
+          </div>
+          <h3 class="fg-card-title">Stolen, Lost &amp; Destroyed</h3>
+          <p class="fg-card-desc">What to do when firearms go missing or are destroyed. Step-by-step checklists for law enforcement, insurance claims, and the documentation gaps that make bad situations worse.</p>
+          <div class="fg-card-footer">
+            <span class="fg-card-meta">3 scenarios · checklist format</span>
+            <span class="fg-card-cta">Read →</span>
+          </div>
+        </a>
+
+        <!-- Additional modules will be added as they are built out -->
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INLINE CTA ── -->
+  <div class="fg-cta">
+    <div class="container">
+      <div class="cta-content">
+        <div>
+          <div class="section-label">IN THE APP</div>
+          <h3>The complete Field Guide is in Lindcott Armory.</h3>
+          <p>Maintenance schedules, ballistics tables, reloading reference, and every cartridge — linked to your guns and your range sessions.</p>
+        </div>
+        <form class="email-capture" id="fg-email-form">
+          <input type="email" placeholder="your@email.com" class="email-input" required />
+          <button type="submit" class="btn-primary">Get Early Access</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="footer-logo-img">LINDCOTT ARMORY</div>
+          <div class="footer-sub">A Lindcott Farms product</div>
+        </div>
+        <div class="footer-links">
+          <a href='/field-guide'>Field Guide</a>
+          <a href='/privacy'>Privacy Policy</a>
+          <a href='/privacy#terms'>Terms of Service</a>
+          <a href="mailto:support@lindcottarmory.com">Support</a>
+        </div>
+      </div>
+      <div class="footer-copy">© 2026 Lindcott Armory LLC. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('fg-email-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('.btn-primary');
+      btn.textContent = "You're on the list!";
+      btn.style.background = '#2ecc71';
+      btn.disabled = true;
+    });
+
+    // Nav scroll
+    window.addEventListener('scroll', function() {
+      document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+    });
+  </script>
+</body>
+</html>
