@@ -988,6 +988,13 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 
 /* ── HERO ADDITIONS ────────────────────────────────────────────────── */
+.hero-logo {
+  width: 72px;
+  height: auto;
+  margin-bottom: 24px;
+  display: block;
+}
+
 .what-it-is {
   font-family: var(--mono);
   font-size: 11px;
