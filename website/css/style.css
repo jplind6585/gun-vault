@@ -279,6 +279,8 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   padding: 120px 24px 80px;
   max-width: var(--max);
   margin: 0 auto;
+  position: relative;
+  overflow: hidden;
 }
 
 .hero-inner {
@@ -997,12 +999,13 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   width: 700px;
   height: auto;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  right: -80px;
+  transform: translateY(-50%);
   mix-blend-mode: screen;
   opacity: 0.28;
   pointer-events: none;
   user-select: none;
+  z-index: 0;
 }
 
 .what-it-is {
