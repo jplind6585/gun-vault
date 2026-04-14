@@ -996,12 +996,12 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 .hero-bg-logo {
   position: absolute;
-  width: 700px;
+  width: 1400px;
   height: auto;
   top: 50%;
-  right: -80px;
+  right: -300px;
   transform: translateY(-50%);
-  opacity: 0.12;
+  opacity: 0.4;
   pointer-events: none;
   user-select: none;
   z-index: 0;
