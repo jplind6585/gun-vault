@@ -1,5 +1,14 @@
 # Lindcott Armory — Developer Handoff
 
+## ⚠️ Critical rules
+
+- **Do NOT modify `index.html`'s static marketing HTML** (inside `<div id="root">`) without explicit approval from James. This is the marketing page visible to crawlers and unauthenticated visitors.
+- **Do NOT change what unauthenticated users see** (i.e. `LoginScreen`, or anything rendered when `!user` in App.tsx) without explicit approval. This caused a major incident on 2026-04-14.
+- **Do NOT deploy changes to Netlify** that affect the public-facing site without confirming with James first.
+- If in doubt: stop and ask. Rolling back is painful.
+
+---
+
 ## What this is
 A personal firearms management PWA (Progressive Web App) packaged as an Android app via Capacitor. Brand: **Lindcott Armory**, sub-brand of Lindcott Farms.
 
