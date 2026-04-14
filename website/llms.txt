@@ -1,0 +1,28 @@
+# Lindcott Armory
+
+> Lindcott Armory is a free mobile app for iOS and Android that lets gun owners privately track their firearms, ammunition, sessions, and maintenance records. No account required. No ads. No data brokers. Works offline.
+
+Built by a competitive shooter, reloader, and aspiring gunsmith.
+
+## Pages
+
+- [Home](https://lindcottarmory.com/): App overview, features, early access signup, and charter member offer
+- [Field Guide](https://lindcottarmory.com/field-guide): Reference hub for firearms knowledge
+- [Cartridge Database](https://lindcottarmory.com/calibers): Searchable database of 198 firearm cartridges with ballistics, history, military adoption timelines, and specifications
+- [History of Firearms](https://lindcottarmory.com/history): Visual timeline of 45 landmark firearms from the flintlock musket to the XM7
+- [Military Firearms Timeline](https://lindcottarmory.com/military): 85 service weapons across every major military, explorable by country, year, or role
+- [Stolen, Lost & Destroyed](https://lindcottarmory.com/stolen): Step-by-step guide for what to do when firearms are stolen, lost, or destroyed — police reports, insurance claims, ATF procedures
+- [Privacy Policy](https://lindcottarmory.com/privacy): Privacy policy and terms of service
+
+## Key Features
+
+- Track every gun, round count, session, and maintenance record in one place
+- AI assistant that answers questions about your own vault using your data
+- Private by design — data stays on your device
+- Free to download, no account required to start
+- Available on iOS and Android
+- Charter member offer: sign up for early access, get 3 months of Pro free at launch
+
+## Contact
+
+support@lindcottarmory.com

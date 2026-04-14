@@ -335,6 +335,7 @@ th.sortable.sort-desc .sort-arrow { display: none; }
 .td-vel, .td-energy {
   color: var(--muted);
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .badge-military {
