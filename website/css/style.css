@@ -1001,8 +1001,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   top: 50%;
   right: -80px;
   transform: translateY(-50%);
-  mix-blend-mode: screen;
-  opacity: 0.28;
+  opacity: 0.12;
   pointer-events: none;
   user-select: none;
   z-index: 0;
