@@ -1,8 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { theme } from './theme';
 import { getAllGuns, addGun, ensureInitialized } from './storage';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { LoginScreen } from './auth/LoginScreen';
+import { LandingPage } from './auth/LandingPage';
 import { WelcomeScreen } from './WelcomeScreen';
 import type { Gun } from './types';
 import { GunVault } from './GunVault';
@@ -172,7 +174,7 @@ function AppCore() {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return Capacitor.isNativePlatform() ? <LoginScreen /> : <LandingPage />;
   }
 
   if (!goalAnswered) {
