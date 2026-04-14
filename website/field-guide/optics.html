@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Optics Guide — Lindcott Armory Field Guide</title>
+  <meta name="description" content="Red dots, holographics, LPVOs, prism scopes, variable magnification, NV, and thermal optics — compared with pros, cons, and real examples." />
+  <link rel="canonical" href="https://lindcottarmory.com/field-guide/optics" />
+  <meta property="og:title" content="Optics Guide — Lindcott Armory Field Guide" />
+  <meta property="og:description" content="Red dots, holographics, LPVOs, prism scopes, variable magnification, NV, and thermal optics — compared with pros, cons, and real examples." />
+  <meta property="og:url" content="https://lindcottarmory.com/field-guide/optics" />
+  <meta property="og:image" content="https://lindcottarmory.com/icon-1024.png" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f4f8;
+    --surface2: #eaeaf0;
+    --border: #e0e0ea;
+    --text: #1a1a2e;
+    --secondary: #44446a;
+    --muted: #88889a;
+    --accent: #2f5fe8;
+    --accent-dim: rgba(47,95,232,0.1);
+    --green: #2f9e44;
+    --red: #c92a2a;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #07071a;
+      --surface: #0e0e2a;
+      --surface2: #14143a;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e8f0;
+      --secondary: #9090b0;
+      --muted: #5a5a7a;
+      --accent: #5b8cff;
+      --accent-dim: rgba(91,140,255,0.1);
+      --green: #51cf66;
+      --red: #ff6b6b;
+    }
+  }
+  body { background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .nav-brand { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--text); }
+  .nav-section { font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .nav-cta {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 5px 12px; border-radius: 4px;
+  }
+  .nav-cta:hover { background: var(--accent-dim); text-decoration: none; }
+
+  /* Page header */
+  .page-header { padding: 40px 24px 24px; max-width: 800px; margin: 0 auto; }
+  .breadcrumb { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-bottom: 12px; }
+  .breadcrumb a { color: var(--muted); }
+  .page-title { font-size: clamp(22px,4vw,32px); font-weight: 800; letter-spacing: -.01em; margin-bottom: 8px; }
+  .page-desc { font-size: 14px; color: var(--secondary); line-height: 1.7; }
+
+  /* Filter bar */
+  .filter-bar {
+    max-width: 800px; margin: 0 auto; padding: 0 24px 20px;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .search-input {
+    flex: 1; min-width: 200px; padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit;
+    font-size: 13px; outline: none;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 12px; font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--secondary);
+    cursor: pointer; transition: all .15s;
+  }
+  .chip:hover, .chip.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+  }
+  .sort-select {
+    padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit; font-size: 12px;
+    cursor: pointer; outline: none;
+  }
+
+  /* Results count */
+  .count { font-size: 11px; color: var(--muted); padding: 0 24px 12px; max-width: 800px; margin: 0 auto; }
+
+  /* Cards */
+  .cards { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; display: grid; gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 700; letter-spacing: .03em; color: var(--text); }
+  .card-subtitle { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-top: 2px; }
+  .card-body { font-size: 13px; color: var(--secondary); line-height: 1.7; }
+  .card-body p + p { margin-top: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 3px 8px;
+    border-radius: 4px; background: var(--accent-dim); color: var(--accent);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .05em;
+    padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border);
+    color: var(--muted); margin: 2px;
+  }
+
+  /* Expandable */
+  .expand-toggle { cursor: pointer; list-style: none; }
+  .expand-toggle::-webkit-details-marker { display: none; }
+  details > summary { cursor: pointer; }
+  details[open] .expand-icon::after { content: '▲'; }
+  .expand-icon::after { content: '▼'; font-size: 9px; color: var(--muted); margin-left: 8px; }
+
+  /* Pros/cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 500px) { .pros-cons { grid-template-columns: 1fr; } }
+  .pros-cons-head { font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: 6px; }
+  .pros-cons-head.pro { color: var(--green); }
+  .pros-cons-head.con { color: var(--red); }
+  .pros-cons li { font-size: 12px; color: var(--secondary); margin-left: 14px; margin-bottom: 3px; }
+
+  /* Spec table */
+  .spec-table { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 12px; }
+  .spec-row { display: contents; }
+  .spec-key { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .spec-val { font-size: 11px; color: var(--text); font-weight: 600; }
+
+  /* Steps list */
+  .steps { margin-top: 10px; }
+  .step { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+  .step-num {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-text { font-size: 13px; color: var(--secondary); line-height: 1.6; }
+
+  /* No results */
+  .no-results { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; display: none; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border); padding: 24px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 11px; color: var(--muted); letter-spacing: .05em;
+  }
+  .footer a { color: var(--muted); }
+  .footer-links { display: flex; gap: 20px; }
+
+  /* Section nav */
+  .section-nav { max-width: 800px; margin: 0 auto; padding: 0 24px 32px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .section-link {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: 4px; color: var(--secondary);
+  }
+  .section-link:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav-brand" href="/">LINDCOTT ARMORY</a>
+    <span class="nav-section">FIELD GUIDE</span>
+    <a class="nav-cta" href="/">OPEN APP →</a>
+  </nav>
+  
+  
+  <div class="page-header">
+    <div class="breadcrumb"><a href="/field-guide/">Field Guide</a> › Optics</div>
+    <h1 class="page-title">Optics Guide</h1>
+    <p class="page-desc">10 optic types compared — from iron sights and red dots to LPVO, night vision, and thermal.</p>
+  </div>
+  <div class="filter-bar">
+    <input class="search-input" id="search" placeholder="Search optics…" type="search" />
+  </div>
+  <p class="count"></p>
+  <div class="cards">
+    
+    <details class="card" data-text="Iron Sights Baseline. No batteries, no glass, no failure modes. The baseline of all shooting: a front post and a rear notch or aperture. No batteries, no magnification, no parallax, no failure modes beyond physical damage. Required proficiency before moving to optics — if you cannot shoot irons, you cannot diagnose problems when your optic fails. Ghost ring apertures are standard on AR-pattern rifles; blade/notch configurations dominate pistols. Regulated at the factory for a specific distance and ammo type. Most service rifle irons are adjustable for elevation and windage via a tool or coin. AR A2 rear sights offer a dual aperture: small for 300m+, large for CQB. No batteries Rugged and lightweight Always work Co-witness baseline when running an optic No magnification Slow on distant targets Eye strain in low light Rear/front/target — three focal planes your eye cannot hold simultaneously A2 rear sight (AR-15) Troy BUIS Magpul MBUS Glock factory sights XS Big Dot">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Iron Sights <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Baseline. No batteries, no glass, no failure modes.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">The baseline of all shooting: a front post and a rear notch or aperture. No batteries, no magnification, no parallax, no failure modes beyond physical damage.</div><div class="card-body" style="margin-bottom:8px;">Required proficiency before moving to optics — if you cannot shoot irons, you cannot diagnose problems when your optic fails. Ghost ring apertures are standard on AR-pattern rifles; blade/notch configurations dominate pistols.</div><div class="card-body" style="margin-bottom:8px;">Regulated at the factory for a specific distance and ammo type. Most service rifle irons are adjustable for elevation and windage via a tool or coin. AR A2 rear sights offer a dual aperture: small for 300m+, large for CQB.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>No batteries</li><li>Rugged and lightweight</li><li>Always work</li><li>Co-witness baseline when running an optic</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>No magnification</li><li>Slow on distant targets</li><li>Eye strain in low light</li><li>Rear/front/target — three focal planes your eye cannot hold simultaneously</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">A2 rear sight (AR-15)</span><span class="tag">Troy BUIS</span><span class="tag">Magpul MBUS</span><span class="tag">Glock factory sights</span><span class="tag">XS Big Dot</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Red Dot Sight (RDS) Fastest 1x option. Pistols, carbines, CQB. A non-magnifying optic that uses an LED to project a dot onto a partially-reflective lens. The dot appears to be on the same focal plane as the target — the optic is effectively parallax-free within its rated range (typically 50–100 yards for pistol dots, 200+ for rifle-mounted). 1 MOA dots for precision applications, 2–4 MOA for speed. Smaller dots are harder to acquire quickly; larger dots obscure more of the target at distance. Battery life is the key operational metric. Aimpoint Micro T-2: 5 years on one CR2032 at medium setting. Holosun 507C: 50,000 hours. Trijicon RMR Type 2: auto-adjust mode extends battery to years. Co-witnessing with irons: absolute co-witness (dot aligns with irons at full height); lower-1/3 co-witness (dot sits above irons, irons visible in lower third of window). Lower-1/3 is preferred on AR uppers for a more natural shooting position. True one-focal-plane aiming Fast target acquisition Works with both eyes open Excellent battery life on quality units Parallax-free within rated range No magnification Battery-dependent on most Astigmatic shooters may see starburst instead of dot Smaller window than holographic Trijicon RMR Type 2 Aimpoint Micro T-2 Holosun 507C / 509T Leupold DeltaPoint Pro Sig Romeo5">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Red Dot Sight (RDS) <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Fastest 1x option. Pistols, carbines, CQB.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">A non-magnifying optic that uses an LED to project a dot onto a partially-reflective lens. The dot appears to be on the same focal plane as the target — the optic is effectively parallax-free within its rated range (typically 50–100 yards for pistol dots, 200+ for rifle-mounted).</div><div class="card-body" style="margin-bottom:8px;">1 MOA dots for precision applications, 2–4 MOA for speed. Smaller dots are harder to acquire quickly; larger dots obscure more of the target at distance.</div><div class="card-body" style="margin-bottom:8px;">Battery life is the key operational metric. Aimpoint Micro T-2: 5 years on one CR2032 at medium setting. Holosun 507C: 50,000 hours. Trijicon RMR Type 2: auto-adjust mode extends battery to years.</div><div class="card-body" style="margin-bottom:8px;">Co-witnessing with irons: absolute co-witness (dot aligns with irons at full height); lower-1/3 co-witness (dot sits above irons, irons visible in lower third of window). Lower-1/3 is preferred on AR uppers for a more natural shooting position.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>True one-focal-plane aiming</li><li>Fast target acquisition</li><li>Works with both eyes open</li><li>Excellent battery life on quality units</li><li>Parallax-free within rated range</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>No magnification</li><li>Battery-dependent on most</li><li>Astigmatic shooters may see starburst instead of dot</li><li>Smaller window than holographic</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Trijicon RMR Type 2</span><span class="tag">Aimpoint Micro T-2</span><span class="tag">Holosun 507C / 509T</span><span class="tag">Leupold DeltaPoint Pro</span><span class="tag">Sig Romeo5</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Holographic Sight Largest window at 1x. Extreme-angle use. CQB. A laser reconstructs a reticle pattern from holographic film embedded in the lens. The mechanism is fundamentally different from an RDS — the reticle is not reflected off the glass, it is reconstructed within it. Critical advantage: the hologram functions at extreme angles. If any portion of the lens is in your field of view, the reticle is on target. This matters in extreme stress positions where cheek weld is inconsistent. The reticle survives a shattered lens — because the hologram IS the lens. A cracked EoTech with glass still in the frame will still work. EoTech is the category standard. Battery life is the primary trade-off versus RDS — EoTechs burn through batteries measurably faster than comparable Aimpoints. EoTech's documented thermal drift issues (2015 settlement) required a firmware revision and are largely addressed in current production. Largest effective window of any 1x optic Functions at extreme cant and off-axis Reticle survives shattered glass Compatible with magnifiers Poor battery life vs. RDS Heavier More expensive than equivalent RDS Documented thermal drift in older EoTech units EoTech 512 EoTech XPS2 EoTech EXPS3 (NV compatible) Vortex AMG UH-1">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Holographic Sight <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Largest window at 1x. Extreme-angle use. CQB.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">A laser reconstructs a reticle pattern from holographic film embedded in the lens. The mechanism is fundamentally different from an RDS — the reticle is not reflected off the glass, it is reconstructed within it.</div><div class="card-body" style="margin-bottom:8px;">Critical advantage: the hologram functions at extreme angles. If any portion of the lens is in your field of view, the reticle is on target. This matters in extreme stress positions where cheek weld is inconsistent.</div><div class="card-body" style="margin-bottom:8px;">The reticle survives a shattered lens — because the hologram IS the lens. A cracked EoTech with glass still in the frame will still work.</div><div class="card-body" style="margin-bottom:8px;">EoTech is the category standard. Battery life is the primary trade-off versus RDS — EoTechs burn through batteries measurably faster than comparable Aimpoints. EoTech's documented thermal drift issues (2015 settlement) required a firmware revision and are largely addressed in current production.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Largest effective window of any 1x optic</li><li>Functions at extreme cant and off-axis</li><li>Reticle survives shattered glass</li><li>Compatible with magnifiers</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Poor battery life vs. RDS</li><li>Heavier</li><li>More expensive than equivalent RDS</li><li>Documented thermal drift in older EoTech units</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">EoTech 512</span><span class="tag">EoTech XPS2</span><span class="tag">EoTech EXPS3 (NV compatible)</span><span class="tag">Vortex AMG UH-1</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Prism Scope Fixed magnification. Best for astigmatic shooters. Uses a prism to focus the image rather than the erector lens system used in traditional scopes. Fixed magnification — typically 1x, 3x, or 5x. Critical advantage for a significant portion of shooters: the reticle is etched into glass, not projected by an LED. Shooters with astigmatism who see a starburst with a red dot see a clean, crisp reticle through a prism scope. Illumination is supplemental, not primary. More compact than a variable scope at the same magnification. The ACOG (Trijicon Advanced Combat Optical Gunsight) is the military benchmark — fixed 4x with a tritium/fiber-optic illuminated reticle. No battery required under any conditions. Limited by fixed magnification. You pick your role and commit. Works for astigmatic shooters No battery required (ACOG) Compact at magnification Rugged — fewer moving parts than variable Etched reticle always visible Fixed magnification — no flexibility Eye box can be unforgiving Limited field of view vs. RDS at 1x Higher cost per magnification than variable scopes Trijicon ACOG (TA31, TA33) Vortex Spitfire 3x Primary Arms 5x Compact Prism Steiner P4Xi (fixed 4x)">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Prism Scope <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Fixed magnification. Best for astigmatic shooters.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">Uses a prism to focus the image rather than the erector lens system used in traditional scopes. Fixed magnification — typically 1x, 3x, or 5x.</div><div class="card-body" style="margin-bottom:8px;">Critical advantage for a significant portion of shooters: the reticle is etched into glass, not projected by an LED. Shooters with astigmatism who see a starburst with a red dot see a clean, crisp reticle through a prism scope. Illumination is supplemental, not primary.</div><div class="card-body" style="margin-bottom:8px;">More compact than a variable scope at the same magnification. The ACOG (Trijicon Advanced Combat Optical Gunsight) is the military benchmark — fixed 4x with a tritium/fiber-optic illuminated reticle. No battery required under any conditions.</div><div class="card-body" style="margin-bottom:8px;">Limited by fixed magnification. You pick your role and commit.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Works for astigmatic shooters</li><li>No battery required (ACOG)</li><li>Compact at magnification</li><li>Rugged — fewer moving parts than variable</li><li>Etched reticle always visible</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Fixed magnification — no flexibility</li><li>Eye box can be unforgiving</li><li>Limited field of view vs. RDS at 1x</li><li>Higher cost per magnification than variable scopes</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Trijicon ACOG (TA31, TA33)</span><span class="tag">Vortex Spitfire 3x</span><span class="tag">Primary Arms 5x Compact Prism</span><span class="tag">Steiner P4Xi (fixed 4x)</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="LPVO — Low Power Variable Optic One-optic solution: 1x CQB to 600+ yards. Variable magnification starting at true 1x, ranging to 4x, 6x, 8x, or 10x. The Swiss Army knife of rifle optics — true 1x for CQB with both eyes open, dial up for distance shots. FFP vs. SFP matters significantly in an LPVO. An FFP reticle scales with magnification — subtensions are correct at any power. An SFP reticle stays the same apparent size, but MIL/MOA holds are only correct at one designated power (usually max). Quality LPVOs are expensive because manufacturing true 1x with zero optical distortion is genuinely difficult. Budget LPVOs often have distortion at 1x, making them effectively false-1x optics. The eye box narrows significantly at higher magnification. Schmidt & Bender, Nightforce NX8, and Vortex Razor are benchmarks. Expect $800–$3,000 for quality glass. A quality LPVO with mount runs 18–24 oz. True versatility from CQB to 600+ yards One-optic solution FFP allows ranging at any magnification Growing selection at multiple price points Heavy Tight eye box at high magnification Quality glass is expensive FFP reticle is tiny at 1x Not as fast as RDS at CQB Vortex Razor HD Gen III 1-10x Nightforce NX8 1-8x Schmidt & Bender PM II 1-8x Leupold Mark 6 1-6x Sig Tango6T 1-6x">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">LPVO — Low Power Variable Optic <span class="expand-icon"></span></div>
+            <div class="card-subtitle">One-optic solution: 1x CQB to 600+ yards.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">Variable magnification starting at true 1x, ranging to 4x, 6x, 8x, or 10x. The Swiss Army knife of rifle optics — true 1x for CQB with both eyes open, dial up for distance shots.</div><div class="card-body" style="margin-bottom:8px;">FFP vs. SFP matters significantly in an LPVO. An FFP reticle scales with magnification — subtensions are correct at any power. An SFP reticle stays the same apparent size, but MIL/MOA holds are only correct at one designated power (usually max).</div><div class="card-body" style="margin-bottom:8px;">Quality LPVOs are expensive because manufacturing true 1x with zero optical distortion is genuinely difficult. Budget LPVOs often have distortion at 1x, making them effectively false-1x optics. The eye box narrows significantly at higher magnification.</div><div class="card-body" style="margin-bottom:8px;">Schmidt &amp; Bender, Nightforce NX8, and Vortex Razor are benchmarks. Expect $800–$3,000 for quality glass. A quality LPVO with mount runs 18–24 oz.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>True versatility from CQB to 600+ yards</li><li>One-optic solution</li><li>FFP allows ranging at any magnification</li><li>Growing selection at multiple price points</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Heavy</li><li>Tight eye box at high magnification</li><li>Quality glass is expensive</li><li>FFP reticle is tiny at 1x</li><li>Not as fast as RDS at CQB</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Vortex Razor HD Gen III 1-10x</span><span class="tag">Nightforce NX8 1-8x</span><span class="tag">Schmidt &amp; Bender PM II 1-8x</span><span class="tag">Leupold Mark 6 1-6x</span><span class="tag">Sig Tango6T 1-6x</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Variable Magnification Scope Maximum range versatility. Hunting to precision. The classic configuration: 3-9x, 4-16x, 5-25x, and beyond. The objective lens diameter (the number after "x") determines light-gathering. An erector assembly adjusts point of impact via internal lenses. Glass quality varies enormously and drives the price delta between a $150 Bushnell and a $3,000 Nightforce. The variables: lens coatings (FMC is the baseline requirement), glass type (ED/HD glass reduces chromatic aberration), and manufacturing tolerances in the erector assembly. Repeatability of adjustments is critical for precision use — a scope that does not return to zero after dialing is useless for field or competition shooting. Benchmark test: shoot a box (up 10 MIL, right 10 MIL, down 10 MIL, left 10 MIL, back to zero) and verify POI returns. The 3-9x40 configuration dominated hunting for 50 years and remains the most common scope sold. The 4-16x and 5-25x configurations have grown as precision rifle competition expanded. Maximum range versatility Large selection at all price points High-magnification precision capability Proven long-range accuracy platform Heavy at high magnification More optical surfaces = more potential distortion Tight eye box at max power Requires solid, properly torqued rings and mount Nightforce ATACR 5-25x56 Vortex Viper PST II 5-25x50 Leupold Mark 5HD 5-25x56 Schmidt & Bender PMII 5-25x56">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Variable Magnification Scope <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Maximum range versatility. Hunting to precision.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">The classic configuration: 3-9x, 4-16x, 5-25x, and beyond. The objective lens diameter (the number after &quot;x&quot;) determines light-gathering. An erector assembly adjusts point of impact via internal lenses.</div><div class="card-body" style="margin-bottom:8px;">Glass quality varies enormously and drives the price delta between a $150 Bushnell and a $3,000 Nightforce. The variables: lens coatings (FMC is the baseline requirement), glass type (ED/HD glass reduces chromatic aberration), and manufacturing tolerances in the erector assembly.</div><div class="card-body" style="margin-bottom:8px;">Repeatability of adjustments is critical for precision use — a scope that does not return to zero after dialing is useless for field or competition shooting. Benchmark test: shoot a box (up 10 MIL, right 10 MIL, down 10 MIL, left 10 MIL, back to zero) and verify POI returns.</div><div class="card-body" style="margin-bottom:8px;">The 3-9x40 configuration dominated hunting for 50 years and remains the most common scope sold. The 4-16x and 5-25x configurations have grown as precision rifle competition expanded.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Maximum range versatility</li><li>Large selection at all price points</li><li>High-magnification precision capability</li><li>Proven long-range accuracy platform</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Heavy at high magnification</li><li>More optical surfaces = more potential distortion</li><li>Tight eye box at max power</li><li>Requires solid, properly torqued rings and mount</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Nightforce ATACR 5-25x56</span><span class="tag">Vortex Viper PST II 5-25x50</span><span class="tag">Leupold Mark 5HD 5-25x56</span><span class="tag">Schmidt &amp; Bender PMII 5-25x56</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Fixed Power Scope Maximum simplicity. Benchrest. Military sniper tradition. No magnification ring, no variable assembly. A single magnification — typically 6x, 10x, 12x, or exotic fixed powers like 36x and 45x for benchrest. Simplicity is the design advantage: fewer glass elements, fewer moving parts, often better light transmission than an equivalent variable at the same power due to fewer optical surfaces. A 10x fixed can outperform a 3-12x variable at 10x if glass quality is comparable. The classic precision fixed powers are 10x (Leupold Mark 4 M1, Unertl 10x) and the sniper tradition of using fixed optics for battlefield predictability. Fixed power scopes are still preferred by some military shooters who want guaranteed performance with no selector to set incorrectly. Benchrest competition uses very high fixed powers (36x–45x) where the goal is group size, not versatility. The rifle rests mechanically; field shooting skills are largely irrelevant. Simpler — fewer failure points Better light transmission per optical surface Lighter than comparable variable No selector to leave at wrong power No versatility — committed to one magnification Wrong power for a scenario is a liability Limited selection vs. the variable market Leupold Mark 4 M1 10x40 Unertl 10x USMC Sniper Scope March 10x52 Fixed Nightforce 12x42 Fixed Leupold 36x competition">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Fixed Power Scope <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Maximum simplicity. Benchrest. Military sniper tradition.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">No magnification ring, no variable assembly. A single magnification — typically 6x, 10x, 12x, or exotic fixed powers like 36x and 45x for benchrest.</div><div class="card-body" style="margin-bottom:8px;">Simplicity is the design advantage: fewer glass elements, fewer moving parts, often better light transmission than an equivalent variable at the same power due to fewer optical surfaces. A 10x fixed can outperform a 3-12x variable at 10x if glass quality is comparable.</div><div class="card-body" style="margin-bottom:8px;">The classic precision fixed powers are 10x (Leupold Mark 4 M1, Unertl 10x) and the sniper tradition of using fixed optics for battlefield predictability. Fixed power scopes are still preferred by some military shooters who want guaranteed performance with no selector to set incorrectly.</div><div class="card-body" style="margin-bottom:8px;">Benchrest competition uses very high fixed powers (36x–45x) where the goal is group size, not versatility. The rifle rests mechanically; field shooting skills are largely irrelevant.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Simpler — fewer failure points</li><li>Better light transmission per optical surface</li><li>Lighter than comparable variable</li><li>No selector to leave at wrong power</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>No versatility — committed to one magnification</li><li>Wrong power for a scenario is a liability</li><li>Limited selection vs. the variable market</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Leupold Mark 4 M1 10x40</span><span class="tag">Unertl 10x USMC Sniper Scope</span><span class="tag">March 10x52 Fixed</span><span class="tag">Nightforce 12x42 Fixed</span><span class="tag">Leupold 36x competition</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Night Vision (NV/NODS) Ambient light amplification. Near-darkness operation. Image intensifier tubes amplify ambient light (starlight, moonlight, IR illumination) through a photocathode and microchannel plate. Requires some ambient or supplemental IR light to function — unlike thermal, it does not detect heat. Generations: Gen 1 (significant distortion, limited tube life, civilian grade); Gen 2 (transitional, better MCP); Gen 3 (US military standard — gallium arsenide photocathode, dramatically better resolution and tube life). Film-less Gen 3 removes the ion barrier film for improved sensitivity at a tube life trade-off. White Phosphor vs. Green Phosphor: Green is the traditional output and what most operators trained on. White provides more natural grayscale contrast discrimination. Neither has a clear tactical superiority — it is a preference. Auto-gating cycles the tube voltage when hit with sudden bright light (flashlight, muzzle flash) to prevent damage and whiteout. Essential for any tactical use. Laser aiming devices (MAWL, PEQ-15, DBAL) emit IR lasers — invisible to the naked eye, visible through NV. Operates in near-darkness Passive — detects using ambient light Long military track record Can be helmet-mounted for hands-free use Gen 3 quality: $3,000–$10,000+ Requires ambient or IR illuminator Cannot see through glass or dense foliage Export-controlled (ITAR regulations) PVS-14 (monocular) GPNVG-18 (quad-tube panoramic) RNVG (ruggedized) MAWL-C1+ (laser device) PEQ-15 (laser device)">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Night Vision (NV/NODS) <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Ambient light amplification. Near-darkness operation.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">Image intensifier tubes amplify ambient light (starlight, moonlight, IR illumination) through a photocathode and microchannel plate. Requires some ambient or supplemental IR light to function — unlike thermal, it does not detect heat.</div><div class="card-body" style="margin-bottom:8px;">Generations: Gen 1 (significant distortion, limited tube life, civilian grade); Gen 2 (transitional, better MCP); Gen 3 (US military standard — gallium arsenide photocathode, dramatically better resolution and tube life). Film-less Gen 3 removes the ion barrier film for improved sensitivity at a tube life trade-off.</div><div class="card-body" style="margin-bottom:8px;">White Phosphor vs. Green Phosphor: Green is the traditional output and what most operators trained on. White provides more natural grayscale contrast discrimination. Neither has a clear tactical superiority — it is a preference.</div><div class="card-body" style="margin-bottom:8px;">Auto-gating cycles the tube voltage when hit with sudden bright light (flashlight, muzzle flash) to prevent damage and whiteout. Essential for any tactical use. Laser aiming devices (MAWL, PEQ-15, DBAL) emit IR lasers — invisible to the naked eye, visible through NV.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Operates in near-darkness</li><li>Passive — detects using ambient light</li><li>Long military track record</li><li>Can be helmet-mounted for hands-free use</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Gen 3 quality: $3,000–$10,000+</li><li>Requires ambient or IR illuminator</li><li>Cannot see through glass or dense foliage</li><li>Export-controlled (ITAR regulations)</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">PVS-14 (monocular)</span><span class="tag">GPNVG-18 (quad-tube panoramic)</span><span class="tag">RNVG (ruggedized)</span><span class="tag">MAWL-C1+ (laser device)</span><span class="tag">PEQ-15 (laser device)</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Thermal Heat detection. Total darkness. Smoke and fog. Detects heat signature rather than reflected light. A microbolometer sensor measures infrared radiation emitted by objects. Works in total darkness, through smoke, and through light fog — conditions that defeat night vision. Resolution is measured in pixels: 320x240 (entry-level), 640x480 (mid-tier), 1280x1024 (high-end). Refresh rate matters for moving targets — 60Hz handles fast movement cleanly; 9Hz or 30Hz may show lag. Critical limitation: thermal cannot see through glass. Car windshields, building windows, and optical glass appear opaque to thermal. A person behind a glass door is largely invisible. Not subject to ITAR restrictions like Gen 3 NV — more accessible for civilian purchase. Used increasingly in hunting (where legal — varies by state), property security, and search and rescue. Works in total darkness without IR illuminator Cuts through smoke and fog Not ITAR-controlled Detects humans regardless of camouflage or concealment Cannot see through glass Resolution lower than NV at equivalent price Image is heat-map, not photographic detail Battery-intensive Pulsar Thermion 2 XP50 FLIR RS64 2.25-9x35mm ATN Thor 4 640 Sig Echo3 Thermal FLIR Breach PTQ136">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Thermal <span class="expand-icon"></span></div>
+            <div class="card-subtitle">Heat detection. Total darkness. Smoke and fog.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">Detects heat signature rather than reflected light. A microbolometer sensor measures infrared radiation emitted by objects. Works in total darkness, through smoke, and through light fog — conditions that defeat night vision.</div><div class="card-body" style="margin-bottom:8px;">Resolution is measured in pixels: 320x240 (entry-level), 640x480 (mid-tier), 1280x1024 (high-end). Refresh rate matters for moving targets — 60Hz handles fast movement cleanly; 9Hz or 30Hz may show lag.</div><div class="card-body" style="margin-bottom:8px;">Critical limitation: thermal cannot see through glass. Car windshields, building windows, and optical glass appear opaque to thermal. A person behind a glass door is largely invisible.</div><div class="card-body" style="margin-bottom:8px;">Not subject to ITAR restrictions like Gen 3 NV — more accessible for civilian purchase. Used increasingly in hunting (where legal — varies by state), property security, and search and rescue.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Works in total darkness without IR illuminator</li><li>Cuts through smoke and fog</li><li>Not ITAR-controlled</li><li>Detects humans regardless of camouflage or concealment</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>Cannot see through glass</li><li>Resolution lower than NV at equivalent price</li><li>Image is heat-map, not photographic detail</li><li>Battery-intensive</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Pulsar Thermion 2 XP50</span><span class="tag">FLIR RS64 2.25-9x35mm</span><span class="tag">ATN Thor 4 640</span><span class="tag">Sig Echo3 Thermal</span><span class="tag">FLIR Breach PTQ136</span>
+        </div>
+      </div>
+    </details>
+    <details class="card" data-text="Magnifier 3x reach behind an RDS. Lighter than LPVO. A magnifying optic mounted behind an RDS — typically 3x (Aimpoint 3x-C, Vortex VMX-3T, EoTech G33). Some are 5x or 6x for additional reach. Flip-to-side mount: a lever-actuated mount swings the magnifier 90 degrees clear of the sight line. Folded = pure RDS performance. Swung into position = 3x magnified. Works with most red dots but eye box becomes critical — some RDS and magnifier combinations produce poor image quality or vignetting. Aimpoint and EoTech with their respective magnifiers are validated pairings. The concept originated in military use: an M68 red dot with an Aimpoint magnifier gives 300-yard capability without the weight and bulk of an LPVO. At $200–$400 for a quality magnifier added to an existing RDS, it is cost-effective reach extension. Converts CQB optic to 3x in one motion Lighter than LPVO Failure of magnifier still leaves a functional RDS Fast 1x-to-3x transition 3x ceiling vs. 4–10x on an LPVO Eye box is tight with magnifier in place Combined cost of RDS + magnifier + mount approaches LPVO territory Aimpoint 3x-C with TwistMount Vortex VMX-3T EoTech G33 Magnifier Unity Tactical FAST Magnifier Mount">
+      <summary style="cursor:pointer;list-style:none;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Magnifier <span class="expand-icon"></span></div>
+            <div class="card-subtitle">3x reach behind an RDS. Lighter than LPVO.</div>
+          </div>
+        </div>
+      </summary>
+      <div style="margin-top:12px;">
+        <div class="card-body" style="margin-bottom:8px;">A magnifying optic mounted behind an RDS — typically 3x (Aimpoint 3x-C, Vortex VMX-3T, EoTech G33). Some are 5x or 6x for additional reach.</div><div class="card-body" style="margin-bottom:8px;">Flip-to-side mount: a lever-actuated mount swings the magnifier 90 degrees clear of the sight line. Folded = pure RDS performance. Swung into position = 3x magnified.</div><div class="card-body" style="margin-bottom:8px;">Works with most red dots but eye box becomes critical — some RDS and magnifier combinations produce poor image quality or vignetting. Aimpoint and EoTech with their respective magnifiers are validated pairings.</div><div class="card-body" style="margin-bottom:8px;">The concept originated in military use: an M68 red dot with an Aimpoint magnifier gives 300-yard capability without the weight and bulk of an LPVO. At $200–$400 for a quality magnifier added to an existing RDS, it is cost-effective reach extension.</div>
+        <div class="pros-cons">
+          <div>
+            <div class="pros-cons-head pro">PROS</div>
+            <ul><li>Converts CQB optic to 3x in one motion</li><li>Lighter than LPVO</li><li>Failure of magnifier still leaves a functional RDS</li><li>Fast 1x-to-3x transition</li></ul>
+          </div>
+          <div>
+            <div class="pros-cons-head con">CONS</div>
+            <ul><li>3x ceiling vs. 4–10x on an LPVO</li><li>Eye box is tight with magnifier in place</li><li>Combined cost of RDS + magnifier + mount approaches LPVO territory</li></ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="pros-cons-head" style="color:var(--muted);margin-bottom:6px;">EXAMPLES</div>
+          <span class="tag">Aimpoint 3x-C with TwistMount</span><span class="tag">Vortex VMX-3T</span><span class="tag">EoTech G33 Magnifier</span><span class="tag">Unity Tactical FAST Magnifier Mount</span>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div class="no-results">No optics match your search.</div>
+  <div class="section-nav"><a class="section-link" href="/field-guide/glossary">Glossary</a><a class="section-link" href="/field-guide/calibers">Calibers</a><a class="section-link" href="/field-guide/competition">Competition</a><a class="section-link" href="/field-guide/platforms">Platforms</a><a class="section-link" href="/field-guide/camos">Camos</a><a class="section-link" href="/field-guide/ballistics">Ballistics</a><a class="section-link" href="/field-guide/maintenance">Maintenance</a><a class="section-link" href="/field-guide/marksmanship">Marksmanship</a></div>
+  <footer class="footer">
+    <span>© 2026 LINDCOTT FARMS</span>
+    <div class="footer-links">
+      <a href="/field-guide/">Field Guide</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/support">Support</a>
+    </div>
+  </footer>
+  <script>
+function filterCards(searchId, cardClass, filterAttr) {
+  const input = document.getElementById(searchId);
+  const cards = document.querySelectorAll('.' + cardClass);
+  const noResults = document.querySelector('.no-results');
+  const countEl = document.querySelector('.count');
+  let activeFilters = {};
+
+  function update() {
+    const q = input ? input.value.toLowerCase().trim() : '';
+    let shown = 0;
+    cards.forEach(card => {
+      let show = true;
+      if (q) {
+        const text = (card.dataset.text || card.textContent || '').toLowerCase();
+        if (!text.includes(q)) show = false;
+      }
+      Object.entries(activeFilters).forEach(([attr, val]) => {
+        if (val && val !== 'all') {
+          const cardVal = (card.dataset[attr] || '').toLowerCase();
+          if (!cardVal.includes(val.toLowerCase())) show = false;
+        }
+      });
+      card.style.display = show ? '' : 'none';
+      if (show) shown++;
+    });
+    if (noResults) noResults.style.display = shown === 0 ? 'block' : 'none';
+    if (countEl) countEl.textContent = shown + ' of ' + cards.length + ' entries';
+  }
+
+  if (input) input.addEventListener('input', update);
+
+  document.querySelectorAll('.chip[data-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const attr = chip.dataset.filterAttr;
+      const val = chip.dataset.filter;
+      activeFilters[attr] = (activeFilters[attr] === val) ? 'all' : val;
+      document.querySelectorAll('.chip[data-filter-attr="' + attr + '"]').forEach(c => c.classList.remove('active'));
+      if (activeFilters[attr] !== 'all') chip.classList.add('active');
+      update();
+    });
+  });
+
+  update();
+}
+filterCards('search','card',null);</script>
+</body>
+</html>

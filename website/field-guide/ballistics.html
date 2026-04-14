@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ballistics Guide — Lindcott Armory Field Guide</title>
+  <meta name="description" content="External, terminal, and internal ballistics explained — bullet drop, wind drift, spin drift, Coriolis, terminal expansion, muzzle velocity, headspace, and rifling." />
+  <link rel="canonical" href="https://lindcottarmory.com/field-guide/ballistics" />
+  <meta property="og:title" content="Ballistics Guide — Lindcott Armory Field Guide" />
+  <meta property="og:description" content="External, terminal, and internal ballistics explained — bullet drop, wind drift, spin drift, Coriolis, terminal expansion, muzzle velocity, headspace, and rifling." />
+  <meta property="og:url" content="https://lindcottarmory.com/field-guide/ballistics" />
+  <meta property="og:image" content="https://lindcottarmory.com/icon-1024.png" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f4f8;
+    --surface2: #eaeaf0;
+    --border: #e0e0ea;
+    --text: #1a1a2e;
+    --secondary: #44446a;
+    --muted: #88889a;
+    --accent: #2f5fe8;
+    --accent-dim: rgba(47,95,232,0.1);
+    --green: #2f9e44;
+    --red: #c92a2a;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #07071a;
+      --surface: #0e0e2a;
+      --surface2: #14143a;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e8f0;
+      --secondary: #9090b0;
+      --muted: #5a5a7a;
+      --accent: #5b8cff;
+      --accent-dim: rgba(91,140,255,0.1);
+      --green: #51cf66;
+      --red: #ff6b6b;
+    }
+  }
+  body { background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .nav-brand { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--text); }
+  .nav-section { font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .nav-cta {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 5px 12px; border-radius: 4px;
+  }
+  .nav-cta:hover { background: var(--accent-dim); text-decoration: none; }
+
+  /* Page header */
+  .page-header { padding: 40px 24px 24px; max-width: 800px; margin: 0 auto; }
+  .breadcrumb { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-bottom: 12px; }
+  .breadcrumb a { color: var(--muted); }
+  .page-title { font-size: clamp(22px,4vw,32px); font-weight: 800; letter-spacing: -.01em; margin-bottom: 8px; }
+  .page-desc { font-size: 14px; color: var(--secondary); line-height: 1.7; }
+
+  /* Filter bar */
+  .filter-bar {
+    max-width: 800px; margin: 0 auto; padding: 0 24px 20px;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .search-input {
+    flex: 1; min-width: 200px; padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit;
+    font-size: 13px; outline: none;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 12px; font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--secondary);
+    cursor: pointer; transition: all .15s;
+  }
+  .chip:hover, .chip.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+  }
+  .sort-select {
+    padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit; font-size: 12px;
+    cursor: pointer; outline: none;
+  }
+
+  /* Results count */
+  .count { font-size: 11px; color: var(--muted); padding: 0 24px 12px; max-width: 800px; margin: 0 auto; }
+
+  /* Cards */
+  .cards { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; display: grid; gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 700; letter-spacing: .03em; color: var(--text); }
+  .card-subtitle { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-top: 2px; }
+  .card-body { font-size: 13px; color: var(--secondary); line-height: 1.7; }
+  .card-body p + p { margin-top: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 3px 8px;
+    border-radius: 4px; background: var(--accent-dim); color: var(--accent);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .05em;
+    padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border);
+    color: var(--muted); margin: 2px;
+  }
+
+  /* Expandable */
+  .expand-toggle { cursor: pointer; list-style: none; }
+  .expand-toggle::-webkit-details-marker { display: none; }
+  details > summary { cursor: pointer; }
+  details[open] .expand-icon::after { content: '▲'; }
+  .expand-icon::after { content: '▼'; font-size: 9px; color: var(--muted); margin-left: 8px; }
+
+  /* Pros/cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 500px) { .pros-cons { grid-template-columns: 1fr; } }
+  .pros-cons-head { font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: 6px; }
+  .pros-cons-head.pro { color: var(--green); }
+  .pros-cons-head.con { color: var(--red); }
+  .pros-cons li { font-size: 12px; color: var(--secondary); margin-left: 14px; margin-bottom: 3px; }
+
+  /* Spec table */
+  .spec-table { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 12px; }
+  .spec-row { display: contents; }
+  .spec-key { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .spec-val { font-size: 11px; color: var(--text); font-weight: 600; }
+
+  /* Steps list */
+  .steps { margin-top: 10px; }
+  .step { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+  .step-num {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-text { font-size: 13px; color: var(--secondary); line-height: 1.6; }
+
+  /* No results */
+  .no-results { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; display: none; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border); padding: 24px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 11px; color: var(--muted); letter-spacing: .05em;
+  }
+  .footer a { color: var(--muted); }
+  .footer-links { display: flex; gap: 20px; }
+
+  /* Section nav */
+  .section-nav { max-width: 800px; margin: 0 auto; padding: 0 24px 32px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .section-link {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: 4px; color: var(--secondary);
+  }
+  .section-link:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav-brand" href="/">LINDCOTT ARMORY</a>
+    <span class="nav-section">FIELD GUIDE</span>
+    <a class="nav-cta" href="/">OPEN APP →</a>
+  </nav>
+  
+  
+  <div class="page-header">
+    <div class="breadcrumb"><a href="/field-guide/">Field Guide</a> › Ballistics</div>
+    <h1 class="page-title">Ballistics Guide</h1>
+    <p class="page-desc">11 ballistic concepts covering external, terminal, and internal ballistics.</p>
+  </div>
+  <div class="filter-bar">
+    <input class="search-input" id="search" placeholder="Search concepts…" type="search" />
+    <div class="chip-group">
+      <button class="chip" data-filter="External Ballistics" data-filter-attr="cat">EXTERNAL BALLISTICS</button><button class="chip" data-filter="Terminal Ballistics" data-filter-attr="cat">TERMINAL BALLISTICS</button><button class="chip" data-filter="Internal Ballistics" data-filter-attr="cat">INTERNAL BALLISTICS</button>
+    </div>
+  </div>
+  <p class="count"></p>
+  <div class="cards">
+    
+    <div class="card" data-text="Trajectory &amp; Bullet Drop External Ballistics A bullet begins dropping from the moment it leaves the muzzle due to gravity. For a rifle zeroed at 100 yards, the bullet's path crosses the line of sight twice — once on the way up (typically ~25 yards) and once at the zero distance. Beyond the zero, the bullet drops below the line of sight at an accelerating rate. At long range, even a small error in range estimation translates to significant vertical error." data-cat="External Ballistics">
+      <div class="card-head">
+        <div class="card-title">Trajectory &amp; Bullet Drop</div>
+        <span class="badge">External Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">A bullet begins dropping from the moment it leaves the muzzle due to gravity. For a rifle zeroed at 100 yards, the bullet's path crosses the line of sight twice — once on the way up (typically ~25 yards) and once at the zero distance. Beyond the zero, the bullet drops below the line of sight at an accelerating rate. At long range, even a small error in range estimation translates to significant vertical error.</div>
+    </div>
+    <div class="card" data-text="Wind Drift External Ballistics Wind exerts a lateral force on a bullet throughout its flight. A 10 mph full-value (90°) crosswind can push a .308 Win bullet 10 inches at 500 yards. The effect is not linear — it compounds as range increases. A high BC reduces wind drift significantly; this is why wind reading is the primary skill separating good long-range shooters from excellent ones." data-cat="External Ballistics">
+      <div class="card-head">
+        <div class="card-title">Wind Drift</div>
+        <span class="badge">External Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Wind exerts a lateral force on a bullet throughout its flight. A 10 mph full-value (90°) crosswind can push a .308 Win bullet 10 inches at 500 yards. The effect is not linear — it compounds as range increases. A high BC reduces wind drift significantly; this is why wind reading is the primary skill separating good long-range shooters from excellent ones.</div>
+    </div>
+    <div class="card" data-text="Supersonic vs. Transonic vs. Subsonic External Ballistics Bullets fired at supersonic speeds (above ~1,125 fps) are stable and predictable. In the transonic zone (~1,125–900 fps), the shockwave behavior changes and bullets can become unstable or exhibit erratic yaw. Most precision rifle shots are planned to reach the target while still supersonic, or well into the subsonic regime (intentionally subsonic loads). The transonic transition is the primary range limitation for precision shooting." data-cat="External Ballistics">
+      <div class="card-head">
+        <div class="card-title">Supersonic vs. Transonic vs. Subsonic</div>
+        <span class="badge">External Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Bullets fired at supersonic speeds (above ~1,125 fps) are stable and predictable. In the transonic zone (~1,125–900 fps), the shockwave behavior changes and bullets can become unstable or exhibit erratic yaw. Most precision rifle shots are planned to reach the target while still supersonic, or well into the subsonic regime (intentionally subsonic loads). The transonic transition is the primary range limitation for precision shooting.</div>
+    </div>
+    <div class="card" data-text="Spin Drift (Gyroscopic Drift) External Ballistics A spinning bullet experiences a gyroscopic precession that causes it to drift in the direction of the rifling twist — right-hand twist drifts right, left-hand twist drifts left. At 1,000 yards with a typical 1:10 twist rifle, spin drift can exceed 10 inches. Precision long-range shooters account for this in their DOPE and firing solutions." data-cat="External Ballistics">
+      <div class="card-head">
+        <div class="card-title">Spin Drift (Gyroscopic Drift)</div>
+        <span class="badge">External Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">A spinning bullet experiences a gyroscopic precession that causes it to drift in the direction of the rifling twist — right-hand twist drifts right, left-hand twist drifts left. At 1,000 yards with a typical 1:10 twist rifle, spin drift can exceed 10 inches. Precision long-range shooters account for this in their DOPE and firing solutions.</div>
+    </div>
+    <div class="card" data-text="Coriolis Effect External Ballistics The Earth's rotation creates a small but measurable force on long-range projectiles. In the Northern Hemisphere, bullets drift right; in the Southern Hemisphere, left. The effect is significant only beyond ~800–1,000 yards, and its magnitude depends on the shooter's latitude and the direction of fire. Extreme long-range records (beyond 2,000 yards) require Coriolis compensation." data-cat="External Ballistics">
+      <div class="card-head">
+        <div class="card-title">Coriolis Effect</div>
+        <span class="badge">External Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">The Earth's rotation creates a small but measurable force on long-range projectiles. In the Northern Hemisphere, bullets drift right; in the Southern Hemisphere, left. The effect is significant only beyond ~800–1,000 yards, and its magnitude depends on the shooter's latitude and the direction of fire. Extreme long-range records (beyond 2,000 yards) require Coriolis compensation.</div>
+    </div>
+    <div class="card" data-text="Expansion &amp; Terminal Performance Terminal Ballistics When a hollow-point bullet enters tissue, hydraulic pressure forces the cavity to peel back, creating a mushroom shape that increases diameter and creates a larger wound channel. Expansion depends on velocity and construction; most JHP rounds are designed to expand reliably above 800–900 fps. Below this threshold, expansion is unreliable, which limits the effective range of defensive handgun loads." data-cat="Terminal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Expansion &amp; Terminal Performance</div>
+        <span class="badge">Terminal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">When a hollow-point bullet enters tissue, hydraulic pressure forces the cavity to peel back, creating a mushroom shape that increases diameter and creates a larger wound channel. Expansion depends on velocity and construction; most JHP rounds are designed to expand reliably above 800–900 fps. Below this threshold, expansion is unreliable, which limits the effective range of defensive handgun loads.</div>
+    </div>
+    <div class="card" data-text="Penetration Depth Terminal Ballistics The FBI established a 12–18 inch penetration standard in ordnance gelatin (calibrated at 10% concentration) for law enforcement defensive ammunition. This range is intended to ensure consistent vital organ reach while limiting over-penetration hazard. Bullets that expand too quickly fail to penetrate adequately; those that don't expand penetrate deeply but transfer less energy to the target." data-cat="Terminal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Penetration Depth</div>
+        <span class="badge">Terminal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">The FBI established a 12–18 inch penetration standard in ordnance gelatin (calibrated at 10% concentration) for law enforcement defensive ammunition. This range is intended to ensure consistent vital organ reach while limiting over-penetration hazard. Bullets that expand too quickly fail to penetrate adequately; those that don't expand penetrate deeply but transfer less energy to the target.</div>
+    </div>
+    <div class="card" data-text="Temporary Cavity Terminal Ballistics High-velocity rifle bullets create a large temporary cavity — a stretching and tearing of tissue caused by the pressure wave as the bullet decelerates. This cavity is far larger than the permanent wound channel and is responsible for significant tissue damage beyond the direct bullet path. Pistol bullets, moving too slowly, create only modest temporary cavities; their wounding effect comes primarily from the permanent channel." data-cat="Terminal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Temporary Cavity</div>
+        <span class="badge">Terminal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">High-velocity rifle bullets create a large temporary cavity — a stretching and tearing of tissue caused by the pressure wave as the bullet decelerates. This cavity is far larger than the permanent wound channel and is responsible for significant tissue damage beyond the direct bullet path. Pistol bullets, moving too slowly, create only modest temporary cavities; their wounding effect comes primarily from the permanent channel.</div>
+    </div>
+    <div class="card" data-text="Muzzle Velocity &amp; Energy Internal Ballistics Muzzle velocity is determined by powder burn rate, charge weight, bullet weight, and barrel length. Kinetic energy = 0.5 × mass × velocity². Because velocity is squared, small increases in velocity yield proportionally larger energy gains. Barrel length matters: adding 2 inches to a 16&quot; rifle barrel typically adds 25–50 fps; the gains diminish as the powder is already burned out. Very short barrels waste powder as unburned gas exits the muzzle." data-cat="Internal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Muzzle Velocity &amp; Energy</div>
+        <span class="badge">Internal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Muzzle velocity is determined by powder burn rate, charge weight, bullet weight, and barrel length. Kinetic energy = 0.5 × mass × velocity². Because velocity is squared, small increases in velocity yield proportionally larger energy gains. Barrel length matters: adding 2 inches to a 16&quot; rifle barrel typically adds 25–50 fps; the gains diminish as the powder is already burned out. Very short barrels waste powder as unburned gas exits the muzzle.</div>
+    </div>
+    <div class="card" data-text="Headspace Internal Ballistics Headspace is the distance from the bolt face to the datum point in the chamber where the cartridge case seats. Correct headspace allows the case to seal the chamber and control firing pressures. Excessive headspace allows the case to stretch, leading to head separation — a dangerous failure. Insufficient headspace prevents the action from closing. Headspace is checked with GO/NO-GO gauges during barrel fitting or inspection." data-cat="Internal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Headspace</div>
+        <span class="badge">Internal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Headspace is the distance from the bolt face to the datum point in the chamber where the cartridge case seats. Correct headspace allows the case to seal the chamber and control firing pressures. Excessive headspace allows the case to stretch, leading to head separation — a dangerous failure. Insufficient headspace prevents the action from closing. Headspace is checked with GO/NO-GO gauges during barrel fitting or inspection.</div>
+    </div>
+    <div class="card" data-text="Rifling &amp; Twist Rate Internal Ballistics Rifling imparts spin to the bullet for gyroscopic stability. Twist rate is expressed as 1:X, meaning one full rotation per X inches of barrel. Faster twist (lower X number) stabilizes longer, heavier bullets; slower twist is suited to shorter, lighter bullets. Mismatch causes instability — underspun bullets tumble; overspun light bullets can strip or fragment. The Greenhill Formula approximates optimal twist for a given bullet length." data-cat="Internal Ballistics">
+      <div class="card-head">
+        <div class="card-title">Rifling &amp; Twist Rate</div>
+        <span class="badge">Internal Ballistics</span>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Rifling imparts spin to the bullet for gyroscopic stability. Twist rate is expressed as 1:X, meaning one full rotation per X inches of barrel. Faster twist (lower X number) stabilizes longer, heavier bullets; slower twist is suited to shorter, lighter bullets. Mismatch causes instability — underspun bullets tumble; overspun light bullets can strip or fragment. The Greenhill Formula approximates optimal twist for a given bullet length.</div>
+    </div>
+  </div>
+  <div class="no-results">No concepts match your search.</div>
+  <div class="section-nav"><a class="section-link" href="/field-guide/glossary">Glossary</a><a class="section-link" href="/field-guide/calibers">Calibers</a><a class="section-link" href="/field-guide/optics">Optics</a><a class="section-link" href="/field-guide/competition">Competition</a><a class="section-link" href="/field-guide/platforms">Platforms</a><a class="section-link" href="/field-guide/camos">Camos</a><a class="section-link" href="/field-guide/maintenance">Maintenance</a><a class="section-link" href="/field-guide/marksmanship">Marksmanship</a></div>
+  <footer class="footer">
+    <span>© 2026 LINDCOTT FARMS</span>
+    <div class="footer-links">
+      <a href="/field-guide/">Field Guide</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/support">Support</a>
+    </div>
+  </footer>
+  <script>
+function filterCards(searchId, cardClass, filterAttr) {
+  const input = document.getElementById(searchId);
+  const cards = document.querySelectorAll('.' + cardClass);
+  const noResults = document.querySelector('.no-results');
+  const countEl = document.querySelector('.count');
+  let activeFilters = {};
+
+  function update() {
+    const q = input ? input.value.toLowerCase().trim() : '';
+    let shown = 0;
+    cards.forEach(card => {
+      let show = true;
+      if (q) {
+        const text = (card.dataset.text || card.textContent || '').toLowerCase();
+        if (!text.includes(q)) show = false;
+      }
+      Object.entries(activeFilters).forEach(([attr, val]) => {
+        if (val && val !== 'all') {
+          const cardVal = (card.dataset[attr] || '').toLowerCase();
+          if (!cardVal.includes(val.toLowerCase())) show = false;
+        }
+      });
+      card.style.display = show ? '' : 'none';
+      if (show) shown++;
+    });
+    if (noResults) noResults.style.display = shown === 0 ? 'block' : 'none';
+    if (countEl) countEl.textContent = shown + ' of ' + cards.length + ' entries';
+  }
+
+  if (input) input.addEventListener('input', update);
+
+  document.querySelectorAll('.chip[data-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const attr = chip.dataset.filterAttr;
+      const val = chip.dataset.filter;
+      activeFilters[attr] = (activeFilters[attr] === val) ? 'all' : val;
+      document.querySelectorAll('.chip[data-filter-attr="' + attr + '"]').forEach(c => c.classList.remove('active'));
+      if (activeFilters[attr] !== 'all') chip.classList.add('active');
+      update();
+    });
+  });
+
+  update();
+}
+filterCards('search','card',null);</script>
+</body>
+</html>
