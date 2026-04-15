@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { theme } from './theme';
 import { supabase } from './lib/supabase';
 
-type Category = 'bug' | 'feature' | 'general';
+type Category = 'support' | 'bug' | 'feature' | 'general';
 
 const CATEGORIES: { key: Category; label: string }[] = [
+  { key: 'support', label: 'Support request' },
   { key: 'bug',     label: 'Bug report' },
   { key: 'feature', label: 'Feature request' },
   { key: 'general', label: 'General feedback' },
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function FeedbackModal({ onClose }: Props) {
-  const [category, setCategory] = useState<Category>('general');
+  const [category, setCategory] = useState<Category>('support');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -53,7 +54,7 @@ export function FeedbackModal({ onClose }: Props) {
   }
 
   const btnBase: React.CSSProperties = {
-    flex: 1, padding: '9px 6px',
+    padding: '9px 6px',
     border: '0.5px solid ' + theme.border,
     borderRadius: '6px',
     fontFamily: 'monospace', fontSize: '10px',
@@ -85,7 +86,7 @@ export function FeedbackModal({ onClose }: Props) {
           borderBottom: '0.5px solid ' + theme.border,
         }}>
           <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, letterSpacing: '1px', color: theme.textPrimary }}>
-            FEEDBACK
+            SUPPORT
           </span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontSize: '18px', lineHeight: 1, padding: '4px' }}>
             ×
@@ -98,10 +99,10 @@ export function FeedbackModal({ onClose }: Props) {
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <div style={{ fontFamily: 'monospace', fontSize: '32px', marginBottom: '12px' }}>✓</div>
               <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textPrimary, marginBottom: '8px' }}>
-                Thanks for your feedback!
+                Message received!
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '24px' }}>
-                Your feedback goes directly to the team.
+                We'll follow up at your account email if needed.
               </div>
               <button
                 onClick={onClose}
@@ -125,7 +126,7 @@ export function FeedbackModal({ onClose }: Props) {
               <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
                 Type
               </div>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '20px' }}>
                 {CATEGORIES.map(c => (
                   <button
                     key={c.key}
@@ -165,7 +166,10 @@ export function FeedbackModal({ onClose }: Props) {
                 }}
               />
               <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '20px' }}>
-                Your feedback goes directly to the team.
+                We'll follow up at your account email if needed.{' '}
+                <a href="mailto:support@lindcottarmory.com" style={{ color: theme.textMuted }}>
+                  support@lindcottarmory.com
+                </a>
               </div>
 
               {/* Send */}
@@ -183,7 +187,7 @@ export function FeedbackModal({ onClose }: Props) {
                   cursor: (sending || !message.trim()) ? 'default' : 'pointer',
                 }}
               >
-                {sending ? 'SENDING...' : 'SEND FEEDBACK'}
+                {sending ? 'SENDING...' : 'SEND'}
               </button>
 
               {error && (

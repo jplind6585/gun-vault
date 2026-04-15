@@ -1297,8 +1297,9 @@ function AnalyticsPanel({
 }) {
   if (sessions.length === 0) {
     return (
-      <div style={{ padding: '48px 24px', textAlign: 'center', color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px' }}>
-        No sessions yet. Start logging to see analytics.
+      <div style={{ padding: '48px 24px', textAlign: 'center', color: theme.textMuted, fontFamily: 'monospace', lineHeight: 1.8 }}>
+        <div style={{ fontWeight: 700, fontSize: '12px', marginBottom: '6px' }}>NO SESSIONS LOGGED</div>
+        <div style={{ fontSize: '11px' }}>Every range trip you record builds your accuracy history and keeps maintenance on schedule.</div>
       </div>
     );
   }

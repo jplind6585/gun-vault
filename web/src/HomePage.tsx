@@ -506,7 +506,7 @@ export function HomePage({
       <div style={{ ...card, marginBottom: '10px' }}>
         <div style={sectionLabel}>ARMORY STATUS</div>
         {topArmoryAlerts.length === 0 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>All clear. Armory is in order.</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, lineHeight: 1.6 }}>No alerts. Add session logs and we'll track cleaning schedules, ammo levels, and range activity automatically.</div>
         ) : topArmoryAlerts.map((alert, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -541,7 +541,7 @@ export function HomePage({
         <div style={sectionLabel}>RANGE INSIGHTS</div>
         {topRangeRecs.length === 0 ? (
           <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
-            {sessions.length < 6 ? 'Log more sessions to see patterns.' : 'Looking good — no issues detected.'}
+            {sessions.length < 6 ? 'Your shooting patterns live here. Log 3+ sessions with the same gun to see accuracy trends, round counts, and issue rates.' : 'Looking good — no issues detected.'}
           </div>
         ) : topRangeRecs.map((rec, i) => (
           <div key={i} style={{

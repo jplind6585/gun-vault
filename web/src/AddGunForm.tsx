@@ -3,6 +3,7 @@ import { theme } from './theme';
 import type { Gun } from './types';
 import { lookupGunSpec, suggestMakes, suggestModels } from './gunDatabase';
 import { getSettings } from './SettingsPanel';
+import { searchManufacturers, searchCalibers, checkGunModel } from './lib/referenceData';
 
 const LRU_KEY = 'lru_calibers';
 const DEFAULT_LRU = ['9mm', '5.56 NATO', '.308 Win', '.22 LR'];
@@ -67,6 +68,11 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [showMakeSugg, setShowMakeSugg] = useState(false);
   const [showModelSugg, setShowModelSugg] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
+  // Caliber suggestions from Supabase cartridges table
+  const [caliberSuggestions, setCaliberSuggestions] = useState<string[]>([]);
+  const [showCaliberSugg, setShowCaliberSugg] = useState(false);
+  // 1C: post-submit mismatch review
+  const [reviewMismatch, setReviewMismatch] = useState<{ dbCaliber: string; pendingData: Partial<Gun> } | null>(null);
 
   // Condition & status
   const [condition, setCondition]   = useState<NonNullable<Gun['condition']> | null>(null);
@@ -108,12 +114,37 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     ? platform.trim() && caliber.trim() && type && action
     : make.trim() && model.trim() && caliber.trim() && type && action;
 
-  // Auto-suggest makes as user types
+  // Auto-suggest makes — merge local gunDatabase + Supabase manufacturers
   useEffect(() => {
-    const sugg = suggestMakes(make);
-    setMakeSuggestions(sugg);
-    setShowMakeSugg(sugg.length > 0 && make.length > 0);
+    const local = suggestMakes(make);
+    setMakeSuggestions(local);
+    setShowMakeSugg(local.length > 0 && make.length > 0);
+    if (make.length >= 2) {
+      searchManufacturers(make).then(remote => {
+        setMakeSuggestions(prev => {
+          const merged = [...new Set([...prev, ...remote])].slice(0, 10);
+          setShowMakeSugg(merged.length > 0);
+          return merged;
+        });
+      });
+    }
   }, [make]);
+
+  // Auto-suggest calibers from Supabase cartridges table
+  useEffect(() => {
+    if (!caliber.trim() || caliber.length < 1) {
+      setCaliberSuggestions([]);
+      setShowCaliberSugg(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      searchCalibers(caliber).then(results => {
+        setCaliberSuggestions(results);
+        setShowCaliberSugg(results.length > 0);
+      });
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [caliber]);
 
   // Auto-suggest models as user types
   useEffect(() => {
@@ -154,16 +185,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     reader.readAsDataURL(file);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!isValid) return;
-
-    // Update LRU calibers
-    if (caliber.trim()) {
-      saveLruCaliber(caliber.trim());
-      setLruCalibers(getLruCalibers());
-    }
-
+  function buildSaveData(): Partial<Gun> {
     const effectiveMake = freeEntry ? platform.trim() : make.trim();
     const effectiveModel = freeEntry ? (model.trim() || platform.trim()) : model.trim();
     const freeDisplayName = freeEntry
@@ -173,8 +195,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     const effectiveNotes = arsenalNote
       ? [arsenalNote, notes.trim()].filter(Boolean).join('\n')
       : notes.trim();
-
-    onSave({
+    return {
       make: effectiveMake,
       model: effectiveModel,
       displayName: displayName.trim() || freeDisplayName,
@@ -192,7 +213,39 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       nfaItem,
       suppressorHost,
       receiptImageUrl: receiptPreview || undefined,
-    });
+    };
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isValid) return;
+
+    // Update LRU calibers
+    if (caliber.trim()) {
+      saveLruCaliber(caliber.trim());
+      setLruCalibers(getLruCalibers());
+    }
+
+    // 1C: Check entered caliber against DB for mismatch
+    if (!freeEntry && make.trim() && model.trim()) {
+      const dbSpec = await checkGunModel(make.trim(), model.trim());
+      if (dbSpec?.caliber && dbSpec.caliber.toLowerCase() !== caliber.trim().toLowerCase()) {
+        setReviewMismatch({ dbCaliber: dbSpec.caliber, pendingData: buildSaveData() });
+        return;
+      }
+    }
+
+    onSave(buildSaveData());
+  }
+
+  // Called from mismatch dialog — user confirmed to save as-is or with corrected caliber
+  function commitWithCaliber(overrideCaliber?: string) {
+    if (!reviewMismatch) return;
+    const data = overrideCaliber
+      ? { ...reviewMismatch.pendingData, caliber: overrideCaliber }
+      : reviewMismatch.pendingData;
+    setReviewMismatch(null);
+    onSave(data);
   }
 
   return (
@@ -338,9 +391,20 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                   placeholder="e.g. 9mm, .308 Win, 12 Gauge"
                   value={caliber}
                   onChange={e => { setCaliber(e.target.value); setAutoFilled(false); }}
+                  onBlur={() => setTimeout(() => setShowCaliberSugg(false), 150)}
+                  autoComplete="off"
                 />
                 {autoFilled && (
                   <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AUTO</span>
+                )}
+                {showCaliberSugg && (
+                  <div style={styles.dropdown}>
+                    {caliberSuggestions.map(s => (
+                      <button key={s} type="button" onMouseDown={() => { setCaliber(s); setAutoFilled(false); setShowCaliberSugg(false); }} style={styles.dropdownItem}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
               {/* LRU caliber quick-pick buttons — 4 equal-width */}
@@ -559,6 +623,50 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
 
           </div>
         </form>
+
+        {/* 1C: Caliber mismatch review dialog */}
+        {reviewMismatch && (
+          <div style={{
+            position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: '8px', padding: '24px', zIndex: 10,
+          }}>
+            <div style={{
+              backgroundColor: theme.surface, border: `1px solid ${theme.border}`,
+              borderRadius: '8px', padding: '20px', maxWidth: '320px', width: '100%',
+            }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1px', color: theme.orange, marginBottom: '10px', textTransform: 'uppercase' }}>
+                Caliber Check
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, marginBottom: '6px', lineHeight: 1.5 }}>
+                Our records show <strong style={{ color: theme.accent }}>{make} {model}</strong> is chambered in <strong style={{ color: theme.accent }}>{reviewMismatch.dbCaliber}</strong>, not <strong>{reviewMismatch.pendingData.caliber}</strong>.
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '18px' }}>
+                Use the correct caliber, keep yours, or save as-is.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={() => commitWithCaliber(reviewMismatch.dbCaliber)} style={{
+                  padding: '10px', backgroundColor: theme.accent, border: 'none', borderRadius: '4px',
+                  color: theme.bg, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                }}>
+                  Use {reviewMismatch.dbCaliber}
+                </button>
+                <button onClick={() => commitWithCaliber()} style={{
+                  padding: '10px', backgroundColor: 'transparent', border: `1px solid ${theme.border}`,
+                  borderRadius: '4px', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer',
+                }}>
+                  Keep {reviewMismatch.pendingData.caliber} (I know what I have)
+                </button>
+                <button onClick={() => setReviewMismatch(null)} style={{
+                  padding: '8px', background: 'none', border: 'none',
+                  color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                }}>
+                  Go back and edit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

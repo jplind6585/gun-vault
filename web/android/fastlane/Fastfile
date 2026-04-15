@@ -4,6 +4,7 @@ platform :android do
 
   desc "Build signed AAB and upload to Play Store Internal Testing"
   lane :deploy do
+    ENV["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
     gradle(
       task: "bundle",
       build_type: "Release",

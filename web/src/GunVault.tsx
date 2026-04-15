@@ -471,7 +471,7 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
                 VAULT IS EMPTY
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '20px', lineHeight: 1.6 }}>
-                Add your first firearm to start tracking rounds, maintenance, and market value.
+                Add your first firearm to start tracking round counts, maintenance, and session history.
               </div>
               <button onClick={onAddGun} style={{
                 padding: '11px 24px', backgroundColor: theme.accent,

@@ -853,9 +853,9 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
 
           {/* Task 5: empty state for lots view */}
           {displayedLots.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: theme.textMuted, fontSize: '13px', fontFamily: 'monospace' }}>
-              <div>No {categoryFilter === 'all' ? '' : categoryFilter} ammo in inventory</div>
-              <div style={{ marginTop: '8px', fontSize: '11px' }}>Tap + ADD to log some</div>
+            <div style={{ padding: '32px', textAlign: 'center', color: theme.textMuted, fontSize: '11px', fontFamily: 'monospace', lineHeight: 1.8 }}>
+              <div style={{ fontWeight: 700, fontSize: '12px', marginBottom: '6px' }}>NO AMMO TRACKED</div>
+              <div>Add your current stock to get low-ammo alerts and cost-per-round tracking.</div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>

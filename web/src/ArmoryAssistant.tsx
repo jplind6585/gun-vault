@@ -108,7 +108,7 @@ export function ArmoryAssistant() {
     setError(null);
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+      setTimeout(() => reject(new Error('TIMEOUT')), 60000)
     );
 
     try {

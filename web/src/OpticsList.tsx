@@ -6,6 +6,7 @@ import {
   addOptic, updateOptic, getMountsForOptic,
 } from './storage';
 import { getAllGuns } from './storage';
+import { getOpticBrands, getOpticModelsForBrand, getOpticSpec } from './lib/referenceData';
 
 interface OpticsListProps {
   onSelectOptic: (optic: Optic) => void;
@@ -500,11 +501,50 @@ function AddOpticForm({
   const [purchasedFrom, setPurchasedFrom] = useState(initial?.purchasedFrom || '');
   const [notes, setNotes]             = useState(initial?.notes || '');
   const [prefillBanner, setPrefillBanner] = useState('');
+  // Supabase-backed brand/model lists merged with KNOWN_OPTICS
+  const [dbBrands, setDbBrands] = useState<string[]>([]);
+  const [dbModels, setDbModels] = useState<string[]>([]);
 
-  // When a known brand+model is selected, pre-fill all known specs
-  function applyKnownSpec(b: string, m: string) {
-    const spec = KNOWN_OPTICS[b]?.[m];
-    if (!spec) return;
+  useEffect(() => {
+    getOpticBrands().then(brands => {
+      setDbBrands(brands);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!brand.trim()) { setDbModels([]); return; }
+    getOpticModelsForBrand(brand).then(setDbModels);
+  }, [brand]);
+
+  // When a known brand+model is selected, pre-fill all known specs.
+  // Tries KNOWN_OPTICS first (instant), then falls back to Supabase optic_models.
+  async function applyKnownSpec(b: string, m: string) {
+    const local = KNOWN_OPTICS[b]?.[m];
+    if (local) {
+      applySpec(local, b, m);
+    } else {
+      const remote = await getOpticSpec(b, m);
+      if (remote) {
+        applySpec({
+          opticType: remote.optic_type as typeof OPTIC_TYPES[number],
+          magnificationMin: remote.magnification_min ?? undefined,
+          magnificationMax: remote.magnification_max ?? undefined,
+          objectiveMM: remote.objective_mm ?? undefined,
+          focalPlane: (remote.focal_plane as typeof FOCAL_PLANES[number]) ?? undefined,
+          reticleName: remote.reticle_name ?? undefined,
+          illuminated: remote.illuminated,
+          turretUnit: (remote.turret_unit as typeof TURRET_UNITS[number]) ?? undefined,
+          clickValueMOA: remote.click_value_moa ?? undefined,
+          clickValueMRAD: remote.click_value_mrad ?? undefined,
+          batteryType: remote.battery_type ?? undefined,
+          weightOz: remote.weight_oz ?? undefined,
+          msrp: remote.msrp_usd ?? undefined,
+        }, b, m);
+      }
+    }
+  }
+
+  function applySpec(spec: KnownSpec, b: string, m: string) {
     setOpticType(spec.opticType);
     setMagMin(spec.magnificationMin?.toString() || '');
     setMagMax(spec.magnificationMax?.toString() || '');
@@ -522,10 +562,14 @@ function AddOpticForm({
     setTimeout(() => setPrefillBanner(''), 3000);
   }
 
-  // Models available for the currently typed brand
+  // All brands: merge local KNOWN_OPTICS + Supabase, sorted, deduped
+  const allBrands = [...new Set([...KNOWN_BRANDS, ...dbBrands])].sort();
+
+  // Models for the current brand: merge local + Supabase
   const knownModelsForBrand = (() => {
     const exact = Object.keys(KNOWN_OPTICS).find(b => b.toLowerCase() === brand.toLowerCase());
-    return exact ? Object.keys(KNOWN_OPTICS[exact]) : [];
+    const localModels = exact ? Object.keys(KNOWN_OPTICS[exact]) : [];
+    return [...new Set([...localModels, ...dbModels])].sort();
   })();
 
   const hasMag = ['LPVO', 'Scope', 'Prism', 'Magnifier'].includes(opticType);
@@ -626,7 +670,7 @@ function AddOpticForm({
                 onChange={v => { setBrand(v); setModel(''); setPrefillBanner(''); }}
                 onSelect={v => { setBrand(v); setModel(''); setPrefillBanner(''); }}
                 placeholder="Trijicon, Vortex…"
-                options={KNOWN_BRANDS}
+                options={allBrands}
                 style={inputStyle}
               />
             </div>
@@ -637,8 +681,8 @@ function AddOpticForm({
                 onChange={v => setModel(v)}
                 onSelect={v => {
                   setModel(v);
-                  const exactBrand = Object.keys(KNOWN_OPTICS).find(b => b.toLowerCase() === brand.toLowerCase());
-                  if (exactBrand) applyKnownSpec(exactBrand, v);
+                  const exactBrand = Object.keys(KNOWN_OPTICS).find(b => b.toLowerCase() === brand.toLowerCase()) || brand;
+                  applyKnownSpec(exactBrand, v);
                 }}
                 placeholder={knownModelsForBrand.length ? 'Select or type…' : 'MRO, Strike Eagle…'}
                 options={knownModelsForBrand}

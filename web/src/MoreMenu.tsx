@@ -160,12 +160,13 @@ function IconAssistant({ size = 26, muted = false }: { size?: number; muted?: bo
   );
 }
 
-function IconFeedback({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
+function IconSupport({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
   const c = muted ? theme.textMuted : theme.textPrimary;
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
-      <path d="M8 10H16M8 13.5H13" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="12" cy="12" r="9" stroke={c} strokeWidth="1.5"/>
+      <path d="M7.5 9.5C7.5 7.01472 9.51472 5 12 5C14.4853 5 16.5 7.01472 16.5 9.5C16.5 11.3744 15.3856 12.9799 13.8 13.7L13.8 15H10.2V13.5C10.2 13.5 8.5 12.5 7.5 9.5Z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <circle cx="12" cy="18" r="1" fill={c}/>
     </svg>
   );
 }
@@ -198,9 +199,9 @@ export function MoreMenu({ onNavigate, onFeedbackOpen }: MoreMenuProps) {
     },
     {
       id: 'feedback',
-      Icon: IconFeedback,
-      label: 'Feedback',
-      sub: 'Bug or idea?',
+      Icon: IconSupport,
+      label: 'Support',
+      sub: 'Get help',
       available: !!onFeedbackOpen,
       onPress: () => onFeedbackOpen?.(),
     },

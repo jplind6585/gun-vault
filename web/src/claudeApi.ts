@@ -3,7 +3,7 @@
 import type { Session, Gun, AmmoLot, TargetPhotoAnalysis, SessionPurpose, IssueType } from './types';
 import type { ShooterProfile } from './shooterProfile';
 import type { CheckInTrigger } from './profileInference';
-import { supabase, SUPABASE_URL } from './lib/supabase';
+import { SUPABASE_URL } from './lib/supabase';
 
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/claude`;
 
@@ -19,14 +19,20 @@ async function callClaude(
   feature = 'unknown',
   maxTokens = 1024,
 ): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Sign in to use AI features.');
-
+  // Read token directly from localStorage — supabase.auth.getSession() acquires a PKCE lock
+  // that deadlocks when called concurrently with AuthProvider's onAuthStateChange listener.
+  const storageKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+  let accessToken: string | null = null;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    accessToken = raw ? JSON.parse(raw).access_token : null;
+  } catch { /* ignore */ }
+  if (!accessToken) throw new Error('Sign in to use AI features.');
   const res = await fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
+      'Authorization': `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ messages, systemPrompt, feature, maxTokens }),
   });

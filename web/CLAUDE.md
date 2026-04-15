@@ -10,9 +10,10 @@
 ---
 
 ## What this is
-A personal firearms management PWA (Progressive Web App) packaged as an Android app via Capacitor. Brand: **Lindcott Armory**, sub-brand of Lindcott Farms.
+A personal firearms management app packaged as an Android app via Capacitor. Brand: **Lindcott Armory**, sub-brand of Lindcott Farms.
 
-- **Live web**: deployed on Netlify (auto-deploy from `main`)
+- **Live web app**: deployed on Netlify (auto-deploy from `main`) — moving to `app.lindcottarmory.com`
+- **Marketing site**: separate static site in `../website/` → `lindcottarmory.com`
 - **Android**: Play Store, package `com.lindcottarmory.app`
 - **iOS**: not yet deployed (Apple Dev account exists, Fastlane TBD)
 
@@ -32,7 +33,17 @@ A personal firearms management PWA (Progressive Web App) packaged as an Android 
 
 ---
 
-## Project structure
+## Repo structure
+
+```
+gun-app/
+├── web/                      # This app (you are here)
+├── website/                  # Static marketing site (lindcottarmory.com) — separate, no shared code
+├── scripts/                  # One-off scripts (e.g. seed-cartridges.ts)
+└── supabase/migrations/      # SQL migrations — run manually in Supabase SQL Editor
+```
+
+## App structure (`web/`)
 
 ```
 web/
@@ -49,27 +60,43 @@ web/
 │   ├── AddGunForm.tsx        # Add/edit gun form
 │   ├── Arsenal.tsx           # Ammo inventory — lots, totals, usage
 │   ├── SessionLoggingModal.tsx  # Log a range session
+│   ├── SessionLogView.tsx    # Full-page session logging (multi-gun, multi-distance)
 │   ├── SessionRecaps.tsx     # Session history list
 │   ├── ArmoryAssistant.tsx   # Claude AI chat assistant
 │   ├── TargetAnalysis.tsx    # Shot group stats (MOA, CEP, ES, SD)
+│   ├── CaliberDatabase.tsx   # In-app caliber reference browser
+│   ├── FieldGuide.tsx        # In-app field guide (encyclopedia)
+│   ├── MoreMenu.tsx          # More tab — grid of secondary tools
+│   ├── FeedbackModal.tsx     # Support / feedback form (submits to Supabase feedback table)
 │   ├── SettingsPanel.tsx     # Settings + Test Tools (dev-only, gated to james@lindcottarmory.com)
 │   ├── AppHeader.tsx         # Shared top header with back nav
 │   ├── MobileNav.tsx         # Bottom tab bar
+│   ├── LegalDocs.tsx         # Terms + Privacy in-app viewer
+│   ├── UpgradeModal.tsx      # Pro upgrade flow
+│   │
+│   ├── auth/                 # Auth components
+│   │   ├── LoginScreen.tsx   # Shown to unauthenticated users — DO NOT CHANGE without approval
+│   │   ├── AuthProvider.tsx
+│   │   └── PasscodeGate.tsx
+│   │
+│   ├── lib/                  # Shared utilities
+│   │   ├── supabase.ts       # Supabase client
+│   │   ├── sync.ts           # Cloud sync logic
+│   │   └── billing.ts        # Pro billing logic
 │   │
 │   ├── gunDatabase.ts        # Make/model autocomplete + spec lookup
 │   ├── claudeApi.ts          # Claude API wrapper + system prompt
 │   ├── seedData.ts           # Demo guns (shown on first launch)
 │   ├── seedSessions.ts       # Demo sessions
 │   ├── seedAmmo.ts           # Demo ammo lots
+│   ├── seedCartridges.ts     # Cartridge reference data (also seeded to Supabase)
 │   │
-│   ├── auth/                 # Supabase auth components
 │   └── __tests__/            # Vitest test files
 │
 ├── android/                  # Capacitor Android project
 │   └── app/build.gradle      # versionCode lives here — bump before each Play Store release
 ├── public/                   # Static assets
-├── netlify.toml              # Netlify build config (publishes dist/)
-├── vite.config.ts            # Vite + PWA plugin config
+├── index.html                # App shell — also contains static marketing HTML for crawlers
 └── CLAUDE.md                 # This file
 ```
 
@@ -77,7 +104,7 @@ web/
 
 ## Data model
 
-All data lives in `localStorage`. Keys:
+All user data lives in `localStorage`. Keys:
 
 | Key | Type | Description |
 |---|---|---|
@@ -150,7 +177,7 @@ npx cap sync android
 # Then open android/ in Android Studio to build APK/AAB
 ```
 
-Bump `versionCode` in `android/app/build.gradle` before every Play Store upload.
+Bump `versionCode` in `android/app/build.gradle` before every Play Store upload. **Current: 17**
 
 ---
 
@@ -160,7 +187,8 @@ Project is connected to Supabase (URL and anon key in `.env`). Used for:
 - **Auth**: `supabase.auth.signInWithPassword()` etc.
 - **Cloud sync**: guns/sessions/ammo mirrored to Supabase tables (sync runs in background)
 - **Edge Functions**: `armory-assistant` — proxies Claude API calls so the API key stays server-side
-- **Feedback**: `feedback` table stores in-app feedback submissions
+- **Feedback/Support**: `feedback` table stores in-app support form submissions
+- **Reference data**: `cartridges` table — public read via anon key, shared with marketing site
 
 `.env` is gitignored. Ask James for the values.
 
@@ -169,7 +197,7 @@ Project is connected to Supabase (URL and anon key in `.env`). Used for:
 ## Deployment
 
 ### Web (Netlify)
-Push to `main` → Netlify auto-deploys. Config in `netlify.toml`.
+Push to `main` → Netlify auto-deploys the app. Target domain: `app.lindcottarmory.com` (DNS CNAME pending).
 
 ### Android (Play Store)
 Fastlane is set up in `android/fastlane/`. Signing config in `android/keystore.properties` (gitignored). Ask James for the keystore file and properties.
@@ -188,7 +216,8 @@ Manual deploy steps:
 - **Demo mode**: if `gunvault_is_demo` is set, the app shows seed data. Clearing this key exits demo mode
 - **Dev-only Test Tools**: Settings panel has a "Test Tools" section visible only to `james@lindcottarmory.com` — buttons to wipe localStorage data
 - **AI scope**: The Armory Assistant system prompt restricts responses to vault data + firearms topics. Don't remove those guardrails
-- **versionCode must increase monotonically** — Play Store rejects any build with a versionCode ≤ the last uploaded one. Current: 14
+- **versionCode must increase monotonically** — Play Store rejects any build with a versionCode ≤ the last uploaded one. Current: 16
+- **`website/` is completely separate** — no shared code, assets, or build process with `web/`. Only shared layer is Supabase tables.
 
 ---
 
