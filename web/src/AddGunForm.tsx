@@ -3,7 +3,8 @@ import { theme } from './theme';
 import type { Gun } from './types';
 import { lookupGunSpec, suggestMakes, suggestModels } from './gunDatabase';
 import { getSettings } from './SettingsPanel';
-import { searchManufacturers, searchCalibers, checkGunModel } from './lib/referenceData';
+import { searchManufacturers, searchCalibers, checkGunModel, searchGunModels } from './lib/referenceData';
+import { RetailerInput } from './lib/RetailerInput';
 
 const LRU_KEY = 'lru_calibers';
 const DEFAULT_LRU = ['9mm', '5.56 NATO', '.308 Win', '.22 LR'];
@@ -72,7 +73,18 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [caliberSuggestions, setCaliberSuggestions] = useState<string[]>([]);
   const [showCaliberSugg, setShowCaliberSugg] = useState(false);
   // 1C: post-submit mismatch review
-  const [reviewMismatch, setReviewMismatch] = useState<{ dbCaliber: string; pendingData: Partial<Gun> } | null>(null);
+  interface MismatchFlag {
+    field: 'caliber' | 'type';
+    label: string;
+    userValue: string;
+    dbValue: string;
+    resolution: 'keep' | 'accept' | null;
+  }
+  interface ReviewState {
+    flags: MismatchFlag[];
+    pendingData: Partial<Gun>;
+  }
+  const [reviewState, setReviewState] = useState<ReviewState | null>(null);
 
   // Condition & status
   const [condition, setCondition]   = useState<NonNullable<Gun['condition']> | null>(null);
@@ -146,11 +158,21 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     return () => clearTimeout(timeout);
   }, [caliber]);
 
-  // Auto-suggest models as user types
+  // Auto-suggest models — local first, then Supabase gun_models (model-independent of make)
   useEffect(() => {
-    const sugg = suggestModels(make, model);
-    setModelSuggestions(sugg);
-    setShowModelSugg(sugg.length > 0 && model.length > 0);
+    const local = suggestModels(make, model);
+    setModelSuggestions(local);
+    setShowModelSugg(local.length > 0 && model.length > 0);
+    if (model.length >= 2) {
+      searchGunModels(model, make).then(remote => {
+        setModelSuggestions(prev => {
+          const remoteLabels = remote.map(r => r.model);
+          const merged = [...new Set([...prev, ...remoteLabels])].slice(0, 12);
+          setShowModelSugg(merged.length > 0);
+          return merged;
+        });
+      });
+    }
   }, [make, model]);
 
   // Auto-fill caliber/type/action when make+model match a known gun
@@ -226,25 +248,57 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       setLruCalibers(getLruCalibers());
     }
 
-    // 1C: Check entered caliber against DB for mismatch
+    // 1C: Check entered values against DB for mismatches
     if (!freeEntry && make.trim() && model.trim()) {
       const dbSpec = await checkGunModel(make.trim(), model.trim());
-      if (dbSpec?.caliber && dbSpec.caliber.toLowerCase() !== caliber.trim().toLowerCase()) {
-        setReviewMismatch({ dbCaliber: dbSpec.caliber, pendingData: buildSaveData() });
-        return;
+      if (dbSpec) {
+        const flags: MismatchFlag[] = [];
+
+        // Type mismatch
+        if (dbSpec.type && type && dbSpec.type.toLowerCase() !== type.toLowerCase()) {
+          flags.push({ field: 'type', label: 'Firearm Type', userValue: type, dbValue: dbSpec.type, resolution: null });
+        }
+
+        // Caliber mismatch — skip if user's caliber is in caliber_options
+        if (dbSpec.caliber && caliber.trim()) {
+          const userCal = caliber.trim().toLowerCase();
+          const dbCal = dbSpec.caliber.toLowerCase();
+          const altCals = (dbSpec.caliber_options ?? []).map(c => c.toLowerCase());
+          if (userCal !== dbCal && !altCals.includes(userCal)) {
+            flags.push({ field: 'caliber', label: 'Caliber', userValue: caliber.trim(), dbValue: dbSpec.caliber, resolution: null });
+          }
+        }
+
+        if (flags.length > 0) {
+          setReviewState({ flags, pendingData: buildSaveData() });
+          return;
+        }
       }
     }
 
     onSave(buildSaveData());
   }
 
-  // Called from mismatch dialog — user confirmed to save as-is or with corrected caliber
-  function commitWithCaliber(overrideCaliber?: string) {
-    if (!reviewMismatch) return;
-    const data = overrideCaliber
-      ? { ...reviewMismatch.pendingData, caliber: overrideCaliber }
-      : reviewMismatch.pendingData;
-    setReviewMismatch(null);
+  // Resolve a single flag's choice
+  function resolveFlag(field: MismatchFlag['field'], resolution: 'keep' | 'accept') {
+    setReviewState(prev => {
+      if (!prev) return prev;
+      return { ...prev, flags: prev.flags.map(f => f.field === field ? { ...f, resolution } : f) };
+    });
+  }
+
+  // Commit review — apply accepted suggestions, save
+  function commitReview(saveAnyway = false) {
+    if (!reviewState) return;
+    let data = { ...reviewState.pendingData };
+    for (const flag of reviewState.flags) {
+      const res = saveAnyway ? 'keep' : flag.resolution;
+      if (res === 'accept') {
+        if (flag.field === 'caliber') data = { ...data, caliber: flag.dbValue };
+        if (flag.field === 'type') data = { ...data, type: flag.dbValue as Gun['type'] };
+      }
+    }
+    setReviewState(null);
     onSave(data);
   }
 
@@ -282,7 +336,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                 onClick={() => { setFreeEntry(v => !v); setPlatform(''); setArsenal(''); setMake(''); setModel(''); }}
                 style={{
                   width: '32px', height: '18px', borderRadius: '9px', border: 'none', flexShrink: 0,
-                  backgroundColor: freeEntry ? theme.accent : theme.surfaceAlt,
+                  backgroundColor: freeEntry ? theme.accent : theme.surfaceAlt, overflow: 'hidden',
                   cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
                 }}
               >
@@ -492,11 +546,13 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
             </div>
 
             <Field label="Acquired From">
-              <input
-                style={styles.input}
-                placeholder="e.g. Local Gun Store, Private Sale, Online"
+              {/* Queries retailers table; primary_category = 'Firearms' */}
+              <RetailerInput
+                category="Firearms"
                 value={acquiredFrom}
-                onChange={e => setAcquiredFrom(e.target.value)}
+                onChange={setAcquiredFrom}
+                placeholder="Brownells, Local Gun Shop…"
+                style={styles.input}
               />
             </Field>
 
@@ -624,46 +680,118 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
           </div>
         </form>
 
-        {/* 1C: Caliber mismatch review dialog */}
-        {reviewMismatch && (
+        {/* 1C: Smart Review Screen */}
+        {reviewState && (
           <div style={{
-            position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderRadius: '8px', padding: '24px', zIndex: 10,
+            position: 'absolute', inset: 0, backgroundColor: theme.bg,
+            borderRadius: '8px', display: 'flex', flexDirection: 'column',
+            zIndex: 10, overflow: 'hidden',
           }}>
+            {/* Review header */}
             <div style={{
-              backgroundColor: theme.surface, border: `1px solid ${theme.border}`,
-              borderRadius: '8px', padding: '20px', maxWidth: '320px', width: '100%',
+              padding: '16px 20px 12px',
+              borderBottom: `1px solid ${theme.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1px', color: theme.orange, marginBottom: '10px', textTransform: 'uppercase' }}>
-                Caliber Check
+              <div>
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.5px', color: theme.orange, textTransform: 'uppercase', marginBottom: '2px' }}>
+                  ⚠ Review Flagged Fields
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
+                  Our records found {reviewState.flags.length} mismatch{reviewState.flags.length > 1 ? 'es' : ''} for <span style={{ color: theme.textSecondary }}>{make} {model}</span>
+                </div>
               </div>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, marginBottom: '6px', lineHeight: 1.5 }}>
-                Our records show <strong style={{ color: theme.accent }}>{make} {model}</strong> is chambered in <strong style={{ color: theme.accent }}>{reviewMismatch.dbCaliber}</strong>, not <strong>{reviewMismatch.pendingData.caliber}</strong>.
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '18px' }}>
-                Use the correct caliber, keep yours, or save as-is.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => commitWithCaliber(reviewMismatch.dbCaliber)} style={{
-                  padding: '10px', backgroundColor: theme.accent, border: 'none', borderRadius: '4px',
-                  color: theme.bg, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+            </div>
+
+            {/* Flag cards */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {reviewState.flags.map(flag => (
+                <div key={flag.field} style={{
+                  backgroundColor: theme.surface,
+                  border: `1px solid ${flag.resolution ? theme.border : theme.orange}`,
+                  borderRadius: '6px', padding: '14px',
                 }}>
-                  Use {reviewMismatch.dbCaliber}
+                  {/* Field label */}
+                  <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '10px' }}>
+                    {flag.label}
+                  </div>
+                  {/* Values row */}
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                    <div style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '4px', padding: '8px 10px' }}>
+                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>YOUR ENTRY</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: flag.resolution === 'keep' ? theme.accent : theme.textPrimary, fontWeight: flag.resolution === 'keep' ? 700 : 400 }}>
+                        {flag.userValue}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, backgroundColor: 'rgba(255,212,59,0.06)', borderRadius: '4px', padding: '8px 10px' }}>
+                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>SUGGESTION</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: flag.resolution === 'accept' ? theme.accent : theme.textPrimary, fontWeight: flag.resolution === 'accept' ? 700 : 400 }}>
+                        {flag.dbValue}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Action chips */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'keep' as const, label: 'Keep Original' },
+                      { key: 'accept' as const, label: 'Accept Suggestion' },
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => resolveFlag(flag.field, opt.key)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '20px',
+                          border: `1px solid ${flag.resolution === opt.key ? theme.accent : theme.border}`,
+                          backgroundColor: flag.resolution === opt.key ? `${theme.accent}22` : 'transparent',
+                          color: flag.resolution === opt.key ? theme.accent : theme.textSecondary,
+                          fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setReviewState(null)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        border: `1px solid ${theme.border}`,
+                        backgroundColor: 'transparent',
+                        color: theme.textMuted,
+                        fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer buttons */}
+            <div style={{ padding: '12px 20px 16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {reviewState.flags.every(f => f.resolution !== null) && (
+                <button
+                  onClick={() => commitReview()}
+                  style={{
+                    padding: '12px', backgroundColor: theme.accent, border: 'none', borderRadius: '4px',
+                    color: theme.bg, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  SAVE TO VAULT
                 </button>
-                <button onClick={() => commitWithCaliber()} style={{
-                  padding: '10px', backgroundColor: 'transparent', border: `1px solid ${theme.border}`,
-                  borderRadius: '4px', color: theme.textSecondary, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer',
-                }}>
-                  Keep {reviewMismatch.pendingData.caliber} (I know what I have)
-                </button>
-                <button onClick={() => setReviewMismatch(null)} style={{
-                  padding: '8px', background: 'none', border: 'none',
+              )}
+              <button
+                onClick={() => commitReview(true)}
+                style={{
+                  padding: '10px', backgroundColor: 'transparent',
+                  border: `1px solid ${theme.border}`, borderRadius: '4px',
                   color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
-                }}>
-                  Go back and edit
-                </button>
-              </div>
+                }}
+              >
+                Save Anyway (keep my entries)
+              </button>
             </div>
           </div>
         )}
@@ -735,7 +863,7 @@ function ToggleRow({ label, sublabel, value, onToggle }: {
       </div>
       <button type="button" onClick={() => onToggle(!value)} style={{
         width: '50px', height: '30px', borderRadius: '15px', border: 'none',
-        backgroundColor: value ? theme.accent : theme.surfaceAlt,
+        backgroundColor: value ? theme.accent : theme.surfaceAlt, overflow: 'hidden',
         cursor: 'pointer', position: 'relative', flexShrink: 0,
         transition: 'background-color 0.2s',
       }} aria-checked={value} role="switch">

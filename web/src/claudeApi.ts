@@ -206,7 +206,10 @@ Use null for any field you cannot read clearly. Return only the JSON object.`;
   );
 
   try {
-    return JSON.parse(raw);
+    // Claude sometimes wraps JSON in ```json ... ``` — strip it before parsing
+    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = match ? match[1].trim() : raw.trim();
+    return JSON.parse(jsonStr);
   } catch {
     return {};
   }

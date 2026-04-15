@@ -76,7 +76,8 @@ export interface Gun {
   lastCleanedDate?: string;         // ISO date
   lastCleanedRoundCount?: number;   // Lifetime round count at last cleaning
   lastZeroDate?: string;            // ISO date
-  lastZeroDistance?: number;        // Yards
+  lastZeroDistance?: number;        // Yards (always stored in yards)
+  lastZeroDistanceUnit?: 'yd' | 'm' | 'ft'; // Unit as entered by user (for display)
   openIssues?: string;              // Current known issues
   // Accessories
   accessories?: GunAccessories;
@@ -181,6 +182,7 @@ export interface AmmoLot {
   // Purchase tracking
   quantityPurchased?: number;
   purchaseDate?: string;
+  purchasedFrom?: string;
   purchasePricePerRound?: number;
   currentMarketPrice?: number; // Current market price per round (manual, for replacement cost)
   averageCostPerRound?: number; // Calculated from all purchases

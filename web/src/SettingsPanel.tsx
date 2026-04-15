@@ -148,7 +148,7 @@ function ToggleRow({ label, sub, value, onChange }: { label: string; sub?: strin
         onClick={() => onChange(!value)}
         style={{
           width: '40px', height: '22px', borderRadius: '11px',
-          backgroundColor: value ? theme.accent : theme.border,
+          backgroundColor: value ? theme.accent : theme.border, overflow: 'hidden',
           position: 'relative', cursor: 'pointer', flexShrink: 0,
           transition: 'background-color 0.15s', userSelect: 'none',
         }}
@@ -794,7 +794,7 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
               cursor: 'pointer',
             }}
           >
-            SEND FEEDBACK
+            SUPPORT
           </button>
           <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>LINDCOTT ARMORY v1.0</div>
         </div>

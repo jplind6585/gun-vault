@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { theme } from './theme';
 import { getAllGuns, addGun, ensureInitialized } from './storage';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
@@ -16,8 +17,7 @@ import { Toast, useToast } from './Toast';
 import { useUndo } from './useUndo';
 import { AddGunForm } from './AddGunForm';
 import { SessionRecaps } from './SessionRecaps';
-import { SessionLogView } from './SessionLogView';
-import { SessionAIParser } from './SessionAIParser';
+import { SessionEntry } from './SessionEntry';
 import { DevToolbar } from './DevToolbar';
 import { exportInsuranceClaim } from './GunVault';
 
@@ -51,7 +51,7 @@ import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'session-ai' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
 
 function App() {
   return (
@@ -65,6 +65,33 @@ function AppCore() {
   const { user, loading: authLoading } = useAuth();
   const [ready, setReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
+  // Navigation history stack for Android hardware back button
+  const [viewHistory, setViewHistory] = useState<AppView[]>([]);
+
+  // Tab-level views reset the stack; detail views push onto it.
+  const TAB_VIEWS: AppView[] = ['home', 'vault', 'sessions', 'more', 'arsenal'];
+
+  function navigateTo(view: AppView) {
+    setViewHistory(prev => TAB_VIEWS.includes(view) ? [] : [...prev, currentView]);
+    setCurrentView(view);
+  }
+
+  function navigateBack() {
+    if (showSmartSearch) { setShowSmartSearch(false); return; }
+    // Clean up view-specific state when leaving detail screens
+    if (currentView === 'gun-detail') setSelectedGun(null);
+    if (currentView === 'optic-detail') { setSelectedOpticId(null); setVaultSection('optics'); }
+    if (currentView === 'session-log') setSessionLogGun(null);
+    if (viewHistory.length > 0) {
+      const prev = viewHistory[viewHistory.length - 1];
+      setViewHistory(h => h.slice(0, -1));
+      setCurrentView(prev);
+    } else if (currentView !== 'home') {
+      setCurrentView('home');
+    } else if (Capacitor.isNativePlatform()) {
+      CapApp.minimizeApp();
+    }
+  }
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
   const [skipWelcome, setSkipWelcome] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -133,6 +160,14 @@ function AppCore() {
     window.addEventListener('ai_budget_exceeded', handler);
     return () => window.removeEventListener('ai_budget_exceeded', handler);
   }, []);
+
+  // Android hardware back button
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listener = CapApp.addListener('backButton', () => navigateBack());
+    return () => { listener.then(l => l.remove()); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView, viewHistory, showSmartSearch]);
 
   // Keyboard shortcuts — must be before any early return to satisfy rules of hooks
   useEffect(() => {
@@ -240,7 +275,7 @@ function AppCore() {
 
   function openSessionLog(gun?: Gun) {
     setSessionLogGun(gun || null);
-    setCurrentView('session-log');
+    navigateTo('session-log');
   }
 
   // ── VIEWS ────────────────────────────────────────────────────────────────────
@@ -248,22 +283,21 @@ function AppCore() {
   function renderHeader() {
     if (currentView === 'home')         return <AppHeader title="Lindcott Armory" />;
     if (currentView === 'vault' || currentView === 'arsenal') return <AppHeader title="Vault" onSearch={() => setShowSmartSearch(true)} />;
-    if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
+    if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={navigateBack} backLabel="Vault" />;
     if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
-    if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
-    if (currentView === 'session-ai')   return <AppHeader title="Debrief" onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
-    if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
-    if (currentView === 'training')     return <AppHeader title="Training Log" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} backLabel="Vault" />;
+    if (currentView === 'session-log')  return null; // SessionEntry renders its own header
+    if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'training')     return <AppHeader title="Training Log" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'optic-detail') return <AppHeader title="Optic" onBack={navigateBack} backLabel="Vault" />;
     if (currentView === 'more')         return <AppHeader title="Lindcott Armory" />;
-    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'assistant')    return <AppHeader title="AI Assistant" onBack={() => setCurrentView('more')} backLabel="More" />;
-    if (currentView === 'legal')        return <AppHeader title="Legal" onBack={() => setCurrentView('more')} backLabel="More" />;
+    if (currentView === 'field-guide')  return <AppHeader title="Field Guide" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'assistant')    return <AppHeader title="AI Assistant" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'legal')        return <AppHeader title="Legal" onBack={navigateBack} backLabel="More" />;
     return null;
   }
 
@@ -279,8 +313,8 @@ function AppCore() {
       <HomePage
         onNavigateToVault={() => setCurrentView('vault')}
         onNavigateToArsenal={() => { setCurrentView('vault'); setVaultSection('ammo'); }}
-        onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-        onNavigateToGun={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
+        onNavigateToTargetAnalysis={() => navigateTo('target-analysis')}
+        onNavigateToGun={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
         onLogSession={(gun) => openSessionLog(gun)}
         onAddGun={() => setShowAddForm(true)}
         onSearchOpen={() => setShowSmartSearch(true)}
@@ -311,7 +345,7 @@ function AppCore() {
             {(['guns', 'ammo', 'optics'] as const).map(s => (
               <button
                 key={s}
-                onClick={() => { setVaultSection(s); if (currentView === 'arsenal') setCurrentView('vault'); }}
+                onClick={() => { setVaultSection(s); if (currentView === 'arsenal') navigateTo('vault'); }}
                 style={{
                   flex: 1,
                   padding: '9px',
@@ -332,14 +366,14 @@ function AppCore() {
           </div>
           {section === 'guns'
             ? <GunVault
-                onGunSelect={(gun) => { setSelectedGun(gun); setCurrentView('gun-detail'); }}
+                onGunSelect={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
                 onAddGun={() => setShowAddForm(true)}
                 onImportRequest={() => setShowCSVImport(true)}
                 refreshKey={gunRefreshKey}
               />
             : section === 'ammo'
             ? <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
-            : <OpticsList onSelectOptic={(o) => { setSelectedOpticId(o.id); setCurrentView('optic-detail'); }} />
+            : <OpticsList onSelectOptic={(o) => { setSelectedOpticId(o.id); navigateTo('optic-detail'); }} />
           }
         </div>
       );
@@ -347,15 +381,14 @@ function AppCore() {
     if (currentView === 'gun-detail' && selectedGun) return (
       <GunDetail
         gun={selectedGun}
-        onBack={() => { setSelectedGun(null); setCurrentView('vault'); }}
+        onBack={navigateBack}
         onGunUpdated={loadGuns}
         onLogSession={(gun) => openSessionLog(gun)}
-        onViewSessions={(gunId) => { setSessionFilterGunId(gunId); setCurrentView('sessions'); }}
+        onViewSessions={(gunId) => { setSessionFilterGunId(gunId); navigateTo('sessions'); }}
       />
     );
     if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} />;
-    if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onDebrief={() => { setSessionLogGun(null); setCurrentView('session-ai'); }} />;
-    if (currentView === 'session-ai')  return <SessionAIParser onSaved={() => setCurrentView('sessions')} onCancel={() => setCurrentView('sessions')} />;
+    if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis />;
@@ -363,9 +396,9 @@ function AppCore() {
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist />;
-    if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} onDeleted={() => { setSelectedOpticId(null); setCurrentView('vault'); setVaultSection('optics'); }} />;
+    if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={navigateBack} onDeleted={() => { setSelectedOpticId(null); navigateTo('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
-    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => setCurrentView(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} />;
+    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => navigateTo(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} />;
     if (currentView === 'assistant')   return <ArmoryAssistant />;
     if (currentView === 'field-guide') return <FieldGuide />;
     if (currentView === 'legal') return <LegalDocs />;
@@ -395,11 +428,11 @@ function AppCore() {
       </div>
       <MobileNav
         currentView={activeNavView}
-        onNavigateToHome={() => setCurrentView('home')}
-        onNavigateToVault={() => { setSelectedGun(null); setCurrentView('vault'); setVaultSection('guns'); }}
-        onNavigateToSessions={() => { setSessionFilterGunId(null); setCurrentView('sessions'); }}
-        onNavigateToTargetAnalysis={() => setCurrentView('target-analysis')}
-        onNavigateToMore={() => setCurrentView('more')}
+        onNavigateToHome={() => navigateTo('home')}
+        onNavigateToVault={() => { setSelectedGun(null); navigateTo('vault'); setVaultSection('guns'); }}
+        onNavigateToSessions={() => { setSessionFilterGunId(null); navigateTo('sessions'); }}
+        onNavigateToTargetAnalysis={() => navigateTo('target-analysis')}
+        onNavigateToMore={() => navigateTo('more')}
       />
       {showSmartSearch && (
         <SmartSearch

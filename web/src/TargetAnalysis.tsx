@@ -98,7 +98,7 @@ function caliberToBulletDia(caliber: string): number | null {
 }
 
 // ── Stats panel drawn on canvas (overlay + export) ────────────────────────
-function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, stats: Stats, distYds: number) {
+function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, stats: Stats, distYds: number, posXPct?: number, posYPct?: number) {
   const panelW = Math.round(W * 0.33);
   const lineH = Math.round(panelW * 0.068);
   const fontSize = Math.round(lineH * 0.66);
@@ -116,8 +116,8 @@ function drawStatsPanel(ctx: CanvasRenderingContext2D, W: number, H: number, sta
   // 3 header lines (title, separator, "Xyd • N shots") + rows + bottom padding
   const panelH = lineH * (3.2 + rows.length + 0.8);
   const margin = Math.round(W * 0.022);
-  const px = W - panelW - margin;
-  const py = margin;
+  const px = posXPct !== undefined ? Math.round((posXPct / 100) * W) : W - panelW - margin;
+  const py = posYPct !== undefined ? Math.round((posYPct / 100) * H) : margin;
 
   // Panel background
   ctx.fillStyle = 'rgba(0,0,0,0.84)';
@@ -509,6 +509,29 @@ export function TargetAnalysis() {
 
   // Ammo search (Change 6)
   const [ammoSearch, setAmmoSearch] = useState('');
+
+  // Gun picker bottom sheet (item 1)
+  const [gunSearch, setGunSearch] = useState('');
+  const [showGunSheet, setShowGunSheet] = useState(false);
+
+  // Draggable stats box on overlay (item 6)
+  const [baseOverlayUrl, setBaseOverlayUrl] = useState<string | null>(null);
+  const [statsBoxPos, setStatsBoxPos] = useState({ x: 55, y: 4 }); // % from top-left
+  const statsBoxDragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
+  const overlayContainerRef = useRef<HTMLDivElement>(null);
+
+  // Share action sheet (item 7)
+  const [showShareSheet, setShowShareSheet] = useState(false);
+
+  // AI Analyze modal (item 8)
+  const [aiAnalyzeResult, setAiAnalyzeResult] = useState<string | null>(null);
+  const [aiAnalyzeLoading, setAiAnalyzeLoading] = useState(false);
+  const [showAiAnalyzeModal, setShowAiAnalyzeModal] = useState(false);
+
+  // Called shot accordion (item 4)
+  const [showCalledShotAccordion, setShowCalledShotAccordion] = useState(false);
+  const [calledShotHInput, setCalledShotHInput] = useState('');
+  const [calledShotVInput, setCalledShotVInput] = useState('');
 
   // Loupe magnifier shown during drag
   const [showLoupe, setShowLoupe] = useState(false);
@@ -1042,6 +1065,9 @@ export function TargetAnalysis() {
 
     const canvas = canvasRef.current;
     if (canvas && s) {
+      // Capture base overlay without stats panel (for draggable overlay tab)
+      setBaseOverlayUrl(canvas.toDataURL('image/png'));
+      // Also bake a default overlay for fallback
       const off = document.createElement('canvas');
       off.width = canvas.width; off.height = canvas.height;
       const ctx = off.getContext('2d')!;
@@ -1054,15 +1080,10 @@ export function TargetAnalysis() {
   };
   goToResultsInnerRef.current = goToResultsInner;
 
-  // ── Go to results — enters called shot mode first (8I) ───────────────────
+  // ── Go to results ─────────────────────────────────────────────────────────
   const goToResults = () => {
     haptic();
-    if (taOptions.calledShot) {
-      // Enter called shot mode — user taps where they called the shot
-      setAwaitingCalledShot(true);
-    } else {
-      goToResultsInnerRef.current();
-    }
+    goToResultsInnerRef.current();
   };
 
   useEffect(() => {
@@ -1086,15 +1107,30 @@ export function TargetAnalysis() {
   // Load guns on mount so step 1 gun picker works
   useEffect(() => { setGuns(getAllGuns()); }, []);
 
-  // ── Export — share / download the pre-rendered overlay ───────────────────
-  const exportOverlay = async () => {
+  // ── Export — share / download overlay composited with stats at current pos ─
+  const exportOverlay = async (action: 'share' | 'save' = 'share') => {
     haptic();
-    if (!overlayDataUrl || !stats) return;
+    const sourceUrl = baseOverlayUrl || overlayDataUrl;
+    if (!sourceUrl || !stats) return;
+    setShowShareSheet(false);
     const filename = `lindcott-${distanceYds}yd-${stats.shotCount}shots.png`;
-    const res = await fetch(overlayDataUrl);
-    const blob = await res.blob();
+
+    // Composite base + stats panel at dragged position
+    const img = new Image();
+    img.src = sourceUrl;
+    await new Promise<void>(res => { img.onload = () => res(); });
+    const off = document.createElement('canvas');
+    off.width = img.width; off.height = img.height;
+    const ctx = off.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    drawStatsPanel(ctx, off.width, off.height, stats, distanceYds, statsBoxPos.x, statsBoxPos.y);
+    const dataUrl = off.toDataURL('image/png');
+
+    const fetchRes = await fetch(dataUrl);
+    const blob = await fetchRes.blob();
     const file = new File([blob], filename, { type: 'image/png' });
-    if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+
+    if (action === 'share' && typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
       try { await navigator.share({ files: [file], title: 'Lindcott Armory — Target Analysis' }); return; } catch { /* fall through */ }
     }
     const url = URL.createObjectURL(blob);
@@ -1111,10 +1147,12 @@ export function TargetAnalysis() {
     setCalibPts([]); setPixelsPerInch(null);
     setMarks([]); setMarkMode('calib'); setStats(null); setScale(1);
     setOffset({ x: 0, y: 0 }); setCalibBannerMsg(null); setSavedMsg(false);
-    setOverlayDataUrl(null); setCoachMessages([]); setShowCoach(false);
+    setOverlayDataUrl(null); setBaseOverlayUrl(null); setStatsBoxPos({ x: 55, y: 4 }); setCoachMessages([]); setShowCoach(false);
     setSavedRecordId(null); setLinkedAmmoLotId(null);
     setAwaitingCalledShot(false); calledShotRef.current = null; setCalledShotDisplay(null);
     setEnvTemp(''); setEnvWindSpeed(''); setEnvWindDir(''); setEnvLighting(''); setShowEnvPanel(false);
+    setShowShareSheet(false); setAiAnalyzeResult(null); setShowAiAnalyzeModal(false);
+    setShowCalledShotAccordion(false); setCalledShotHInput(''); setCalledShotVInput('');
     clearLoupe();
   };
   const deleteHistoryEntry = (id: string) => { deleteTargetAnalysis(id); setHistory(getTargetAnalyses()); };
@@ -1191,6 +1229,51 @@ export function TargetAnalysis() {
       prompt = 'Looking at my shooting history across multiple sessions:\n' + allCtx + '\n\nWhat trends do you see? Am I improving overall? What long-term patterns should I address?';
     }
     callCoach(prompt);
+  };
+
+  // ── AI Analyze (item 8) ───────────────────────────────────────────────────
+  const runAiAnalyze = async () => {
+    if (!stats) return;
+    setAiAnalyzeLoading(true);
+    setShowAiAnalyzeModal(true);
+    setAiAnalyzeResult(null);
+    setShowShareSheet(false);
+    const todayStr = new Date().toDateString();
+    const sessionHistory = history.filter(r => new Date(r.createdAt).toDateString() === todayStr);
+    const recentHistory = history.slice(0, 10);
+    const linkedAmmo = linkedAmmoLotId ? ammoLots.find(l => l.id === linkedAmmoLotId) : null;
+    const gun = selectedGunId ? guns.find(g => g.id === selectedGunId) : null;
+    const context = [
+      '# Current Target',
+      `Distance: ${distanceYds}yd | Shots: ${stats.shotCount}`,
+      gun ? `Gun: ${gun.displayName || `${gun.make} ${gun.model}`} (${gun.caliber})` : '',
+      linkedAmmo ? `Ammo: ${linkedAmmo.brand} ${linkedAmmo.grainWeight}gr ${linkedAmmo.bulletType}` : '',
+      `ES: ${stats.extremeSpreadIn.toFixed(2)}" (${stats.extremeSpreadMoa.toFixed(2)} MOA)`,
+      `CEP: ${stats.cepIn.toFixed(2)}" (${stats.cepMoa.toFixed(2)} MOA)`,
+      `Windage: ${stats.windageIn >= 0 ? 'Right' : 'Left'} ${Math.abs(stats.windageIn).toFixed(2)}" (${stats.windageMoa.toFixed(2)} MOA)`,
+      `Elevation: ${stats.elevationIn >= 0 ? 'Up' : 'Down'} ${Math.abs(stats.elevationIn).toFixed(2)}" (${stats.elevationMoa.toFixed(2)} MOA)`,
+      `Radial SD: ${stats.radialSdIn.toFixed(2)}" | Vert SD: ${stats.verticalSdIn.toFixed(2)}" | Horiz SD: ${stats.horizontalSdIn.toFixed(2)}"`,
+      sessionHistory.length > 1 ? '\n# Session History (today)' : '',
+      ...sessionHistory.slice(0, 5).map(r =>
+        `  ${r.distanceYds}yd: ${r.stats.shotCount} shots, CEP ${r.stats.cepIn.toFixed(2)}", ES ${r.stats.extremeSpreadIn.toFixed(2)}"`
+      ),
+      recentHistory.length > 0 ? '\n# Recent Sessions' : '',
+      ...recentHistory.map(r => {
+        const d = new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `  ${d} @${r.distanceYds}yd: CEP ${r.stats.cepIn.toFixed(2)}", ES ${r.stats.extremeSpreadIn.toFixed(2)}"`;
+      }),
+    ].filter(Boolean).join('\n');
+    try {
+      const reply = await callTargetCoach(context, [{
+        role: 'user',
+        content: 'Provide a thorough analysis: group quality assessment, zero correction advice, what the dispersion pattern suggests about technique, and 3 actionable improvements. Be specific and direct.',
+      }]);
+      setAiAnalyzeResult(reply);
+    } catch (err) {
+      setAiAnalyzeResult(`⚠️ ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setAiAnalyzeLoading(false);
+    }
   };
 
   // ── UI helpers ────────────────────────────────────────────────────────────
@@ -1320,26 +1403,18 @@ export function TargetAnalysis() {
 
             <div>
               {sectionLabel('Gun (optional)')}
-              <div style={{ display: 'flex', overflowX: 'auto', gap: 8, paddingBottom: 4, scrollbarWidth: 'none' }}>
-                {guns.filter(g => g.status === 'Active').map(g => {
-                  const isSelected = selectedGunId === g.id;
-                  return (
-                    <button key={g.id} onClick={() => {
-                      if (isSelected) { setSelectedGunId(null); }
-                      else {
-                        setSelectedGunId(g.id);
-                        const dia = caliberToBulletDia(g.caliber);
-                        if (dia) { setBulletDiaIn(dia); setCustomBullet(''); }
-                      }
-                    }} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: 20, border: `1px solid ${isSelected ? theme.accent : theme.border}`, background: isSelected ? theme.accent : theme.surface, color: isSelected ? '#000' : theme.textPrimary, fontSize: 13, fontWeight: isSelected ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                      {g.displayName || `${g.make} ${g.model}`}
-                    </button>
-                  );
-                })}
-                {guns.filter(g => g.status === 'Active').length === 0 && (
-                  <span style={{ fontSize: 12, color: theme.textMuted }}>No active guns in vault</span>
-                )}
-              </div>
+              {(() => {
+                const selGun = selectedGunId ? guns.find(g => g.id === selectedGunId) : null;
+                return (
+                  <button onClick={() => { setGunSearch(''); setShowGunSheet(true); }}
+                    style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 12, border: `1px solid ${selGun ? theme.accent : theme.border}`, background: selGun ? theme.accentDim : theme.surface, color: selGun ? theme.accent : theme.textSecondary, fontSize: 14, cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ fontWeight: selGun ? 600 : 400 }}>{selGun ? (selGun.displayName || `${selGun.make} ${selGun.model}`) : 'Select gun…'}</span>
+                    {selGun
+                      ? <span onClick={e => { e.stopPropagation(); setSelectedGunId(null); }} style={{ fontSize: 16, lineHeight: 1, color: theme.accent, padding: '0 2px' }}>✕</span>
+                      : <span style={{ fontSize: 16, opacity: 0.5 }}>›</span>}
+                  </button>
+                );
+              })()}
             </div>
 
             <div>
@@ -1547,14 +1622,77 @@ export function TargetAnalysis() {
 
         {resultTab === 'overlay' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {overlayDataUrl
-                ? <img src={overlayDataUrl} alt="Annotated target" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
+            <div
+              ref={overlayContainerRef}
+              style={{ flex: 1, overflow: 'hidden', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', touchAction: 'none', userSelect: 'none' }}
+            >
+              {baseOverlayUrl
+                ? (
+                  <>
+                    <img src={baseOverlayUrl} alt="Annotated target" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
+                    {stats && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: `${statsBoxPos.x}%`,
+                          top: `${statsBoxPos.y}%`,
+                          background: 'rgba(0,0,0,0.82)',
+                          borderRadius: 8,
+                          padding: '7px 10px',
+                          minWidth: 130,
+                          cursor: 'grab',
+                          border: '1px solid rgba(255,212,59,0.25)',
+                          touchAction: 'none',
+                        }}
+                        onPointerDown={e => {
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                          const container = overlayContainerRef.current;
+                          if (!container) return;
+                          statsBoxDragRef.current = {
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            startPosX: statsBoxPos.x,
+                            startPosY: statsBoxPos.y,
+                          };
+                        }}
+                        onPointerMove={e => {
+                          if (!statsBoxDragRef.current) return;
+                          const container = overlayContainerRef.current;
+                          if (!container) return;
+                          const rect = container.getBoundingClientRect();
+                          const dx = ((e.clientX - statsBoxDragRef.current.startX) / rect.width) * 100;
+                          const dy = ((e.clientY - statsBoxDragRef.current.startY) / rect.height) * 100;
+                          setStatsBoxPos({
+                            x: Math.max(0, Math.min(70, statsBoxDragRef.current.startPosX + dx)),
+                            y: Math.max(0, Math.min(80, statsBoxDragRef.current.startPosY + dy)),
+                          });
+                        }}
+                        onPointerUp={() => { statsBoxDragRef.current = null; }}
+                      >
+                        <div style={{ fontSize: 8, fontWeight: 700, color: theme.accent, letterSpacing: '0.8px', marginBottom: 4 }}>LINDCOTT ARMORY</div>
+                        <div style={{ fontSize: 8, color: 'rgba(200,200,220,0.7)', marginBottom: 4 }}>{distanceYds}yd · {stats.shotCount} shots</div>
+                        {[
+                          ['CEP', `${stats.cepIn.toFixed(2)}"`, `${stats.cepMoa.toFixed(2)} MOA`],
+                          ['ES',  `${stats.extremeSpreadIn.toFixed(2)}"`, `${stats.extremeSpreadMoa.toFixed(2)} MOA`],
+                          ['W',   `${stats.windageIn >= 0 ? 'R' : 'L'}${Math.abs(stats.windageIn).toFixed(2)}"`, `${stats.windageMoa.toFixed(2)} MOA`],
+                          ['E',   `${stats.elevationIn >= 0 ? 'U' : 'D'}${Math.abs(stats.elevationIn).toFixed(2)}"`, `${stats.elevationMoa.toFixed(2)} MOA`],
+                        ].map(([label, val, moa]) => (
+                          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
+                            <span style={{ fontSize: 8, color: 'rgba(155,155,175,0.9)', minWidth: 16 }}>{label}</span>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: 'white', fontFamily: 'monospace' }}>{val}</span>
+                            <span style={{ fontSize: 7, color: 'rgba(155,155,175,0.8)', fontFamily: 'monospace' }}>{moa}</span>
+                          </div>
+                        ))}
+                        <div style={{ fontSize: 7, color: 'rgba(255,212,59,0.4)', marginTop: 3, textAlign: 'center' }}>drag to reposition</div>
+                      </div>
+                    )}
+                  </>
+                )
                 : <span style={{ color: theme.textMuted, fontSize: 13 }}>No overlay captured</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, padding: 12, flexShrink: 0 }}>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: 12, borderRadius: 10, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
+              <button onClick={() => { haptic(); setShowShareSheet(true); }} style={{ flex: 2, padding: 12, borderRadius: 10, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
             </div>
           </div>
         ) : (
@@ -1564,19 +1702,6 @@ export function TargetAnalysis() {
               <div style={{ fontSize: 12, color: theme.textMuted }}>{stats.shotCount} shots • {distanceYds}yd</div>
             </div>
             {savedMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(60,180,60,0.12)', border: '1px solid rgba(60,180,60,0.3)', color: '#4caf50', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Saved to history ✓</div>}
-
-            {/* 8I — Called shot offset display */}
-            {calledShotDisplay && (
-              <div style={{ background: 'rgba(255,212,59,0.06)', borderRadius: 10, padding: '8px 14px', border: `1px solid rgba(255,212,59,0.2)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: theme.accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 2 }}>Called Shot</div>
-                  <div style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'monospace' }}>
-                    {calledShotDisplay.x >= 0 ? 'R' : 'L'} {Math.abs(calledShotDisplay.x).toFixed(2)}" &nbsp;·&nbsp; {calledShotDisplay.y >= 0 ? 'U' : 'D'} {Math.abs(calledShotDisplay.y).toFixed(2)}"
-                  </div>
-                </div>
-                <div style={{ fontSize: 10, color: theme.textMuted, textAlign: 'right', fontFamily: 'monospace' }}>offset from POA</div>
-              </div>
-            )}
 
 
             {/* 8J — Environmental conditions */}
@@ -1617,18 +1742,45 @@ export function TargetAnalysis() {
               )}
             </div>
 
-            {/* PRIMARY — Group Size + CEP */}
-            <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
-              <div style={{ padding: '10px 0 2px', fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</div>
-              <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} primary />
-              <StatRow label="CEP"            val={`${stats.cepIn.toFixed(3)}"`}            moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
-              {taOptions.cepRing && (
-                <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', paddingBottom: 6, paddingLeft: 2 }}>
-                  ↑ ring on canvas surrounds 50% of shots — shrinks as group tightens
+            {/* CARD 1 — Group Size */}
+            {(() => {
+              const esMoa = stats.extremeSpreadMoa;
+              const qualityLabel = esMoa < 1 ? 'PRECISION' : esMoa < 2 ? 'SOLID' : esMoa < 4 ? 'PRACTICE' : 'NEEDS WORK';
+              const qualityColor = esMoa < 1 ? '#4caf50' : esMoa < 2 ? theme.accent : esMoa < 4 ? '#ff9800' : '#f44336';
+              const inPerMoa = distanceYds > 0 ? (distanceYds / 95.5).toFixed(2) : '—';
+              return (
+                <div style={{ background: theme.surface, borderRadius: 12, padding: '10px 16px 4px', border: `1px solid ${theme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Group Size</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: qualityColor, letterSpacing: '0.8px', padding: '2px 7px', borderRadius: 10, border: `1px solid ${qualityColor}`, opacity: 0.9 }}>{qualityLabel}</span>
+                  </div>
+                  <StatRow label="Extreme Spread" val={`${stats.extremeSpreadIn.toFixed(3)}"`} moa={`${stats.extremeSpreadMoa.toFixed(2)} MOA`} primary />
+                  <StatRow label="CEP"            val={`${stats.cepIn.toFixed(3)}"`}            moa={`${stats.cepMoa.toFixed(2)} MOA`} primary />
+                  <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', paddingBottom: 8, paddingTop: 2 }}>
+                    1 MOA ≈ {inPerMoa}" at {distanceYds}yd
+                    {taOptions.cepRing ? '  ·  ring = 50% of shots' : ''}
+                  </div>
                 </div>
-              )}
+              );
+            })()}
+
+            {/* CARD 2 — Dispersion */}
+            <div style={{ background: theme.surface, borderRadius: 12, padding: '10px 16px 4px', border: `1px solid ${theme.border}` }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 2 }}>Dispersion</div>
+              <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}   moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
+              <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`} moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
+              {(() => {
+                const vsd = stats.verticalSdMoa, hsd = stats.horizontalSdMoa;
+                const ratio = Math.max(vsd, hsd) > 0 ? Math.max(vsd, hsd) / Math.max(Math.min(vsd, hsd), 0.01) : 1;
+                if (ratio > 1.5) {
+                  const axis = vsd > hsd ? 'vertical' : 'horizontal';
+                  return <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', paddingBottom: 8, paddingTop: 2 }}>↑ {axis} spread is dominant — check {axis === 'vertical' ? 'trigger control / breathing' : 'grip consistency / wind'}</div>;
+                }
+                return <div style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'monospace', paddingBottom: 8, paddingTop: 2 }}>spread is balanced</div>;
+              })()}
             </div>
-            {/* SECONDARY — POA Offset */}
+
+            {/* CARD 3 — POA Offset */}
             <div style={{ background: theme.surface, borderRadius: 12, padding: '0 16px', border: `1px solid ${theme.border}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 2 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>POA Offset</span>
@@ -1642,12 +1794,10 @@ export function TargetAnalysis() {
                 const clickMoa = optic?.clickValueMOA ?? (optic?.clickValueMRAD ? optic.clickValueMRAD * 3.438 : null);
                 const manualVal = parseFloat(adjustZeroClickValue);
                 const effectiveClick = clickMoa ?? (adjustZeroClickValue && !isNaN(manualVal) && manualVal > 0 ? manualVal : null);
-
                 const elevClicks = effectiveClick ? Math.round(stats.elevationMoa / effectiveClick) : null;
                 const windClicks = effectiveClick ? Math.round(stats.windageMoa / effectiveClick) : null;
                 const elevDir = stats.elevationIn >= 0 ? 'UP' : 'DOWN';
                 const windDir = stats.windageIn >= 0 ? 'RIGHT' : 'LEFT';
-
                 return (
                   <div style={{ borderTop: `1px solid ${theme.border}`, padding: '12px 0' }}>
                     {optic && clickMoa ? (
@@ -1674,7 +1824,7 @@ export function TargetAnalysis() {
                 );
               })()}
             </div>
-            {/* ADVANCED — collapsed by default */}
+            {/* ADVANCED — collapsed, Mean Radius + dimensions */}
             <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
               <button onClick={() => setShowAdvanced(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Advanced</span>
@@ -1682,19 +1832,66 @@ export function TargetAnalysis() {
               </button>
               {showAdvanced && (
                 <div style={{ padding: '0 16px' }}>
-                  <StatRow label="Radial SD"     val={`${stats.radialSdIn.toFixed(3)}"`}     moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
-                  <StatRow label="Vertical SD"   val={`${stats.verticalSdIn.toFixed(3)}"`}   moa={`${stats.verticalSdMoa.toFixed(2)} MOA`} />
-                  <StatRow label="Horizontal SD" val={`${stats.horizontalSdIn.toFixed(3)}"`} moa={`${stats.horizontalSdMoa.toFixed(2)} MOA`} />
-                  <StatRow label="Mean Radius"   val={`${stats.meanRadiusIn.toFixed(3)}"`}   moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Radial SD"      val={`${stats.radialSdIn.toFixed(3)}"`}      moa={`${stats.radialSdMoa.toFixed(2)} MOA`} />
+                  <StatRow label="Mean Radius"    val={`${stats.meanRadiusIn.toFixed(3)}"`}    moa={`${stats.meanRadiusMoa.toFixed(2)} MOA`} />
                   <StatRow label="Overall Width"  val={`${stats.overallWidthIn.toFixed(3)}"`}  moa={`${stats.overallWidthMoa.toFixed(2)} MOA`} />
                   <StatRow label="Overall Height" val={`${stats.overallHeightIn.toFixed(3)}"`} moa={`${stats.overallHeightMoa.toFixed(2)} MOA`} />
                 </div>
               )}
             </div>
 
+            {/* CALLED SHOT accordion (item 4) */}
+            <div style={{ background: theme.surface, borderRadius: 12, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
+              <button onClick={() => setShowCalledShotAccordion(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '1px' }}>Called Shot Offset</span>
+                <span style={{ fontSize: 13, color: theme.textMuted }}>{showCalledShotAccordion ? '▲' : '▼'}</span>
+              </button>
+              {showCalledShotAccordion && (
+                <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 11, color: theme.textMuted, lineHeight: 1.4 }}>Where did you call your shot relative to POA?</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>H Offset (+ = R)</div>
+                      <input type="number" step="0.1" placeholder='e.g. -0.5"' value={calledShotHInput}
+                        onChange={e => {
+                          setCalledShotHInput(e.target.value);
+                          const h = parseFloat(e.target.value), v = parseFloat(calledShotVInput);
+                          if (!isNaN(h) && !isNaN(v)) {
+                            setCalledShotDisplay({ x: h, y: v });
+                            if (savedRecordId) updateTargetAnalysis(savedRecordId, { calledShotOffsetX: h, calledShotOffsetY: v });
+                          }
+                        }}
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 13, boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>V Offset (+ = U)</div>
+                      <input type="number" step="0.1" placeholder='e.g. 0.25"' value={calledShotVInput}
+                        onChange={e => {
+                          setCalledShotVInput(e.target.value);
+                          const h = parseFloat(calledShotHInput), v = parseFloat(e.target.value);
+                          if (!isNaN(h) && !isNaN(v)) {
+                            setCalledShotDisplay({ x: h, y: v });
+                            if (savedRecordId) updateTargetAnalysis(savedRecordId, { calledShotOffsetX: h, calledShotOffsetY: v });
+                          }
+                        }}
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 13, boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                    </div>
+                  </div>
+                  {calledShotDisplay && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'rgba(255,212,59,0.06)', border: `1px solid rgba(255,212,59,0.2)` }}>
+                      <div style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'monospace' }}>
+                        {calledShotDisplay.x >= 0 ? 'R' : 'L'} {Math.abs(calledShotDisplay.x).toFixed(2)}" · {calledShotDisplay.y >= 0 ? 'U' : 'D'} {Math.abs(calledShotDisplay.y).toFixed(2)}"
+                      </div>
+                      <div style={{ fontSize: 10, color: theme.textMuted }}>from POA</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: 13, borderRadius: 12, background: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}`, fontSize: 13, cursor: 'pointer' }}>← Edit</button>
-              <button onClick={exportOverlay} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
+              <button onClick={() => { haptic(); setShowShareSheet(true); }} style={{ flex: 2, padding: 13, borderRadius: 12, background: theme.accent, color: '#000', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>⬆ Share / Save</button>
             </div>
 
             {/* GROUP TREND SPARKLINE */}
@@ -1906,7 +2103,7 @@ export function TargetAnalysis() {
                   <div style={{ fontSize: 14, color: theme.textPrimary, fontWeight: 600 }}>{label}</div>
                   <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{desc}</div>
                 </div>
-                <div role="switch" aria-checked={taOptions[key]} onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s', userSelect: 'none' }}>
+                <div role="switch" aria-checked={taOptions[key]} onClick={() => updateOption(key, !taOptions[key])} style={{ flexShrink: 0, width: 52, height: 28, borderRadius: 14, cursor: 'pointer', background: taOptions[key] ? theme.accent : theme.border, position: 'relative', transition: 'background 0.2s', userSelect: 'none', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 3, left: taOptions[key] ? 26 : 3, width: 22, height: 22, borderRadius: '50%', background: taOptions[key] ? '#000' : theme.textMuted, transition: 'left 0.2s' }} />
                 </div>
               </div>
@@ -1920,6 +2117,102 @@ export function TargetAnalysis() {
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
       </div>}
+      {/* Gun picker bottom sheet (item 1) */}
+      {showGunSheet && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowGunSheet(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: theme.surface, borderRadius: '16px 16px 0 0', maxHeight: '70vh', display: 'flex', flexDirection: 'column', padding: '16px 0 32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px 12px' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: theme.textPrimary }}>Select Gun</span>
+              <button onClick={() => setShowGunSheet(false)} style={{ background: 'transparent', border: 'none', color: theme.textMuted, fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ padding: '0 16px 10px' }}>
+              <input type="text" placeholder="Search guns…" value={gunSearch} onChange={e => setGunSearch(e.target.value)} autoFocus
+                style={{ width: '100%', padding: '9px 14px', borderRadius: 10, border: `1px solid ${theme.border}`, background: theme.bg, color: theme.textPrimary, fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {guns.filter(g => g.status === 'Active' && (!gunSearch || `${g.displayName || ''} ${g.make} ${g.model} ${g.caliber}`.toLowerCase().includes(gunSearch.toLowerCase()))).map(g => (
+                <button key={g.id} onClick={() => {
+                  setSelectedGunId(g.id);
+                  const dia = caliberToBulletDia(g.caliber);
+                  if (dia) { setBulletDiaIn(dia); setCustomBullet(''); }
+                  setShowGunSheet(false);
+                }} style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '12px 20px', background: selectedGunId === g.id ? theme.accentDim : 'transparent', border: 'none', borderBottom: `1px solid ${theme.border}`, cursor: 'pointer', textAlign: 'left', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: selectedGunId === g.id ? theme.accent : theme.textPrimary }}>{g.displayName || `${g.make} ${g.model}`}</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted }}>{g.caliber}</div>
+                  </div>
+                  {selectedGunId === g.id && <span style={{ color: theme.accent, fontSize: 16 }}>✓</span>}
+                </button>
+              ))}
+              {guns.filter(g => g.status === 'Active').length === 0 && (
+                <div style={{ padding: '20px', textAlign: 'center', color: theme.textMuted, fontSize: 13 }}>No active guns in vault</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share action sheet (item 7) */}
+      {showShareSheet && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowShareSheet(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: theme.surface, borderRadius: '16px 16px 0 0', padding: '16px 0 40px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px 14px', borderBottom: `1px solid ${theme.border}` }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: theme.textPrimary }}>Share & Export</span>
+              <button onClick={() => setShowShareSheet(false)} style={{ background: 'transparent', border: 'none', color: theme.textMuted, fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+            {[
+              { icon: '⬆️', label: 'Share', sub: 'Share via system share sheet', action: () => exportOverlay('share') },
+              { icon: '💾', label: 'Save Image', sub: 'Download to device', action: () => exportOverlay('save') },
+              { icon: '🤖', label: 'Analyze with AI', sub: 'Get detailed coaching from Claude', action: runAiAnalyze },
+            ].map(({ icon, label, sub, action }) => (
+              <button key={label} onClick={action} style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 20px', background: 'transparent', border: 'none', borderBottom: `1px solid ${theme.border}`, cursor: 'pointer', gap: 14, textAlign: 'left' }}>
+                <span style={{ fontSize: 22, width: 32, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: theme.textPrimary }}>{label}</div>
+                  <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 1 }}>{sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Analyze modal (item 8) */}
+      {showAiAnalyzeModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end' }} onClick={() => !aiAnalyzeLoading && setShowAiAnalyzeModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: theme.surface, borderRadius: '16px 16px 0 0', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px 12px', borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
+              <div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: theme.accent, fontFamily: 'monospace', letterSpacing: '0.6px' }}>AI ANALYSIS</span>
+                <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: 8 }}>{distanceYds}yd · {stats?.shotCount} shots</span>
+              </div>
+              {!aiAnalyzeLoading && <button onClick={() => setShowAiAnalyzeModal(false)} style={{ background: 'transparent', border: 'none', color: theme.textMuted, fontSize: 20, cursor: 'pointer' }}>✕</button>}
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {aiAnalyzeLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 12 }}>
+                  <div style={{ fontSize: 28 }}>🤖</div>
+                  <div style={{ fontSize: 14, color: theme.textMuted }}>Analyzing your shot group…</div>
+                </div>
+              ) : aiAnalyzeResult ? (
+                <>
+                  <div style={{ fontSize: 14, color: theme.textPrimary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{aiAnalyzeResult}</div>
+                  <button
+                    onClick={() => {
+                      if (!aiAnalyzeResult || !savedRecordId) return;
+                      updateTargetAnalysis(savedRecordId, { notes: aiAnalyzeResult });
+                      setShowAiAnalyzeModal(false);
+                    }}
+                    style={{ padding: '12px 0', borderRadius: 12, background: theme.surfaceAlt, color: theme.accent, border: `1px solid ${theme.accent}`, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>
+                    Save to Session Notes
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* History record detail modal */}
       {selectedHistoryRecord && (() => {
         const rec = selectedHistoryRecord;

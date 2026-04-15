@@ -13,4 +13,4 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   },
 });
 
-export { SUPABASE_URL };
+export { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY };

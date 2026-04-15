@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { theme } from './theme';
 import type { Gun, Session, GunAccessories, TargetAnalysisRecord } from './types';
 import { getSessionsForGun, getAllAmmo, updateGun, getAnalysesForGun } from './storage';
+import { getSettings } from './SettingsPanel';
 import { SessionLoggingModal } from './SessionLoggingModal';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
 import { typeAccent } from './GunVault';
@@ -43,6 +44,10 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [soldDateInput, setSoldDateInput]   = useState('');
   const [soldPriceInput, setSoldPriceInput] = useState('');
   const [zeroDistInput, setZeroDistInput]   = useState('');
+  const [zeroDistUnit, setZeroDistUnit]     = useState<'yd' | 'm' | 'ft'>(() => {
+    const units = getSettings().units;
+    return units === 'metric' ? 'm' : 'yd';
+  });
   const [editingIssues, setEditingIssues]   = useState(false);
   const [issuesDraft, setIssuesDraft]       = useState(gun.openIssues || '');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -130,7 +135,11 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
     : null;
 
   // ── Ammo performance ──────────────────────────────────────────────────────
-  const ammoLots       = getAllAmmo().filter(l => l.caliber === gun.caliber);
+  const ammoLots       = getAllAmmo().filter(l => {
+    const lc = l.caliber.toLowerCase();
+    const gc = (gun.caliber || '').toLowerCase();
+    return lc.includes(gc) || gc.includes(lc);
+  });
   // Sessions that had no issues and reference an ammo lot
   const cleanSessions  = sessions.filter(s => !s.issues && s.ammoLotId);
   const ammoScores: Record<string, { name: string; sessions: number; rounds: number; issues: number }> = {};
@@ -170,12 +179,20 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   }
 
   function logZero() {
-    const dist = parseInt(zeroDistInput, 10);
-    if (!dist || dist <= 0) return;
+    const val = parseFloat(zeroDistInput);
+    if (!val || val <= 0) return;
+    const toYards = zeroDistUnit === 'm' ? val * 1.09361 : zeroDistUnit === 'ft' ? val / 3 : val;
+    const distYards = Math.round(toYards);
     const today = new Date().toISOString().split('T')[0];
-    persist({ lastZeroDate: today, lastZeroDistance: dist });
+    persist({ lastZeroDate: today, lastZeroDistance: distYards, lastZeroDistanceUnit: zeroDistUnit });
     setShowZeroForm(false);
     setZeroDistInput('');
+  }
+
+  function formatZeroDist(yards: number, unit?: 'yd' | 'm' | 'ft'): string {
+    if (!unit || unit === 'yd') return `${yards} yd`;
+    if (unit === 'm') return `${Math.round(yards / 1.09361)} m`;
+    return `${Math.round(yards * 3)} ft`;
   }
 
   function saveIssues() {
@@ -186,6 +203,20 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   function handleSessionLogged() {
     setSessions(getSessionsForGun(gun.id).sort((a, b) => b.date.localeCompare(a.date)));
     onGunUpdated();
+  }
+
+  // ── Tab change — commit any open inline edits before switching ─────────────
+  function handleTabChange(t: DetailTab) {
+    if (showZeroForm) {
+      const val = parseFloat(zeroDistInput);
+      if (val && val > 0) logZero();
+      else { setShowZeroForm(false); setZeroDistInput(''); }
+    }
+    if (editingIssues) {
+      persist({ openIssues: issuesDraft });
+      setEditingIssues(false);
+    }
+    setTab(t);
   }
 
   function formatDate(d: string) {
@@ -276,7 +307,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
           ['ammo', 'AMMO'],
           ['timeline', 'TIMELINE'],
         ] as [DetailTab, string][]).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)} style={{
+          <button key={t} onClick={() => handleTabChange(t)} style={{
             flex: 1, padding: '10px 2px',
             backgroundColor: tab === t ? theme.textPrimary : 'transparent',
             border: 'none', color: tab === t ? theme.bg : theme.textMuted,
@@ -560,7 +591,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                 <div>
                   <div style={labelStyle}>Zero Distance</div>
                   <div style={{ ...valStyle, color: gun.lastZeroDistance ? theme.textPrimary : theme.textMuted }}>
-                    {gun.lastZeroDistance ? `${gun.lastZeroDistance} yds` : '—'}
+                    {gun.lastZeroDistance ? formatZeroDist(gun.lastZeroDistance, gun.lastZeroDistanceUnit) : '—'}
                   </div>
                 </div>
               </div>
@@ -612,21 +643,33 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                   backgroundColor: theme.bg, borderRadius: '6px', padding: '10px 12px',
                   border: `0.5px solid ${theme.border}`, marginBottom: '10px',
                 }}>
-                  <div style={labelStyle}>Zero Distance (yards)</div>
+                  <div style={labelStyle}>Zero Distance</div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                    <input
-                      type="number"
-                      value={zeroDistInput}
-                      onChange={e => setZeroDistInput(e.target.value)}
-                      placeholder="e.g. 100"
-                      autoFocus
-                      min={1}
-                      style={{ ...inputStyle, flex: 1 }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') logZero();
-                        if (e.key === 'Escape') { setShowZeroForm(false); setZeroDistInput(''); }
-                      }}
-                    />
+                    <div style={{ flex: 1, position: 'relative' }}>
+                      <input
+                        type="number"
+                        value={zeroDistInput}
+                        onChange={e => setZeroDistInput(e.target.value)}
+                        placeholder={zeroDistUnit === 'm' ? 'e.g. 91' : zeroDistUnit === 'ft' ? 'e.g. 300' : 'e.g. 100'}
+                        autoFocus
+                        min={1}
+                        style={{ ...inputStyle, paddingRight: '36px' }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') logZero();
+                          if (e.key === 'Escape') { setShowZeroForm(false); setZeroDistInput(''); }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setZeroDistUnit(u => u === 'yd' ? 'm' : u === 'm' ? 'ft' : 'yd')}
+                        style={{
+                          position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+                          fontFamily: 'monospace', fontSize: '10px', color: theme.accent,
+                          letterSpacing: '0.3px', lineHeight: 1,
+                        }}
+                      >{zeroDistUnit}</button>
+                    </div>
                     <button onClick={logZero} style={{
                       padding: '8px 14px', backgroundColor: theme.accent,
                       border: 'none', borderRadius: '4px', color: theme.bg,
@@ -1005,7 +1048,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
               {gun.lastZeroDistance && (
                 <div style={{ marginBottom: '10px' }}>
                   <div style={labelStyle}>Zero Distance</div>
-                  <div style={valStyle}>{gun.lastZeroDistance + ' yds'}</div>
+                  <div style={valStyle}>{formatZeroDist(gun.lastZeroDistance!, gun.lastZeroDistanceUnit)}</div>
                 </div>
               )}
               {showZeroForm ? (

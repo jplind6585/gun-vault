@@ -6,7 +6,8 @@ import {
   addOptic, updateOptic, getMountsForOptic,
 } from './storage';
 import { getAllGuns } from './storage';
-import { getOpticBrands, getOpticModelsForBrand, getOpticSpec } from './lib/referenceData';
+import { getOpticBrands, getOpticModelsForBrand, getOpticSpec, searchOpticModels } from './lib/referenceData';
+import { RetailerInput } from './lib/RetailerInput';
 
 interface OpticsListProps {
   onSelectOptic: (optic: Optic) => void;
@@ -512,9 +513,14 @@ function AddOpticForm({
   }, []);
 
   useEffect(() => {
-    if (!brand.trim()) { setDbModels([]); return; }
-    getOpticModelsForBrand(brand).then(setDbModels);
-  }, [brand]);
+    if (brand.trim()) {
+      getOpticModelsForBrand(brand).then(setDbModels);
+    } else if (model.length >= 2) {
+      searchOpticModels(model).then(setDbModels);
+    } else {
+      setDbModels([]);
+    }
+  }, [brand, model]);
 
   // When a known brand+model is selected, pre-fill all known specs.
   // Tries KNOWN_OPTICS first (instant), then falls back to Supabase optic_models.
@@ -818,11 +824,12 @@ function AddOpticForm({
           </div>
           <div>
             <div style={labelStyle}>Purchased From</div>
-            <AutocompleteInput
+            {/* Queries retailers table; primary_category = 'Optics & Mounts' */}
+            <RetailerInput
+              category="Optics & Mounts"
               value={purchasedFrom}
               onChange={setPurchasedFrom}
               placeholder="Brownells, Optics Planet…"
-              options={KNOWN_RETAILERS}
               style={inputStyle}
             />
           </div>

@@ -5,6 +5,7 @@ import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
 import { analyzeAmmoBox, hasClaudeApiKey } from './claudeApi';
 import { getSettings } from './SettingsPanel';
+import { RetailerInput } from './lib/RetailerInput';
 
 type ViewMode = 'calibers' | 'lots';
 type CategoryFilter = 'all' | 'Match' | 'Training' | 'Carry' | 'Hunting';
@@ -1365,6 +1366,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
   const [lotNumber, setLotNumber] = useState('');
   const [storageLocation, setStorageLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [purchasedFrom, setPurchasedFrom] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
   const scanInputRef = useRef<HTMLInputElement>(null);
@@ -1417,7 +1419,8 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
       lotNumber,
       storageLocation,
       notes,
-      purchaseDate: purchaseDate || undefined
+      purchaseDate: purchaseDate || undefined,
+      purchasedFrom: purchasedFrom.trim() || undefined
     };
 
     addAmmo(newLot);
@@ -1544,7 +1547,7 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
             type="file"
             accept="image/*"
             capture="environment"
-            style={{ display: 'none' }}
+            style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
             onChange={handleScanFile}
           />
         </div>
@@ -1602,6 +1605,17 @@ function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmm
             <div><label style={labelStyle}>Product Line</label><input type="text" placeholder="HST" value={productLine} onChange={(e) => setProductLine(e.target.value)} style={inputStyle} /></div>
             <div><label style={labelStyle}>Bullet Type</label><TypeaheadInput value={bulletType} onChange={setBulletType} suggestions={AMMO_BULLET_TYPES} placeholder="JHP" inputStyle={inputStyle} /></div>
             <div><label style={labelStyle}>Purchase Date</label><input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} style={inputStyle} /></div>
+            <div>
+              <label style={labelStyle}>Purchased From</label>
+              {/* Queries retailers table; primary_category = 'Ammunition' */}
+              <RetailerInput
+                category="Ammunition"
+                value={purchasedFrom}
+                onChange={setPurchasedFrom}
+                placeholder="MidwayUSA, Graf & Sons…"
+                style={inputStyle}
+              />
+            </div>
             <div><label style={labelStyle}>Cost Per Round ($)</label><input type="number" step="0.01" placeholder="0.35" value={costPerRound} onChange={(e) => setCostPerRound(e.target.value)} style={inputStyle} /></div>
             <div><label style={labelStyle}>Lot Number</label><input type="text" placeholder="ABC123" value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} style={inputStyle} /></div>
             <div><label style={labelStyle}>Storage Location</label><input type="text" placeholder="Ammo can #1" value={storageLocation} onChange={(e) => setStorageLocation(e.target.value)} style={inputStyle} /></div>
