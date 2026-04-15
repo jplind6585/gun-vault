@@ -174,7 +174,7 @@ function AppCore() {
   }
 
   if (!user) {
-    return Capacitor.isNativePlatform() ? <LoginScreen /> : <LandingPage />;
+    return <LoginScreen />;
   }
 
   if (!goalAnswered) {
@@ -251,7 +251,7 @@ function AppCore() {
     if (currentView === 'gun-detail' && selectedGun) return <AppHeader title={`${selectedGun.make} ${selectedGun.model}`} onBack={() => { setSelectedGun(null); setCurrentView('vault'); }} backLabel="Vault" />;
     if (currentView === 'sessions')     return <AppHeader title="Sessions" />;
     if (currentView === 'session-log')  return <AppHeader title={sessionLogGun ? 'Log Session' : 'New Session'} onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
-    if (currentView === 'session-ai')   return <AppHeader title="Describe Session" onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
+    if (currentView === 'session-ai')   return <AppHeader title="Debrief" onBack={() => setCurrentView('sessions')} backLabel="Sessions" />;
     if (currentView === 'caliber')      return <AppHeader title="Calibers" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={() => setCurrentView('more')} backLabel="More" />;
     if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" />;
@@ -354,7 +354,7 @@ function AppCore() {
       />
     );
     if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} />;
-    if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} />;
+    if (currentView === 'session-log') return <SessionLogView preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onCancel={() => { setSessionLogGun(null); setCurrentView('sessions'); }} onDebrief={() => { setSessionLogGun(null); setCurrentView('session-ai'); }} />;
     if (currentView === 'session-ai')  return <SessionAIParser onSaved={() => setCurrentView('sessions')} onCancel={() => setCurrentView('sessions')} />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
@@ -456,7 +456,6 @@ function AppCore() {
               alignItems: 'flex-end',
             }}>
               {[
-                { label: 'Describe Session 🎤', action: () => { setShowFab(false); setCurrentView('session-ai'); } },
                 { label: 'Log Session', action: () => { setShowFab(false); openSessionLog(); } },
                 { label: 'Add Gun',     action: () => { setShowFab(false); setShowAddForm(true); } },
                 { label: 'Add Ammo',    action: () => { setShowFab(false); setVaultSection('ammo'); setCurrentView('vault'); setOpenAddAmmo(true); } },

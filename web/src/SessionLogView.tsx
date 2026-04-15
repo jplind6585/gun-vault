@@ -13,6 +13,7 @@ interface SessionLogViewProps {
   preselectedGun?: Gun | null;
   onSaved: () => void;
   onCancel: () => void;
+  onDebrief?: () => void;
 }
 
 const PURPOSES: SessionPurpose[] = ['Warmup', 'Drills', 'Zeroing', 'Qualification', 'Competition', 'Fun', 'Carry Eval'];
@@ -525,7 +526,7 @@ function StringPicker({ allGuns, preselectedGun, onAdd, onCancel }: StringPicker
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLogViewProps) {
+export function SessionLogView({ preselectedGun, onSaved, onCancel, onDebrief }: SessionLogViewProps) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   const _allSessions = getAllSessions().sort((a, b) => b.date.localeCompare(a.date));
@@ -596,6 +597,13 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
 
   const [saving, setSaving] = useState(false);
 
+  // Quick Log state
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [quickLogGunId, setQuickLogGunId] = useState(preselectedGun?.id || (allGuns[0]?.id ?? ''));
+  const [quickLogRounds, setQuickLogRounds] = useState('');
+  const [quickLogDate, setQuickLogDate] = useState(today);
+  const [quickLogSaved, setQuickLogSaved] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [showPhotoActionSheet, setShowPhotoActionSheet] = useState(false);
@@ -606,6 +614,20 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
     setPickerOpenedOnce(true);
     // Clear the placeholder string we pre-added
     setStrings([]);
+  }
+
+  function handleQuickLogSave() {
+    const rounds = parseInt(quickLogRounds, 10);
+    if (!quickLogGunId || !rounds || rounds <= 0) return;
+    logSession({
+      gunId: quickLogGunId,
+      date: quickLogDate,
+      roundsExpended: rounds,
+      strings: [{ id: generateStringId(), gunId: quickLogGunId, roundsExpended: rounds }],
+    });
+    setShowQuickLog(false);
+    setQuickLogRounds('');
+    setQuickLogSaved(true);
   }
 
   function togglePurpose(p: SessionPurpose) {
@@ -808,6 +830,114 @@ export function SessionLogView({ preselectedGun, onSaved, onCancel }: SessionLog
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+        {/* Quick saved banner */}
+        {quickLogSaved && (
+          <div style={{
+            backgroundColor: 'rgba(255,212,59,0.12)', border: `0.5px solid ${theme.accent}`,
+            borderRadius: '6px', padding: '12px 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.accent, letterSpacing: '0.4px' }}>
+              Session saved. Add details?
+            </span>
+            <button
+              onClick={() => setQuickLogSaved(false)}
+              style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontFamily: 'monospace', fontSize: '10px' }}
+            >
+              dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Debrief + Quick Log buttons */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {onDebrief && (
+            <button
+              onClick={onDebrief}
+              style={{
+                flex: 1, padding: '13px 10px',
+                backgroundColor: theme.accent, border: 'none', borderRadius: '6px',
+                color: theme.bg, fontFamily: 'monospace', fontSize: '11px',
+                letterSpacing: '0.8px', fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              DEBRIEF
+            </button>
+          )}
+          <button
+            onClick={() => { setShowQuickLog(true); setQuickLogSaved(false); }}
+            style={{
+              flex: 1, padding: '13px 10px',
+              backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '6px',
+              color: theme.textSecondary, fontFamily: 'monospace', fontSize: '11px',
+              letterSpacing: '0.8px', cursor: 'pointer',
+            }}
+          >
+            QUICK LOG
+          </button>
+        </div>
+
+        {/* Quick Log bottom sheet */}
+        {showQuickLog && (
+          <div style={{
+            backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
+            borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase' }}>Quick Log</span>
+              <button onClick={() => setShowQuickLog(false)} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '14px' }}>✕</button>
+            </div>
+            <div>
+              <span style={labelStyle}>Gun</span>
+              <select
+                value={quickLogGunId}
+                onChange={e => setQuickLogGunId(e.target.value)}
+                style={{ ...inputStyle, color: quickLogGunId ? theme.textPrimary : theme.textMuted }}
+              >
+                {allGuns.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.displayName || `${g.make} ${g.model}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <span style={labelStyle}>Rounds Fired</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                placeholder="e.g. 50"
+                value={quickLogRounds}
+                onChange={e => setQuickLogRounds(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <span style={labelStyle}>Date</span>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                <Chip label="Today" active={quickLogDate === today} onClick={() => setQuickLogDate(today)} />
+                <Chip label="Yesterday" active={quickLogDate === yesterday} onClick={() => setQuickLogDate(yesterday)} />
+              </div>
+              <input type="date" value={quickLogDate} onChange={e => setQuickLogDate(e.target.value)} style={inputStyle} />
+            </div>
+            <button
+              onClick={handleQuickLogSave}
+              disabled={!quickLogGunId || !quickLogRounds || parseInt(quickLogRounds, 10) <= 0}
+              style={{
+                padding: '12px',
+                backgroundColor: (quickLogGunId && quickLogRounds && parseInt(quickLogRounds, 10) > 0) ? theme.accent : 'rgba(255,212,59,0.2)',
+                color: (quickLogGunId && quickLogRounds && parseInt(quickLogRounds, 10) > 0) ? theme.bg : 'rgba(255,255,255,0.3)',
+                border: 'none', borderRadius: '6px',
+                fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.8px', fontWeight: 700,
+                cursor: (quickLogGunId && quickLogRounds && parseInt(quickLogRounds, 10) > 0) ? 'pointer' : 'not-allowed',
+              }}
+            >
+              SAVE SESSION
+            </button>
+          </div>
+        )}
 
         {/* Date */}
         <div>

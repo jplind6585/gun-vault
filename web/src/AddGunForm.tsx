@@ -40,7 +40,7 @@ interface AddGunFormProps {
   onCancel: () => void;
 }
 
-const TYPES: Gun['type'][] = ['Pistol', 'Rifle', 'Shotgun', 'Suppressor', 'NFA'];
+const TYPES: Gun['type'][] = ['Pistol', 'Rifle', 'Shotgun'];
 const ACTIONS: Gun['action'][] = ['Semi-Auto', 'Bolt', 'Lever', 'Pump', 'Revolver', 'Break', 'Single Shot'];
 
 
@@ -57,6 +57,9 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [action, setAction]   = useState<Gun['action'] | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [lruCalibers, setLruCalibers] = useState<string[]>(() => getLruCalibers());
+  const [freeEntry, setFreeEntry] = useState(false);
+  const [platform, setPlatform] = useState('');
+  const [arsenal, setArsenal] = useState('');
 
   // Autocomplete state
   const [makeSuggestions, setMakeSuggestions] = useState<string[]>([]);
@@ -101,7 +104,9 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const receiptRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  const isValid = make.trim() && model.trim() && caliber.trim() && type && action;
+  const isValid = freeEntry
+    ? platform.trim() && caliber.trim() && type && action
+    : make.trim() && model.trim() && caliber.trim() && type && action;
 
   // Auto-suggest makes as user types
   useEffect(() => {
@@ -159,10 +164,20 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       setLruCalibers(getLruCalibers());
     }
 
+    const effectiveMake = freeEntry ? platform.trim() : make.trim();
+    const effectiveModel = freeEntry ? (model.trim() || platform.trim()) : model.trim();
+    const freeDisplayName = freeEntry
+      ? (model.trim() ? `${platform.trim()} (${model.trim()})` : platform.trim())
+      : undefined;
+    const arsenalNote = freeEntry && arsenal.trim() ? `Arsenal/Maker: ${arsenal.trim()}` : '';
+    const effectiveNotes = arsenalNote
+      ? [arsenalNote, notes.trim()].filter(Boolean).join('\n')
+      : notes.trim();
+
     onSave({
-      make: make.trim(),
-      model: model.trim(),
-      displayName: displayName.trim() || undefined,
+      make: effectiveMake,
+      model: effectiveModel,
+      displayName: displayName.trim() || freeDisplayName,
       caliber: caliber.trim(),
       type: type!,
       action: action!,
@@ -173,7 +188,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       acquiredPrice: acquiredPrice ? parseFloat(acquiredPrice) : undefined,
       acquiredFrom: acquiredFrom.trim() || undefined,
       barrelLength: barrelLength ? parseFloat(barrelLength) : undefined,
-      notes: notes.trim() || undefined,
+      notes: effectiveNotes || undefined,
       nfaItem,
       suppressorHost,
       receiptImageUrl: receiptPreview || undefined,
@@ -207,51 +222,114 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
               />
             </Field>
 
-            {/* Make with autocomplete */}
-            <div style={{ marginBottom: '14px', position: 'relative' }}>
-              <label style={styles.fieldLabel}>Make *</label>
-              <input
-                style={styles.input}
-                placeholder="e.g. Glock, Sig Sauer, S&W..."
-                value={make}
-                onChange={e => setMake(e.target.value)}
-                onBlur={() => setTimeout(() => setShowMakeSugg(false), 150)}
-                autoCapitalize="words"
-                autoComplete="off"
-              />
-              {showMakeSugg && (
-                <div style={styles.dropdown}>
-                  {makeSuggestions.map(s => (
-                    <button key={s} type="button" onMouseDown={() => handleMakeSelect(s)} style={styles.dropdownItem}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Free entry toggle */}
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => { setFreeEntry(v => !v); setPlatform(''); setArsenal(''); setMake(''); setModel(''); }}
+                style={{
+                  width: '32px', height: '18px', borderRadius: '9px', border: 'none', flexShrink: 0,
+                  backgroundColor: freeEntry ? theme.accent : theme.surfaceAlt,
+                  cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px', left: freeEntry ? '17px' : '3px',
+                  width: '12px', height: '12px', borderRadius: '50%',
+                  backgroundColor: freeEntry ? theme.bg : theme.textMuted,
+                  transition: 'left 0.2s',
+                }} />
+              </button>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.3px' }}>
+                Doesn't fit standard Make/Model?
+              </span>
             </div>
 
-            {/* Model with autocomplete */}
-            <div style={{ marginBottom: '14px', position: 'relative' }}>
-              <label style={styles.fieldLabel}>Model *</label>
-              <input
-                style={styles.input}
-                placeholder="e.g. G19 Gen5, P320 Compact..."
-                value={model}
-                onChange={e => setModel(e.target.value)}
-                onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
-                autoCapitalize="words"
-                autoComplete="off"
-              />
-              {showModelSugg && (
-                <div style={styles.dropdown}>
-                  {modelSuggestions.map(s => (
-                    <button key={s} type="button" onMouseDown={() => handleModelSelect(s)} style={styles.dropdownItem}>
-                      {s}
-                    </button>
-                  ))}
+            {freeEntry ? (
+              <>
+                {/* Platform (required) */}
+                <Field label="Platform *">
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. AR-15, AK-47, 1911..."
+                    value={platform}
+                    onChange={e => setPlatform(e.target.value)}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                  />
+                </Field>
+                {/* Arsenal / Maker (optional) */}
+                <Field label="Arsenal / Maker (optional)">
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. Aero Precision, PSA, CMMG..."
+                    value={arsenal}
+                    onChange={e => setArsenal(e.target.value)}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                  />
+                </Field>
+                {/* Variant / Designation (optional) */}
+                <Field label="Variant / Designation (optional)">
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. M4E1, BCM Recce-16, MK18..."
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                  />
+                </Field>
+              </>
+            ) : (
+              <>
+                {/* Make with autocomplete */}
+                <div style={{ marginBottom: '14px', position: 'relative' }}>
+                  <label style={styles.fieldLabel}>Make *</label>
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. Glock, Sig Sauer, S&W..."
+                    value={make}
+                    onChange={e => setMake(e.target.value)}
+                    onBlur={() => setTimeout(() => setShowMakeSugg(false), 150)}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                  />
+                  {showMakeSugg && (
+                    <div style={styles.dropdown}>
+                      {makeSuggestions.map(s => (
+                        <button key={s} type="button" onMouseDown={() => handleMakeSelect(s)} style={styles.dropdownItem}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* Model with autocomplete */}
+                <div style={{ marginBottom: '14px', position: 'relative' }}>
+                  <label style={styles.fieldLabel}>Model *</label>
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. G19 Gen5, P320 Compact..."
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                  />
+                  {showModelSugg && (
+                    <div style={styles.dropdown}>
+                      {modelSuggestions.map(s => (
+                        <button key={s} type="button" onMouseDown={() => handleModelSelect(s)} style={styles.dropdownItem}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             <Field label="Caliber *">
               <div style={{ position: 'relative' }}>
