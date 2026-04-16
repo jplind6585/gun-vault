@@ -546,7 +546,8 @@ export async function fetchCartridgesFromSupabase(): Promise<Cartridge[]> {
   const { data, error } = await supabase
     .from('cartridges')
     .select('*')
-    .order('name');
+    .order('name')
+    .limit(2000);
   if (error || !data || data.length === 0) return [];
   return data.map(cartridgeFromDb);
 }
