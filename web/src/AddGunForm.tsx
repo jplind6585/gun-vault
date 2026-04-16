@@ -74,7 +74,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [showCaliberSugg, setShowCaliberSugg] = useState(false);
   // 1C: post-submit mismatch review
   interface MismatchFlag {
-    field: 'caliber' | 'type';
+    field: 'caliber' | 'type' | 'action';
     label: string;
     userValue: string;
     dbValue: string;
@@ -265,6 +265,11 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
           flags.push({ field: 'type', label: 'Firearm Type', userValue: type, dbValue: dbSpec.type, resolution: null });
         }
 
+        // Action mismatch
+        if (dbSpec.action && action && dbSpec.action.toLowerCase() !== action.toLowerCase()) {
+          flags.push({ field: 'action', label: 'Action Type', userValue: action, dbValue: dbSpec.action, resolution: null });
+        }
+
         // Caliber mismatch — skip if user's caliber is in caliber_options
         if (dbSpec.caliber && caliber.trim()) {
           const userCal = caliber.trim().toLowerCase();
@@ -302,6 +307,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       if (res === 'accept') {
         if (flag.field === 'caliber') data = { ...data, caliber: flag.dbValue };
         if (flag.field === 'type') data = { ...data, type: flag.dbValue as Gun['type'] };
+        if (flag.field === 'action') data = { ...data, action: flag.dbValue as Gun['action'] };
       }
     }
     setReviewState(null);
@@ -712,112 +718,109 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
           <div style={{
             position: 'absolute', inset: 0, backgroundColor: theme.bg,
             borderRadius: '8px', display: 'flex', flexDirection: 'column',
-            zIndex: 10, overflow: 'hidden',
+            zIndex: 50, overflow: 'hidden',
           }}>
             {/* Review header */}
             <div style={{
-              padding: '16px 20px 12px',
+              padding: '14px 20px 12px',
               borderBottom: `1px solid ${theme.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: `${theme.orange}14`,
             }}>
-              <div>
-                <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.5px', color: theme.orange, textTransform: 'uppercase', marginBottom: '2px' }}>
-                  ⚠ Review Flagged Fields
-                </div>
-                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
-                  Our records found {reviewState.flags.length} mismatch{reviewState.flags.length > 1 ? 'es' : ''} for <span style={{ color: theme.textSecondary }}>{make} {model}</span>
-                </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '1px', color: theme.orange, textTransform: 'uppercase', fontWeight: 700 }}>
+                Hold on — we found conflicts
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, marginTop: '4px' }}>
+                Our database shows different specs for {make} {model}. Review each field, then save.
               </div>
             </div>
 
             {/* Flag cards */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {reviewState.flags.map(flag => (
                 <div key={flag.field} style={{
                   backgroundColor: theme.surface,
-                  border: `1px solid ${flag.resolution ? theme.border : theme.orange}`,
-                  borderRadius: '6px', padding: '14px',
+                  border: `1px solid ${flag.resolution ? theme.green + '55' : theme.orange}`,
+                  borderRadius: '6px', padding: '12px',
                 }}>
-                  {/* Field label */}
-                  <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '10px' }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>
                     {flag.label}
                   </div>
-                  {/* Values row */}
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                     <div style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '4px', padding: '8px 10px' }}>
-                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>YOUR ENTRY</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>YOU ENTERED</div>
                       <div style={{ fontFamily: 'monospace', fontSize: '13px', color: flag.resolution === 'keep' ? theme.accent : theme.textPrimary, fontWeight: flag.resolution === 'keep' ? 700 : 400 }}>
                         {flag.userValue}
                       </div>
                     </div>
-                    <div style={{ flex: 1, backgroundColor: 'rgba(255,212,59,0.06)', borderRadius: '4px', padding: '8px 10px' }}>
-                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>SUGGESTION</div>
+                    <div style={{ flex: 1, backgroundColor: `${theme.orange}0f`, borderRadius: '4px', padding: '8px 10px' }}>
+                      <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '3px' }}>DB SAYS</div>
                       <div style={{ fontFamily: 'monospace', fontSize: '13px', color: flag.resolution === 'accept' ? theme.accent : theme.textPrimary, fontWeight: flag.resolution === 'accept' ? 700 : 400 }}>
                         {flag.dbValue}
                       </div>
                     </div>
                   </div>
-                  {/* Action chips */}
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {[
-                      { key: 'keep' as const, label: 'Keep Original' },
-                      { key: 'accept' as const, label: 'Accept Suggestion' },
-                    ].map(opt => (
+                    {([
+                      { key: 'keep' as const, label: 'Keep mine' },
+                      { key: 'accept' as const, label: 'Use DB value' },
+                    ] as const).map(opt => (
                       <button
                         key={opt.key}
+                        type="button"
                         onClick={() => resolveFlag(flag.field, opt.key)}
                         style={{
-                          padding: '5px 12px',
-                          borderRadius: '20px',
+                          padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
                           border: `1px solid ${flag.resolution === opt.key ? theme.accent : theme.border}`,
                           backgroundColor: flag.resolution === opt.key ? `${theme.accent}22` : 'transparent',
                           color: flag.resolution === opt.key ? theme.accent : theme.textSecondary,
-                          fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                          fontFamily: 'monospace', fontSize: '10px', fontWeight: flag.resolution === opt.key ? 700 : 400,
                         }}
                       >
                         {opt.label}
                       </button>
                     ))}
                     <button
+                      type="button"
                       onClick={() => setReviewState(null)}
                       style={{
-                        padding: '5px 12px',
-                        borderRadius: '20px',
-                        border: `1px solid ${theme.border}`,
-                        backgroundColor: 'transparent',
-                        color: theme.textMuted,
-                        fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                        padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
+                        border: `1px solid ${theme.border}`, backgroundColor: 'transparent',
+                        color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px',
                       }}
                     >
-                      Edit
+                      Go back
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Footer buttons */}
+            {/* Footer — always shows both options clearly */}
             <div style={{ padding: '12px 20px 16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {reviewState.flags.every(f => f.resolution !== null) && (
-                <button
-                  onClick={() => commitReview()}
-                  style={{
-                    padding: '12px', backgroundColor: theme.accent, border: 'none', borderRadius: '4px',
-                    color: theme.bg, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                  }}
-                >
-                  SAVE TO VAULT
-                </button>
-              )}
               <button
-                onClick={() => commitReview(true)}
+                type="button"
+                onClick={() => commitReview()}
+                disabled={!reviewState.flags.every(f => f.resolution !== null)}
                 style={{
-                  padding: '10px', backgroundColor: 'transparent',
-                  border: `1px solid ${theme.border}`, borderRadius: '4px',
-                  color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer',
+                  padding: '12px', borderRadius: '4px', cursor: reviewState.flags.every(f => f.resolution !== null) ? 'pointer' : 'not-allowed',
+                  backgroundColor: reviewState.flags.every(f => f.resolution !== null) ? theme.accent : 'rgba(255,212,59,0.2)',
+                  border: 'none',
+                  color: reviewState.flags.every(f => f.resolution !== null) ? theme.bg : 'rgba(255,255,255,0.3)',
+                  fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
                 }}
               >
-                Save Anyway (keep my entries)
+                {reviewState.flags.every(f => f.resolution !== null) ? 'SAVE TO VAULT' : `SAVE TO VAULT — resolve ${reviewState.flags.filter(f => f.resolution === null).length} above first`}
+              </button>
+              <button
+                type="button"
+                onClick={() => commitReview(true)}
+                style={{
+                  padding: '10px', borderRadius: '4px', cursor: 'pointer',
+                  backgroundColor: 'transparent', border: `1px solid ${theme.border}`,
+                  color: theme.textSecondary, fontFamily: 'monospace', fontSize: '10px',
+                }}
+              >
+                Skip review — save with my original entries
               </button>
             </div>
           </div>
@@ -918,6 +921,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '8px', width: '100%', maxWidth: '620px',
     maxHeight: '90vh', display: 'flex', flexDirection: 'column',
     boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+    position: 'relative',
   },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
