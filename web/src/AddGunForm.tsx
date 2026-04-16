@@ -330,27 +330,34 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
             </Field>
 
             {/* Free entry toggle */}
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => { setFreeEntry(v => !v); setPlatform(''); setArsenal(''); setMake(''); setModel(''); }}
-                style={{
-                  width: '32px', height: '18px', borderRadius: '9px', border: 'none', flexShrink: 0,
-                  backgroundColor: freeEntry ? theme.accent : theme.surfaceAlt, overflow: 'hidden',
-                  cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
-                }}
-              >
+            <button
+              type="button"
+              onClick={() => { setFreeEntry(v => !v); setPlatform(''); setArsenal(''); setMake(''); setModel(''); }}
+              style={{
+                marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px',
+                background: 'none', border: 'none', padding: '6px 0', cursor: 'pointer', width: '100%', textAlign: 'left',
+              }}
+            >
+              <div style={{
+                width: '36px', height: '20px', borderRadius: '10px', flexShrink: 0,
+                backgroundColor: freeEntry ? theme.accent : 'transparent',
+                border: freeEntry ? 'none' : `2px solid ${theme.textMuted}`,
+                position: 'relative', transition: 'background-color 0.2s',
+                boxSizing: 'border-box',
+              }}>
                 <div style={{
-                  position: 'absolute', top: '3px', left: freeEntry ? '17px' : '3px',
+                  position: 'absolute',
+                  top: freeEntry ? '4px' : '2px',
+                  left: freeEntry ? '18px' : '2px',
                   width: '12px', height: '12px', borderRadius: '50%',
                   backgroundColor: freeEntry ? theme.bg : theme.textMuted,
                   transition: 'left 0.2s',
                 }} />
-              </button>
-              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.3px' }}>
+              </div>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, letterSpacing: '0.3px' }}>
                 Doesn't fit standard Make/Model?
               </span>
-            </div>
+            </button>
 
             {freeEntry ? (
               <>
