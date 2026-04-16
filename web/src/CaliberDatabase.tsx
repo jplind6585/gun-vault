@@ -621,7 +621,7 @@ function CartridgeDetailModal({
   onClose: () => void;
   allCartridges: Cartridge[];
 }) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'history' | 'military' | 'ballistics' | 'family'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'history' | 'military' | 'family'>('overview');
 
   return (
     <div
@@ -745,7 +745,7 @@ function CartridgeDetailModal({
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '3px', marginTop: '8px' }}>
-            {(['overview', 'specs', 'history', 'military', 'ballistics', 'family'] as const).map(tab => (
+            {(['overview', 'specs', 'history', 'military', 'family'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
