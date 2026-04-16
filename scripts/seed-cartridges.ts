@@ -18,9 +18,12 @@ if (!SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
+import { randomUUID } from 'crypto';
+
 // camelCase → snake_case mapper
 function toRow(c: typeof seedCartridges[0]) {
   return {
+    id:                    randomUUID(),
     name:                  c.name,
     alternate_names:       c.alternateNames ?? [],
     type:                  c.type,
@@ -35,8 +38,6 @@ function toRow(c: typeof seedCartridges[0]) {
     derived_from:          c.derivedFrom ?? null,
     bullet_diameter_inch:  c.bulletDiameterInch ?? null,
     bullet_diameter_mm:    c.bulletDiameterMM ?? null,
-    neck_diameter_inch:    (c as any).neckDiameterInch ?? null,
-    neck_diameter_mm:      (c as any).neckDiameterMM ?? null,
     base_diameter_inch:    c.baseDiameterInch ?? null,
     base_diameter_mm:      c.baseDiameterMM ?? null,
     rim_diameter_inch:     c.rimDiameterInch ?? null,
@@ -47,13 +48,14 @@ function toRow(c: typeof seedCartridges[0]) {
     overall_length_mm:     c.overallLengthMM ?? null,
     case_capacity_grains:  c.caseCapacityGrains ?? null,
     max_pressure_psi:      c.maxPressurePSI ?? null,
-    max_pressure_cup:      (c as any).maxPressureCUP ?? null,
     rim_type:              c.rimType ?? null,
     primer_type:           c.primerType ?? null,
     typical_twist_rate:    c.typicalTwistRate ?? null,
     common_bullet_weights: c.commonBulletWeights ?? [],
-    velocity_range_fps:    c.velocityRangeFPS ?? null,
-    energy_range_ftlbs:    c.energyRangeFTLBS ?? null,
+    velocity_min_fps:      c.velocityRangeFPS?.min ?? null,
+    velocity_max_fps:      c.velocityRangeFPS?.max ?? null,
+    energy_min_ftlbs:      c.energyRangeFTLBS?.min ?? null,
+    energy_max_ftlbs:      c.energyRangeFTLBS?.max ?? null,
     effective_range_yards: c.effectiveRangeYards ?? null,
     max_range_yards:       c.maxRangeYards ?? null,
     primary_use:           c.primaryUse ?? [],
@@ -62,8 +64,6 @@ function toRow(c: typeof seedCartridges[0]) {
     current_military_use:  c.currentMilitaryUse ?? [],
     law_enforcement_use:   c.lawEnforcementUse ?? null,
     similar_cartridges:    c.similarCartridges ?? [],
-    modern_equivalent:     c.modernEquivalent ?? null,
-    superseded_by:         c.supersededBy ?? null,
     description:           c.description ?? null,
     history:               c.history ?? null,
     notable_firearms:      c.notableFirearms ?? [],
