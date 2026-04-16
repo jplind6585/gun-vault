@@ -30,19 +30,21 @@ export function FeedbackModal({ onClose }: Props) {
     if (!message.trim()) return;
     setSending(true);
     setError('');
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-    );
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const insertPromise = supabase.from('feedback').insert({
-        user_id: session?.user?.id ?? null,
-        category,
-        message: message.trim(),
-        email: session?.user?.email ?? null,
-        app_version: '1.0',
-      });
-      const { error: insertError } = await Promise.race([insertPromise, timeout]) as Awaited<typeof insertPromise>;
+      const { data: { session } } = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000)),
+      ]);
+      const { error: insertError } = await Promise.race([
+        supabase.from('feedback').insert({
+          user_id: session?.user?.id ?? null,
+          category,
+          message: message.trim(),
+          email: session?.user?.email ?? null,
+          app_version: '1.0',
+        }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000)),
+      ]);
       if (insertError) throw insertError;
       setSent(true);
       setTimeout(onClose, 1500);
