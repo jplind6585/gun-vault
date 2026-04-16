@@ -70,6 +70,7 @@ async function refreshCartridgesFromSupabase(): Promise<void> {
     });
 
     localStorage.setItem(CARTRIDGES_KEY, JSON.stringify(merged));
+    window.dispatchEvent(new CustomEvent('cartridges-refreshed'));
   } catch {
     // Silent — app continues with cached seed data
   }

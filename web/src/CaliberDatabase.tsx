@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { theme } from './theme';
 import type { Cartridge } from './types';
 import { getAllCartridges } from './storage';
@@ -11,7 +11,13 @@ type SortField = 'name' | 'year' | 'type' | 'bulletDia' | 'velocity' | 'energy' 
 type SortDirection = 'asc' | 'desc';
 
 export function CaliberDatabase() {
-  const [allCartridges] = useState<Cartridge[]>(getAllCartridges());
+  const [allCartridges, setAllCartridges] = useState<Cartridge[]>(getAllCartridges());
+
+  useEffect(() => {
+    const handler = () => setAllCartridges(getAllCartridges());
+    window.addEventListener('cartridges-refreshed', handler);
+    return () => window.removeEventListener('cartridges-refreshed', handler);
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [filterOwnership, setFilterOwnership] = useState<FilterOwnership>('all');
