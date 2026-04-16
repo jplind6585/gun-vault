@@ -18,13 +18,27 @@ export async function searchManufacturers(query: string): Promise<string[]> {
   }
 }
 
+export const COMMON_CALIBERS = [
+  '9mm', '5.56 NATO', '.308 Win', '.45 ACP', '.22 LR',
+];
+
+// Normalize user input before searching: collapse "m m" → "mm", "9 mm" → "9mm", etc.
+export function normalizeCaliber(s: string): string {
+  return s
+    .replace(/m\s+m/gi, 'mm')
+    .replace(/(\d)\s+mm/gi, '$1mm')
+    .replace(/\s*\.\s*(\d)/g, '.$1')
+    .trim();
+}
+
 export async function searchCalibers(query: string): Promise<string[]> {
   if (!query.trim()) return [];
+  const normalized = normalizeCaliber(query);
   try {
     const { data } = await supabase
       .from('cartridges')
       .select('name')
-      .ilike('name', `%${query}%`)
+      .ilike('name', `%${normalized}%`)
       .order('name')
       .limit(12);
     return data?.map((r: { name: string }) => r.name) ?? [];

@@ -3,7 +3,7 @@ import { theme } from './theme';
 import type { Gun } from './types';
 import { lookupGunSpec, suggestMakes, suggestModels } from './gunDatabase';
 import { getSettings } from './SettingsPanel';
-import { searchManufacturers, searchCalibers, checkGunModel, searchGunModels } from './lib/referenceData';
+import { searchManufacturers, searchCalibers, checkGunModel, searchGunModels, normalizeCaliber, COMMON_CALIBERS } from './lib/referenceData';
 import { RetailerInput } from './lib/RetailerInput';
 
 const LRU_KEY = 'lru_calibers';
@@ -121,6 +121,11 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  // Dropdown anchor refs — used to position dropdowns with position:fixed (escapes modal overflow clip)
+  const makeRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const caliberRef = useRef<HTMLDivElement>(null);
+  const [caliberFocused, setCaliberFocused] = useState(false);
 
   const isValid = freeEntry
     ? platform.trim() && caliber.trim() && type && action
@@ -133,20 +138,23 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     setShowMakeSugg(local.length > 0 && make.length > 0);
     if (make.length >= 2) {
       searchManufacturers(make).then(remote => {
-        setMakeSuggestions(prev => {
-          const merged = [...new Set([...prev, ...remote])].slice(0, 10);
-          setShowMakeSugg(merged.length > 0);
-          return merged;
-        });
+        if (!remote.length) return;
+        setMakeSuggestions(prev => [...new Set([...prev, ...remote])].slice(0, 10));
+        setShowMakeSugg(true);
       });
     }
   }, [make]);
 
   // Auto-suggest calibers from Supabase cartridges table
   useEffect(() => {
-    if (!caliber.trim() || caliber.length < 1) {
-      setCaliberSuggestions([]);
-      setShowCaliberSugg(false);
+    if (!caliber.trim()) {
+      if (caliberFocused) {
+        setCaliberSuggestions(COMMON_CALIBERS);
+        setShowCaliberSugg(true);
+      } else {
+        setCaliberSuggestions([]);
+        setShowCaliberSugg(false);
+      }
       return;
     }
     const timeout = setTimeout(() => {
@@ -156,7 +164,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
       });
     }, 200);
     return () => clearTimeout(timeout);
-  }, [caliber]);
+  }, [caliber, caliberFocused]);
 
   // Auto-suggest models — local first, then Supabase gun_models (model-independent of make)
   useEffect(() => {
@@ -165,12 +173,10 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
     setShowModelSugg(local.length > 0 && model.length > 0);
     if (model.length >= 2) {
       searchGunModels(model, make).then(remote => {
-        setModelSuggestions(prev => {
-          const remoteLabels = remote.map(r => r.model);
-          const merged = [...new Set([...prev, ...remoteLabels])].slice(0, 12);
-          setShowModelSugg(merged.length > 0);
-          return merged;
-        });
+        const remoteLabels = remote.map(r => r.model);
+        if (!remoteLabels.length) return;
+        setModelSuggestions(prev => [...new Set([...prev, ...remoteLabels])].slice(0, 12));
+        setShowModelSugg(true);
       });
     }
   }, [make, model]);
@@ -398,7 +404,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
             ) : (
               <>
                 {/* Make with autocomplete */}
-                <div style={{ marginBottom: '14px', position: 'relative' }}>
+                <div ref={makeRef} style={{ marginBottom: '14px', position: 'relative' }}>
                   <label style={styles.fieldLabel}>Make *</label>
                   <input
                     style={styles.input}
@@ -409,19 +415,22 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                     autoCapitalize="words"
                     autoComplete="off"
                   />
-                  {showMakeSugg && (
-                    <div style={styles.dropdown}>
-                      {makeSuggestions.map(s => (
-                        <button key={s} type="button" onMouseDown={() => handleMakeSelect(s)} style={styles.dropdownItem}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {showMakeSugg && makeRef.current && (() => {
+                    const r = makeRef.current!.getBoundingClientRect();
+                    return (
+                      <div style={{ ...styles.dropdown, top: r.bottom, left: r.left, width: r.width }}>
+                        {makeSuggestions.map(s => (
+                          <button key={s} type="button" onMouseDown={() => handleMakeSelect(s)} style={styles.dropdownItem}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Model with autocomplete */}
-                <div style={{ marginBottom: '14px', position: 'relative' }}>
+                <div ref={modelRef} style={{ marginBottom: '14px', position: 'relative' }}>
                   <label style={styles.fieldLabel}>Model *</label>
                   <input
                     style={styles.input}
@@ -432,41 +441,52 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
                     autoCapitalize="words"
                     autoComplete="off"
                   />
-                  {showModelSugg && (
-                    <div style={styles.dropdown}>
-                      {modelSuggestions.map(s => (
-                        <button key={s} type="button" onMouseDown={() => handleModelSelect(s)} style={styles.dropdownItem}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {showModelSugg && modelRef.current && (() => {
+                    const r = modelRef.current!.getBoundingClientRect();
+                    return (
+                      <div style={{ ...styles.dropdown, top: r.bottom, left: r.left, width: r.width }}>
+                        {modelSuggestions.map(s => (
+                          <button key={s} type="button" onMouseDown={() => handleModelSelect(s)} style={styles.dropdownItem}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </>
             )}
 
             <Field label="Caliber *">
-              <div style={{ position: 'relative' }}>
+              <div ref={caliberRef} style={{ position: 'relative' }}>
                 <input
                   style={{ ...styles.input, borderColor: autoFilled ? theme.accent : undefined }}
                   placeholder="e.g. 9mm, .308 Win, 12 Gauge"
                   value={caliber}
                   onChange={e => { setCaliber(e.target.value); setAutoFilled(false); }}
-                  onBlur={() => setTimeout(() => setShowCaliberSugg(false), 150)}
+                  onFocus={() => setCaliberFocused(true)}
+                  onBlur={() => {
+                    setCaliber(normalizeCaliber(caliber));
+                    setCaliberFocused(false);
+                    setTimeout(() => setShowCaliberSugg(false), 150);
+                  }}
                   autoComplete="off"
                 />
                 {autoFilled && (
                   <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px' }}>AUTO</span>
                 )}
-                {showCaliberSugg && (
-                  <div style={styles.dropdown}>
-                    {caliberSuggestions.map(s => (
-                      <button key={s} type="button" onMouseDown={() => { setCaliber(s); setAutoFilled(false); setShowCaliberSugg(false); }} style={styles.dropdownItem}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {showCaliberSugg && caliberRef.current && (() => {
+                  const r = caliberRef.current!.getBoundingClientRect();
+                  return (
+                    <div style={{ ...styles.dropdown, top: r.bottom, left: r.left, width: r.width }}>
+                      {caliberSuggestions.map(s => (
+                        <button key={s} type="button" onMouseDown={() => { setCaliber(s); setAutoFilled(false); setShowCaliberSugg(false); }} style={styles.dropdownItem}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
               {/* LRU caliber quick-pick buttons — 4 equal-width */}
               {!caliber && (
@@ -941,7 +961,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   saveBtnDisabled: { opacity: 0.4, cursor: 'not-allowed' },
   dropdown: {
-    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+    position: 'fixed', zIndex: 9999,
     backgroundColor: theme.surface, border: `1px solid ${theme.border}`,
     borderRadius: '4px', overflow: 'hidden',
     boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
