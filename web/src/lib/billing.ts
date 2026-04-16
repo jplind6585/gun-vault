@@ -13,6 +13,7 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import { supabase } from './supabase';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,31 @@ export async function purchasePro(): Promise<PurchaseResult> {
     }
     console.warn('[billing] purchase failed:', err);
     return { success: false, error: 'unknown', message: 'Purchase failed. Please try again.' };
+  }
+}
+
+// ── Check Pro status (web + native fallback) ──────────────────────────────────
+// Primary source of truth: Supabase user_profiles.
+// On native with RC initialized, RevenueCat entitlement is also checked.
+
+export async function getProStatus(userId: string): Promise<boolean> {
+  // Native + RevenueCat initialized: entitlement is the authority
+  if (isNativePlatform() && _initialized) {
+    return checkProEntitlement();
+  }
+  // Web or native without RC: check Supabase
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('is_pro, pro_expires_at')
+      .eq('user_id', userId)
+      .single();
+    if (!data?.is_pro) return false;
+    // Early-access users have an expiry; paid subscriptions have null (managed by RC)
+    if (data.pro_expires_at && new Date(data.pro_expires_at) < new Date()) return false;
+    return true;
+  } catch {
+    return false;
   }
 }
 

@@ -45,7 +45,7 @@ const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default:
 const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 import { useShooterProfile } from './useShooterProfile';
-import { initBilling } from './lib/billing';
+import { initBilling, getProStatus } from './lib/billing';
 // SplashScreen imported dynamically to avoid Android bundle export error
 import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
@@ -72,6 +72,10 @@ function AppCore() {
   const TAB_VIEWS: AppView[] = ['home', 'vault', 'sessions', 'more', 'arsenal'];
 
   function navigateTo(view: AppView) {
+    if ((view === 'assistant' || view === 'target-analysis') && !isPro) {
+      setShowUpgrade(true);
+      return;
+    }
     setViewHistory(prev => TAB_VIEWS.includes(view) ? [] : [...prev, currentView]);
     setCurrentView(view);
   }
@@ -114,6 +118,9 @@ function AppCore() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+
+  const FREE_GUN_LIMIT = 10;
   const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
@@ -144,6 +151,8 @@ function AppCore() {
     const t = setTimeout(loadGuns, 2000);
     // Initialize RevenueCat with the authenticated user ID (no-op on web)
     initBilling(user.id);
+    // Load Pro status from Supabase / RevenueCat
+    getProStatus(user.id).then(setIsPro);
     return () => clearTimeout(t);
   }, [user]);
 
@@ -243,6 +252,14 @@ function AppCore() {
     setAllGuns(getAllGuns());
   }
 
+  function handleRequestAddGun() {
+    if (!isPro && allGuns.filter(g => g.status !== 'Decommissioned').length >= FREE_GUN_LIMIT) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowAddForm(true);
+  }
+
   function handleSaveGun(gunData: Partial<Gun>) {
     const newGun = {
       make: gunData.make || '',
@@ -304,7 +321,7 @@ function AppCore() {
   function renderView() {
     if (currentView === 'home' && allGuns.length === 0 && !skipWelcome) return (
       <WelcomeScreen
-        onAddGun={() => setShowAddForm(true)}
+        onAddGun={handleRequestAddGun}
         onRestoreBackup={() => setShowCSVImport(true)}
         onBrowse={() => setSkipWelcome(true)}
       />
@@ -316,7 +333,7 @@ function AppCore() {
         onNavigateToTargetAnalysis={() => navigateTo('target-analysis')}
         onNavigateToGun={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
         onLogSession={(gun) => openSessionLog(gun)}
-        onAddGun={() => setShowAddForm(true)}
+        onAddGun={handleRequestAddGun}
         onSearchOpen={() => setShowSmartSearch(true)}
         onSettingsOpen={() => setShowSettings(true)}
         onDevTools={devUnlocked ? () => setDevOpen(o => !o) : undefined}
@@ -367,7 +384,7 @@ function AppCore() {
           {section === 'guns'
             ? <GunVault
                 onGunSelect={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
-                onAddGun={() => setShowAddForm(true)}
+                onAddGun={handleRequestAddGun}
                 onImportRequest={() => setShowCSVImport(true)}
                 refreshKey={gunRefreshKey}
               />
@@ -456,7 +473,7 @@ function AppCore() {
         />
       )}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
-      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} />}
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} onUpgradeSuccess={() => setIsPro(true)} />}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 

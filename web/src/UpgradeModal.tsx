@@ -6,6 +6,7 @@ import { isNativePlatform, purchasePro, restorePurchases } from './lib/billing';
 interface Props {
   onClose: () => void;
   onFeedback?: () => void;
+  onUpgradeSuccess?: () => void;
 }
 
 const PRO_FEATURES = [
@@ -16,7 +17,7 @@ const PRO_FEATURES = [
   'AI Armory Assistant',
 ];
 
-export function UpgradeModal({ onClose, onFeedback }: Props) {
+export function UpgradeModal({ onClose, onFeedback, onUpgradeSuccess }: Props) {
   const native = isNativePlatform();
 
   // Native: 'upgrade' → (billing sheet) → 'success'
@@ -37,6 +38,7 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
       if (result.success) {
         // Mark Pro in Supabase so the backend knows too
         await activateProInSupabase();
+        onUpgradeSuccess?.();
         setStep('success');
       } else if (result.error === 'cancelled') {
         // User dismissed the sheet — do nothing
@@ -55,6 +57,7 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
       const isPro = await restorePurchases();
       if (isPro) {
         await activateProInSupabase();
+        onUpgradeSuccess?.();
         setStep('success');
       } else {
         setError('No active subscription found to restore.');
@@ -92,6 +95,7 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
         setError(data.message ?? 'Something went wrong. Please try again.');
         return;
       }
+      onUpgradeSuccess?.();
       setStep('success');
     } catch {
       setError('Something went wrong. Please try again.');
@@ -188,8 +192,11 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
               LINDCOTT ARMORY PRO
             </div>
             {native && (
-              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.accent, marginTop: '6px', letterSpacing: '0.5px' }}>
-                $7 / month
+              <div style={{ marginTop: '8px' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, color: theme.accent }}>$5</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}> / month</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textDecoration: 'line-through', marginLeft: '8px' }}>$10</span>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.accent, letterSpacing: '1px', marginTop: '4px' }}>50% EARLY ACCESS DISCOUNT</div>
               </div>
             )}
           </div>
@@ -206,7 +213,7 @@ export function UpgradeModal({ onClose, onFeedback }: Props) {
           {native ? (
             <>
               <button onClick={handleNativePurchase} disabled={busy} style={busy ? dimBtn : accentBtn}>
-                {busy ? 'LOADING...' : 'START PRO — $7/MO'}
+                {busy ? 'LOADING...' : 'START PRO — $5/MO'}
               </button>
               {error && <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#ff6b6b', marginTop: '12px', textAlign: 'center' }}>{error}</div>}
               <div style={{ textAlign: 'center', marginTop: '14px' }}>

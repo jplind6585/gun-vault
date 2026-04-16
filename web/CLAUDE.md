@@ -236,9 +236,24 @@ RevenueCat integration is not fully built yet — a pre-launch task. Respect tie
 
 | Tier | What's included |
 |---|---|
-| **Free** | Up to 10 guns, manual tracking, local storage only, no AI |
-| **Vault Pro** | Unlimited guns, cloud sync, photos, full session history, cleaning log |
-| **Vault Pro + AI** | Everything in Pro + Armory Assistant, AI insights, AI session narratives |
+| **Free** | Up to 10 active guns, manual tracking, local storage only, no AI |
+| **Pro** | Unlimited guns, cloud sync, AI Assistant, Target Analysis, AI session narratives |
+
+**Pricing:** $10/mo full price. $5/mo for early access users (50% discount, shown in UpgradeModal).
+
+**Gate enforcement (as of April 16, 2026):**
+- Gun limit: `handleRequestAddGun()` in App.tsx blocks add when `allGuns.filter(active).length >= 10` and `!isPro`
+- AI Assistant: `navigateTo('assistant')` blocked when `!isPro`
+- Target Analysis: `navigateTo('target-analysis')` blocked when `!isPro`
+- `isPro` state loaded via `getProStatus(userId)` in `billing.ts` after auth
+
+**RevenueCat (Android):**
+- SDK key: `test_EiWsEeRjBKxeByKZkXoybIhKLyS` (Test Store — skipped in production init)
+- Products set up: Monthly, Yearly, Lifetime (all linked to 1 entitlement)
+- Production key needed: connect Google Play Console app in RevenueCat → Apps & Providers → get real Android SDK key → add as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars
+- `billing.ts` skips init for `test_` prefixed keys; pro status falls back to Supabase check
+
+**Web claim flow:** `claim-pro` edge function deployed in Supabase. Free 30-day early access claim. `onUpgradeSuccess` callback in `UpgradeModal` sets `isPro(true)` in App.tsx without reload.
 
 Gate checks go through `billing.ts`. Do not add AI features accessible to Free users.
 

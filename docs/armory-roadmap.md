@@ -6,6 +6,63 @@
 
 ---
 
+## Shipped — April 16, 2026
+
+- [x] **Caliber database expanded to 324 entries** — added 126 cartridges across historical, military, handgun, and modern categories. Supabase synced via `scripts/seed-cartridges.ts`. CaliberDatabase now auto-updates live when Supabase refresh completes (cartridges-refreshed event pattern).
+- [x] **Monetization — gates wired** — `isPro` state in App.tsx loaded from Supabase `user_profiles`. Free users gated at 10 active guns and blocked from AI Assistant + Target Analysis. UpgradeModal shown at gate points.
+- [x] **Monetization — pricing set** — $10/mo full price, $5/mo for early access users (50% discount). UpgradeModal updated.
+- [x] **Monetization — Pro status check** — `getProStatus()` in `billing.ts` checks Supabase `user_profiles` (web) or RevenueCat entitlement (native + RC initialized). `onUpgradeSuccess` callback propagates Pro state to App.tsx without page reload.
+- [x] **Support form hang fixed** — `getSession()` was awaited outside the 10s timeout race; wrapped both `getSession()` and `insert()` in separate 8s timeouts.
+- [x] **Feedback table** — `claim-pro` edge function exists and deployed; `feedback` table exists in Supabase with RLS.
+
+---
+
+## HIGHEST PRIORITY — Tomorrow Morning (April 16, 2026)
+
+> Review this section first. These are the items most likely to be blocking or causing regression.
+
+### [P0] Playwright e2e test suite — regression prevention
+**Why this is #1:** The April 15 session hit at least 5 separate regressions (dropdown not showing, toggle invisible, add-gun broken, Netlify not deploying, OAuth redirect dead). A 30-minute manual test against the app after every push would have caught all of them. We agreed: Playwright is the fix. Don't build new features until this is in place.
+
+**Scope for first pass (cover the critical paths):**
+- Add a gun (make + model autocomplete, caliber normalization, save to vault)
+- Log a session (gun picker, rounds fired, save, verify round count increments on gun)
+- Add an ammo lot (brand, caliber, quantity, save to Arsenal)
+- Login flow (email/password → land on Home; Google OAuth → land on Home)
+- Mismatch review screen (enter a known-bad gun → review screen appears → accept suggestion → gun saved correctly)
+
+**Config:** Playwright against `localhost:5173` (Vite dev server). Run manually for now — add to CI later. Place tests in `web/e2e/`.
+
+---
+
+### [P0] Session logging bug — inputs not saving
+**Reported:** April 15. User opened session log, typed into fields, and input did not appear to persist or save.
+**Symptoms:** Unknown — user noticed it at end of session, no screenshot yet. Could be:
+- Field not wired to state (onChange missing or stale)
+- State updating locally but save not persisting to localStorage
+- Race condition if session form reinitializes after mount
+**Action:** Reproduce first, then fix. Check `SessionLoggingModal.tsx` and `SessionLogView.tsx`.
+
+---
+
+### [P1] Manufacturers table — data quality check
+**Status:** `manufacturers` table exists in Supabase. Make autocomplete is wired in AddGunForm to query it. But typing "Vud" (for Vudoo Gun Works) returned no results → table may be sparsely populated.
+**Action:** Check row count and spot-check known brands (Glock, Sig, Vudoo, Zermatt, Tikka). Seed missing brands. Specifically add: Glock, Sig Sauer, Smith & Wesson, Ruger, Springfield Armory, Kimber, Colt, Remington, Mossberg, Winchester, Savage, Benelli, Beretta, FN, HK, CZ, Walther, Taurus, Vudoo Gun Works, Zermatt Arms, Tikka, Sako, Accuracy International, IWI, Arsenal.
+
+---
+
+## Shipped — April 15, 2026
+
+- [x] **"Doesn't Fit? Enter Freely" toggle (1B)** — fixed visibility (off-state now has visible border), enlarged touch target (full row is now the button), toggle is functional on mobile
+- [x] **Add Gun form dropdowns — overflow clipping fixed** — Make, Model, and Caliber dropdowns were clipped by the modal's `overflowY:auto` container. Fixed using `position:fixed` + `getBoundingClientRect()` via refs, `zIndex:9999`.
+- [x] **Make autocomplete — Supabase manufacturers table** — Make field now queries Supabase `manufacturers` table in addition to local hardcoded list. Merged results, deduped.
+- [x] **Caliber UX (1D)** — Caliber field now queries Supabase `cartridges` table. Shows top 5 common calibers on focus (9mm, 5.56 NATO, .308 Win, .45 ACP, .22 LR). Filters as user types. Normalizes bad input on blur: "9 mm" → "9mm", "10 m m" → "10mm". `normalizeCaliber()` added to `referenceData.ts`.
+- [x] **Smart Review Screen (1C)** — mismatch review screen was not rendering (modal missing `position:relative` so overlay escaped container). Fixed. Review screen now: orange header, prominent CTA, action type mismatch added as a flagged field, "Skip review" as secondary option.
+- [x] **Netlify → GitHub auto-deploy connected** — `lindcott-armory-app` was deployed via Netlify Drop (manual), not connected to GitHub. Connected via `netlify api updateSite` to `jplind6585/gun-vault`, branch main, base dir `web`. Auto-deploy now fires on every `git push origin main`.
+- [x] **Google OAuth redirect fixed** — Supabase was redirecting post-auth to `subtle-lollipop-26cd97.netlify.app` (old dead URL). Updated Supabase Auth → URL Configuration to `https://lindcott-armory-app.netlify.app`. Google OAuth login now works.
+
+---
+
 ## Shipped — April 14, 2026
 
 - [x] **Support form** — MoreMenu "Feedback" renamed to "Support", FeedbackModal updated (header, categories grid, support email link), SettingsPanel footer button updated
@@ -107,8 +164,8 @@ Every empty state in the app uses generic filler text. Rewrite each one with: on
 - Sessions empty: "No sessions logged. Every range trip you record builds your accuracy history and keeps maintenance on schedule." + Log Session CTA
 - Analytics insufficient data: "Patterns appear after 3+ sessions with the same firearm. You need [X more] sessions with [gun name] to unlock insights." (dynamic)
 
-### 1B. "Doesn't Fit? Enter Freely" Toggle *(medium)*
-Add checkbox next to Make field label. When checked: Make relabels to "Arsenal / Maker" (optional), Model relabels to "Variant / Designation" (optional), new required "Platform" field appears above both. Helper text: *Suggested format: Platform (Arsenal Year) — e.g. SKS (Tula 1953)*. Vault display: `Platform (Variant)` or just `Platform`. Toggle does not persist between sessions.
+### 1B. "Doesn't Fit? Enter Freely" Toggle *(complete — April 15)*
+~~Add checkbox next to Make field label. When checked: Make relabels to "Arsenal / Maker" (optional), Model relabels to "Variant / Designation" (optional), new required "Platform" field appears above both.~~ Toggle is visible and functional on mobile. Full relabeling of fields is still deferred.
 
 ### 3B. Debrief — Rename and Relocate *(medium)*
 Remove all "Describe Session" language from the app. Rename feature to "Debrief" everywhere. Add full-width primary Debrief button at TOP of New Session form (above DATE section). Flow: user speaks → AI parses into form fields → user lands on pre-filled form → ammo deduction requires explicit confirmation card before saving.
@@ -116,14 +173,14 @@ Remove all "Describe Session" language from the app. Rename feature to "Debrief"
 ### 6. Quick Log Path *(medium)*
 Add "Quick Log" alongside Debrief at top of New Session form. Tapping opens minimal bottom sheet: Gun picker (required) + Rounds fired (required) + Date (defaults today). Single "Log It" button. After save, dismissible banner: "Session logged. Add details?" linking to full session detail view.
 
-### 1D. Caliber Dropdown — Dynamic from Supabase *(medium)*
-Replace free-text caliber field with searchable dropdown querying `cartridges` Supabase table. Keep 4 quick-select chips. Search on `name` and `alternateNames`. Free-text fallback if not in list. Results prioritize by selected gun type.
+### 1D. Caliber Dropdown — Dynamic from Supabase *(complete — April 15)*
+~~Replace free-text caliber field with searchable dropdown querying `cartridges` Supabase table.~~ Done. Common calibers shown on focus, filters from Supabase as user types, normalizes bad input on blur. Free-text fallback intact.
 
 ### 1E. Manufacturer DB — Migrate to Supabase *(medium)*
 Create `manufacturers` table (id, name, country, hq_state, year_founded, year_defunct, specialties[], price_tier, is_active). Seed comprehensively (Glock, Sig, S&W, Ruger, Springfield, Kimber, Wilson Combat, Ed Brown, Cabot, Nighthawk, Les Baer, Dan Wesson, Colt, Remington, Winchester, Savage, Mossberg, Benelli, Beretta, FN, HK, CZ, Walther, Taurus, Vudoo Gun Works, Zermatt Arms, Tikka, Sako, AI, IWI, Arsenal, etc.). Wire Add Firearm form with searchable dropdown + free-text fallback.
 
-### 1C. Smart Review Screen *(medium)*
-After tapping Save on Add Firearm, run validation against manufacturer DB + cartridge DB. If mismatches detected, show Review screen before writing. Mismatch types: caliber doesn't match known calibers for make/model; model name casing differs from canonical. Review screen: flagged fields only, each with Keep Original / Accept Suggestion / Edit chips. "Save Anyway" bypasses all. If Edit: returns to form with field highlighted.
+### 1C. Smart Review Screen *(complete — April 15)*
+~~After tapping Save on Add Firearm, run validation against manufacturer DB + cartridge DB.~~ Done. Validates type, caliber, and action against gun_models table. Review screen shows mismatched fields with Keep/Accept/Edit options. Action type mismatch added April 15. Rendering bug (overlay escaping modal) fixed April 15.
 
 ### 7. Optics DB Migration *(medium)*
 Create `optic_models` table (brand, model, optic_type, magnification_min/max, objective_mm, tube_diameter_mm, focal_plane, reticle_options[], turret_unit, click_value_moa, click_value_mrad, illuminated, msrp, year_introduced, is_discontinued, pending_review, submitted_by). Seed: Vortex (full lineup incl. Strike Eagle 5-25x56, Razor HD Gen III), Nightforce (ATACR, NX8), Leupold (Mark 5HD, Mark 6), S&B, Kahles, Zeiss, US Optics, Primary Arms, Trijicon, EOTech, Aimpoint, Holosun, SIG, Burris. Wire optics form with brand/model dropdowns, auto-fill spec fields on selection (show prefill indicator), free-text fallback. Unknown model → "Submit for review?" banner → pending_review queue.
@@ -331,4 +388,4 @@ Root cause was a chain of three separate issues:
 
 ---
 
-*Last updated: April 14, 2026 — added AI pipeline fix notes (PKCE lock, gateway apikey, Anthropic key); previously: NFA/Suppressor, Range Management, Analytics Deep Dive, AI Gun Value, Monetization/Pro Tier, Field Guide Ballistics/Optics re-enable notes, draggable overlay, feedback backend*
+*Last updated: April 15, 2026 — marked 1B/1C/1D complete; added HIGHEST PRIORITY section for April 16 (Playwright e2e tests, session logging bug, manufacturers table seed); documented Netlify GitHub connection + OAuth redirect fix; previously: AI pipeline fix notes (PKCE lock, gateway apikey, Anthropic key)*
