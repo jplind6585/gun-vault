@@ -17,30 +17,32 @@
 
 ---
 
-## HIGHEST PRIORITY — Tomorrow Morning (April 16, 2026)
+## PICK UP HERE — Next Session
 
-> Review this section first. These are the items most likely to be blocking or causing regression.
+> Start here. These are in priority order.
 
-### [P0] Playwright e2e test suite — regression prevention
-**Why this is #1:** The April 15 session hit at least 5 separate regressions (dropdown not showing, toggle invisible, add-gun broken, Netlify not deploying, OAuth redirect dead). A 30-minute manual test against the app after every push would have caught all of them. We agreed: Playwright is the fix. Don't build new features until this is in place.
+### [P0] RevenueCat — connect Google Play and get production key
+**Context:** RevenueCat account is set up with Test Store (Monthly, Yearly, Lifetime products, 1 entitlement each). The SDK key in use is `test_EiWsEeRjBKxeByKZkXoybIhKLyS` — billing.ts skips initialization for `test_` keys, so no real purchases go through on Android yet.
 
-**Scope for first pass (cover the critical paths):**
-- Add a gun (make + model autocomplete, caliber normalization, save to vault)
-- Log a session (gun picker, rounds fired, save, verify round count increments on gun)
-- Add an ammo lot (brand, caliber, quantity, save to Arsenal)
-- Login flow (email/password → land on Home; Google OAuth → land on Home)
-- Mismatch review screen (enter a known-bad gun → review screen appears → accept suggestion → gun saved correctly)
+**James must do first (in Google Play Console + RevenueCat):**
+1. In RevenueCat → Apps & Providers → add Google Play app (package: `com.lindcottarmory.app`)
+2. Create subscription product `pro_monthly` in Google Play Console at $5/mo (early access price) with a $10/mo base price
+3. RevenueCat will then generate a real Android SDK key (not `test_` prefixed)
 
-**Config:** Playwright against `localhost:5173` (Vite dev server). Run manually for now — add to CI later. Place tests in `web/e2e/`.
+**Claude does after James has the key:**
+4. Update `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars
+5. Update `.env.local` locally
+6. Bump versionCode, build AAB, push to Internal Testing, verify purchase flow end to end
 
 ---
 
-### [P0] Session logging bug — inputs not saving
+### [P0] Playwright e2e test suite — regression prevention
+**Why this is #1:** The April 15 session hit at least 5 separate regressions. 4 critical-path tests are already written and passing (`web/e2e/critical-paths.spec.ts`). Run `npm run test:e2e` before every push. If a test fails, fix before proceeding.
+
+---
+
+### [P1] Session logging bug — inputs not saving
 **Reported:** April 15. User opened session log, typed into fields, and input did not appear to persist or save.
-**Symptoms:** Unknown — user noticed it at end of session, no screenshot yet. Could be:
-- Field not wired to state (onChange missing or stale)
-- State updating locally but save not persisting to localStorage
-- Race condition if session form reinitializes after mount
 **Action:** Reproduce first, then fix. Check `SessionLoggingModal.tsx` and `SessionLogView.tsx`.
 
 ---
@@ -78,7 +80,7 @@
 - [x] Ammo tracker (lots, grain, velocity)
 - [x] Session log + analytics tab
 - [x] Ballistics calculator
-- [x] Caliber database (198 cartridges, fully validated with primerType, rimType, twistRate, caseCapacity)
+- [x] Caliber database (323 cartridges — expanded April 16, 2026; Supabase-synced; auto-refreshes in app)
 - [x] Field Guide — Cartridges, Platforms, Ballistics, Glossary, Optics sections
 - [x] Optics tracker (mounts, zeros, swap history, torque confirmation)
 - [x] Gear Locker

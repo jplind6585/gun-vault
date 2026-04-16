@@ -319,6 +319,14 @@ Fires automatically on `git push origin main`. No extra step needed. Live in ~60
 ### versionCode
 Must increment before every Play Store upload. **Current: 19.** Play Store rejects any build ≤ last uploaded value.
 
+### Next Android build checklist
+Before the next `fastlane internal` run:
+1. Get production RevenueCat Android SDK key (connect Google Play Console app in RevenueCat)
+2. Add key as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars and `.env.local`
+3. Create `pro_monthly` subscription in Google Play Console ($5/mo early access)
+4. Bump versionCode to 20
+5. Run e2e tests, build, sync, fastlane internal
+
 ---
 
 ## Supabase
