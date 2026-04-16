@@ -1,24 +1,36 @@
-// SessionEntry — 5-screen session logging flow
-// Replaces SessionLogView + SessionAIParser
-// Screens: select → mic → review (AI path) | select → quick (quick path) → confirm
-import { useState, useRef, useEffect } from 'react';
+// SessionEntry — rebuilt per session-flow-v2 brief
+// Screens: form → confirm | form → mic → review → confirm
+//
+// Changes from previous version:
+// - Starts directly on a form (no mode picker screen)
+// - AI Debrief is a small bordered header button (not the primary CTA)
+// - "More Details" collapsible for Environment, Purpose, Location, Notes
+// - Round count history chips (top 3 from this gun's past sessions)
+// - Auto-select ammo when exactly 1 compatible lot is in inventory
+// - Post-log maintenance insight on confirm screen
+// - No emoji — SVG icons throughout
+
+import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
-import type { Gun, AmmoLot, IssueType } from './types';
-import { getAllGuns, getAllAmmo, logSession, updateAmmo, updateGun } from './storage';
+import type { Gun, AmmoLot, IssueType, SessionPurpose } from './types';
+import { getAllGuns, getAllAmmo, getAllSessions, logSession, updateAmmo, updateGun } from './storage';
 import { parseSessionFromText } from './claudeApi';
 import { haptic } from './haptic';
 
-type Screen = 'select' | 'mic' | 'review' | 'quick' | 'confirm';
+type Screen = 'form' | 'mic' | 'review' | 'confirm';
 type FieldConf = 'confirmed' | 'flagged' | 'missing';
 
+const PURPOSE_OPTIONS: SessionPurpose[] = ['Warmup', 'Drills', 'Zeroing', 'Qualification', 'Competition', 'Fun', 'Carry Eval'];
+
 interface FormData {
-  date: string;              // YYYY-MM-DD
+  date: string;
   env: 'Indoor' | 'Outdoor';
   gunId: string;
-  rounds: string;            // string for input binding
+  rounds: string;
   ammoLotId: string;
   location: string;
   notes: string;
+  purpose: SessionPurpose[];
   issues: boolean;
   issueDescription: string;
   issueTypes: IssueType[];
@@ -43,24 +55,27 @@ const SpeechRecognition =
 
 // ── Style constants ───────────────────────────────────────────────────────────
 
-const sectionLabel: React.CSSProperties = {
-  fontFamily: 'monospace',
+const mono = 'monospace';
+
+const fieldLabel: React.CSSProperties = {
+  fontFamily: mono,
   fontSize: '9px',
-  letterSpacing: '0.8px',
+  letterSpacing: '1.2px',
   color: theme.textMuted,
   textTransform: 'uppercase',
-  marginBottom: '8px',
-  marginTop: '0',
+  marginBottom: '7px',
+  marginTop: '20px',
+  display: 'block',
 };
 
 const inputBase: React.CSSProperties = {
   width: '100%',
-  padding: '10px 12px',
+  padding: '12px 14px',
   backgroundColor: theme.surface,
-  border: `0.5px solid ${theme.border}`,
-  borderRadius: '6px',
+  border: `1px solid ${theme.border}`,
+  borderRadius: '4px',
   color: theme.textPrimary,
-  fontFamily: 'monospace',
+  fontFamily: mono,
   fontSize: '12px',
   outline: 'none',
   boxSizing: 'border-box',
@@ -68,12 +83,12 @@ const inputBase: React.CSSProperties = {
 
 function chipBtn(active: boolean): React.CSSProperties {
   return {
-    padding: '8px 16px',
+    padding: '8px 14px',
     borderRadius: '4px',
-    border: `0.5px solid ${active ? theme.accent : theme.border}`,
+    border: `1px solid ${active ? theme.accent : theme.border}`,
     background: active ? theme.accent : 'transparent',
     color: active ? theme.bg : theme.textSecondary,
-    fontFamily: 'monospace',
+    fontFamily: mono,
     fontSize: '11px',
     letterSpacing: '0.5px',
     cursor: 'pointer',
@@ -81,76 +96,92 @@ function chipBtn(active: boolean): React.CSSProperties {
   };
 }
 
-function saveBtn(enabled: boolean): React.CSSProperties {
+function primaryBtn(enabled: boolean): React.CSSProperties {
   return {
     width: '100%',
     padding: '14px',
-    borderRadius: '6px',
+    borderRadius: '4px',
     border: 'none',
     background: enabled ? theme.accent : theme.surface,
     color: enabled ? theme.bg : theme.textMuted,
-    fontFamily: 'monospace',
-    fontSize: '11px',
+    fontFamily: mono,
+    fontSize: '12px',
     fontWeight: 700,
-    letterSpacing: '1.2px',
+    letterSpacing: '1.5px',
     textTransform: 'uppercase',
-    cursor: enabled ? 'pointer' : 'not-allowed',
+    cursor: enabled ? 'pointer' : 'default',
     transition: 'background 0.15s, color 0.15s',
   };
 }
 
-// ── Shared header ─────────────────────────────────────────────────────────────
+// ── Inline SVG icons ──────────────────────────────────────────────────────────
 
-function Header({ title, backLabel, onBack }: { title: string; backLabel: string; onBack: () => void }) {
+function MicIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '18px 20px 14px', position: 'relative',
-      borderBottom: `0.5px solid ${theme.border}`, flexShrink: 0,
-    }}>
-      <button onClick={onBack} style={{
-        position: 'absolute', left: 16, background: 'none', border: 'none',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-        color: theme.accent, fontFamily: 'monospace', fontSize: '11px', padding: '4px 0',
-      }}>
-        ‹ {backLabel}
-      </button>
-      <span style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '1.5px', color: theme.textSecondary, textTransform: 'uppercase' }}>
-        {title}
-      </span>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
   );
 }
 
-// ── Scrollable body wrapper ───────────────────────────────────────────────────
-
-function Body({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function StopIcon({ size = 32, color = 'currentColor' }: { size?: number; color?: string }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', ...style }}>
-      {children}
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
   );
 }
 
-// ── Footer with primary action button ────────────────────────────────────────
-
-function Footer({ label, enabled, saving, onPress }: { label: string; enabled: boolean; saving: boolean; onPress: () => void }) {
+function CheckIcon({ size = 28, color = 'currentColor' }: { size?: number; color?: string }) {
   return (
-    <div style={{ padding: '12px 20px 20px', borderTop: `0.5px solid ${theme.border}`, flexShrink: 0 }}>
-      <button onClick={onPress} disabled={!enabled || saving} style={saveBtn(enabled && !saving)}>
-        {saving ? 'Saving…' : label}
-      </button>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
   );
 }
 
-// ── Gun/ammo picker dropdown ──────────────────────────────────────────────────
+function ChevronDownIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+function ChevronUpIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="18 15 12 9 6 15" />
+    </svg>
+  );
+}
+
+function AlertIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+// ── Picker subcomponents ──────────────────────────────────────────────────────
 
 function PickerList({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      background: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px',
-      padding: '4px', marginTop: '4px', marginBottom: '4px', maxHeight: '180px', overflowY: 'auto',
+      background: theme.surface,
+      border: `0.5px solid ${theme.border}`,
+      borderRadius: '4px',
+      padding: '4px',
+      marginTop: '4px',
+      marginBottom: '4px',
+      maxHeight: '180px',
+      overflowY: 'auto',
     }}>
       {children}
     </div>
@@ -160,12 +191,71 @@ function PickerList({ children }: { children: React.ReactNode }) {
 function PickerRow({ label, sub, selected, onClick }: { label: string; sub?: string; selected: boolean; onClick: () => void }) {
   return (
     <div onClick={onClick} style={{
-      padding: '9px 10px', cursor: 'pointer', borderRadius: '4px',
+      padding: '9px 10px',
+      cursor: 'pointer',
+      borderRadius: '4px',
       background: selected ? `${theme.accent}22` : 'transparent',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     }}>
-      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: selected ? theme.accent : theme.textSecondary }}>{label}</span>
-      {sub && <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{sub}</span>}
+      <span style={{ fontFamily: mono, fontSize: '11px', color: selected ? theme.accent : theme.textSecondary }}>{label}</span>
+      {sub && <span style={{ fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>{sub}</span>}
+    </div>
+  );
+}
+
+// ── Footer action button ──────────────────────────────────────────────────────
+
+function Footer({ label, enabled, saving, onPress }: { label: string; enabled: boolean; saving: boolean; onPress: () => void }) {
+  return (
+    <div style={{ padding: '12px 20px 20px', borderTop: `0.5px solid ${theme.border}`, flexShrink: 0 }}>
+      <button onClick={onPress} disabled={!enabled || saving} style={primaryBtn(enabled && !saving)}>
+        {saving ? 'Saving…' : label}
+      </button>
+    </div>
+  );
+}
+
+// ── Review field (AI debrief review screen) ───────────────────────────────────
+
+function ReviewField({
+  label, value, confValue, required, editContent,
+}: {
+  label: string;
+  value: string | null;
+  confValue: FieldConf;
+  required?: boolean;
+  editContent: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  const borderColor =
+    confValue === 'missing' && required ? theme.red
+    : confValue === 'flagged' ? theme.accent
+    : theme.border;
+
+  const bgColor = confValue === 'flagged' ? `${theme.accent}0a` : theme.surface;
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+        <span style={{ fontFamily: mono, fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase' }}>
+          {label}
+          {confValue === 'flagged' && !editing && (
+            <span style={{ color: theme.accent, marginLeft: '6px' }}>◆ REVIEW</span>
+          )}
+          {confValue === 'missing' && required && (
+            <span style={{ color: theme.red, marginLeft: '6px' }}>◆ REQUIRED</span>
+          )}
+        </span>
+        <button onClick={() => setEditing(e => !e)} style={{ background: 'none', border: 'none', color: editing ? theme.accent : theme.textMuted, fontFamily: mono, fontSize: '10px', cursor: 'pointer', padding: '2px 0' }}>
+          {editing ? 'Done' : 'Edit'}
+        </button>
+      </div>
+      <div style={{ background: bgColor, border: `0.5px solid ${borderColor}`, borderRadius: '4px', padding: '11px 12px', fontFamily: mono, fontSize: '12px', color: value ? theme.textPrimary : theme.textMuted }}>
+        {editing ? editContent : (value || 'Not detected — tap Edit')}
+      </div>
     </div>
   );
 }
@@ -179,37 +269,84 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
-  const [screen, setScreen] = useState<Screen>('select');
-  const [form, setForm] = useState<FormData>({
-    date: today, env: 'Outdoor',
-    gunId: preselectedGun?.id ?? '',
-    rounds: '', ammoLotId: '', location: '', notes: '',
-    issues: false, issueDescription: '', issueTypes: [],
-  });
-  const [conf, setConf] = useState<ConfMap>({ gun: 'missing', rounds: 'missing', ammo: 'missing', location: 'missing', notes: 'missing' });
+  const [screen, setScreen] = useState<Screen>('form');
+  const [expanded, setExpanded] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [gunSearch, setGunSearch] = useState('');
   const [ammoSearch, setAmmoSearch] = useState('');
+  const [autoSelectedAmmo, setAutoSelectedAmmo] = useState<AmmoLot | null>(null);
+  const [historyChips, setHistoryChips] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedAmmoName, setSavedAmmoName] = useState('');
+  const [maintenanceInsight, setMaintenanceInsight] = useState<string | null>(null);
+
+  const [form, setForm] = useState<FormData>({
+    date: today,
+    env: 'Outdoor',
+    gunId: preselectedGun?.id ?? '',
+    rounds: '',
+    ammoLotId: '',
+    location: '',
+    notes: '',
+    purpose: [],
+    issues: false,
+    issueDescription: '',
+    issueTypes: [],
+  });
+
+  const [conf, setConf] = useState<ConfMap>({
+    gun: 'missing', rounds: 'missing', ammo: 'missing', location: 'missing', notes: 'missing',
+  });
 
   // Mic state
   const [micPhase, setMicPhase] = useState<'idle' | 'listening' | 'processing'>('idle');
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
 
-  // Auto-navigate away from confirm screen
+  // Auto-navigate away from confirm after 3s
   useEffect(() => {
     if (screen !== 'confirm') return;
-    const t = setTimeout(onSaved, 2800);
+    const t = setTimeout(onSaved, 3000);
     return () => clearTimeout(t);
   }, [screen]);
 
-  // ── Derived values ──────────────────────────────────────────────────────────
+  // When gun changes: compute history chips + auto-select ammo
+  useEffect(() => {
+    if (!form.gunId) {
+      setHistoryChips([]);
+      setAutoSelectedAmmo(null);
+      return;
+    }
 
-  function gunName(g: Gun) {
-    return g.displayName || `${g.make} ${g.model}`;
-  }
+    // Round count history chips
+    const sessions = getAllSessions().filter(s => s.gunId === form.gunId);
+    const freq: Record<number, number> = {};
+    sessions.forEach(s => { freq[s.roundsExpended] = (freq[s.roundsExpended] || 0) + 1; });
+    const chips = Object.entries(freq)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .slice(0, 3)
+      .map(([r]) => Number(r))
+      .sort((a, b) => a - b);
+    setHistoryChips(chips);
+
+    // Auto-select ammo if exactly 1 compatible lot
+    const gun = guns.find(g => g.id === form.gunId);
+    if (gun) {
+      const compatible = ammoLots.filter(a => a.caliber === gun.caliber);
+      if (compatible.length === 1 && !form.ammoLotId) {
+        setForm(f => ({ ...f, ammoLotId: compatible[0].id }));
+        setAutoSelectedAmmo(compatible[0]);
+      } else {
+        setAutoSelectedAmmo(null);
+      }
+    }
+  }, [form.gunId]);
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+
+  function gunName(g: Gun) { return g.displayName || `${g.make} ${g.model}`; }
+  function ammoLabel(a: AmmoLot) { return `${a.brand} ${a.productLine} ${a.grainWeight}gr`; }
+  function fmtDate(iso: string) { const [y, m, d] = iso.split('-'); return `${m}/${d}/${y}`; }
 
   const selectedGun = guns.find(g => g.id === form.gunId) ?? null;
   const compatibleAmmo = selectedGun
@@ -218,13 +355,21 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
   const selectedAmmo = ammoLots.find(a => a.id === form.ammoLotId) ?? null;
   const canSave = !!form.gunId && !!form.rounds && parseInt(form.rounds) > 0;
 
-  function fmtDate(iso: string) {
-    const [y, m, d] = iso.split('-');
-    return `${m}/${d}/${y}`;
-  }
+  const filteredGuns = gunSearch
+    ? guns.filter(g => gunName(g).toLowerCase().includes(gunSearch.toLowerCase()))
+    : guns;
+  const filteredAmmo = ammoSearch
+    ? compatibleAmmo.filter(a => ammoLabel(a).toLowerCase().includes(ammoSearch.toLowerCase()))
+    : compatibleAmmo;
 
-  function ammoLabel(a: AmmoLot) {
-    return `${a.brand} ${a.productLine} ${a.grainWeight}gr`;
+  const showGunPicker = editingField === 'gun' || (!selectedGun && guns.length > 0);
+  const showAmmoPicker = editingField === 'ammo';
+
+  function togglePurpose(p: SessionPurpose) {
+    setForm(f => ({
+      ...f,
+      purpose: f.purpose.includes(p) ? f.purpose.filter(x => x !== p) : [...f.purpose, p],
+    }));
   }
 
   // ── Save ──────────────────────────────────────────────────────────────────
@@ -234,24 +379,23 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
     const gun = guns.find(g => g.id === form.gunId);
     if (!gun || !rounds || rounds <= 0) { setSaving(false); return; }
 
-    const lot = selectedAmmo;
-
     logSession({
       gunId: gun.id,
       date: form.date,
       roundsExpended: rounds,
-      ammoLotId: lot?.id,
+      ammoLotId: selectedAmmo?.id,
       location: form.location || undefined,
       indoorOutdoor: form.env,
+      purpose: form.purpose.length ? form.purpose : undefined,
       issues: form.issues,
       issueTypes: form.issues && form.issueTypes.length ? form.issueTypes : undefined,
       issueDescription: form.issues ? form.issueDescription || undefined : undefined,
       notes: form.notes || undefined,
     });
 
-    if (lot && rounds > 0) {
-      updateAmmo(lot.id, { quantity: Math.max(0, lot.quantity - rounds) });
-      setSavedAmmoName(ammoLabel(lot));
+    if (selectedAmmo && rounds > 0) {
+      updateAmmo(selectedAmmo.id, { quantity: Math.max(0, selectedAmmo.quantity - rounds) });
+      setSavedAmmoName(ammoLabel(selectedAmmo));
     }
 
     if (form.issues && form.issueDescription) {
@@ -259,7 +403,16 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
       updateGun(gun.id, { openIssues: existing + `${form.date}: ${form.issueDescription}` });
     }
 
-    updateGun(gun.id, { roundCount: (gun.roundCount ?? 0) + rounds });
+    // Maintenance insight: check rounds since last cleaning
+    const updatedCount = (gun.roundCount ?? 0) + rounds;
+    if (gun.lastCleanedRoundCount !== undefined) {
+      const sinceCleaning = updatedCount - gun.lastCleanedRoundCount;
+      if (sinceCleaning >= 500) {
+        setMaintenanceInsight(`${sinceCleaning.toLocaleString()} rounds since last cleaning — service recommended.`);
+      } else if (sinceCleaning >= 450) {
+        setMaintenanceInsight(`${500 - sinceCleaning} rounds until 500-round cleaning interval.`);
+      }
+    }
 
     haptic('success');
     setSaving(false);
@@ -270,8 +423,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
 
   function startListening() {
     if (!SpeechRecognition) {
-      // No speech API — fall through to quick log
-      setScreen('quick');
+      setScreen('form');
       return;
     }
     const r = new SpeechRecognition();
@@ -313,7 +465,6 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
       const ex = result.extracted;
       const str0 = ex.strings?.[0];
 
-      // Convert MM/DD/YYYY → YYYY-MM-DD
       let parsedDate = form.date;
       if (ex.date) {
         const parts = ex.date.split('/');
@@ -336,7 +487,6 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
         issueTypes: ex.issueTypes ?? [],
       }));
 
-      // All AI-parsed fields are flagged (best-guess). Missing required = 'missing'.
       setConf({
         gun: str0?.gunId ? 'flagged' : 'missing',
         rounds: str0?.roundsExpended ? 'flagged' : 'missing',
@@ -351,106 +501,295 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── SCREEN: Form ─────────────────────────────────────────────────────────
 
-  // ─── Screen: Select ───────────────────────────────────────────────────────
-  if (screen === 'select') {
+  if (screen === 'form') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.bg }}>
-        <Header title="New Session" backLabel="Sessions" onBack={onCancel} />
-        <Body>
 
-          <div style={{ ...sectionLabel, marginTop: 0 }}>Select Mode</div>
-
-          {/* AI Debrief */}
-          <button onClick={() => { setMicPhase('idle'); setTranscript(''); setScreen('mic'); }} style={{
-            width: '100%', background: theme.accent, border: 'none', borderRadius: '6px',
-            padding: '18px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            gap: 16, marginBottom: '10px', textAlign: 'left',
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '18px 20px 14px', position: 'relative',
+          borderBottom: `0.5px solid ${theme.border}`, flexShrink: 0,
+        }}>
+          <button onClick={onCancel} style={{
+            position: 'absolute', left: 16, background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+            color: theme.accent, fontFamily: mono, fontSize: '11px', padding: '4px 0',
           }}>
-            <div style={{ width: 42, height: 42, borderRadius: '4px', background: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px' }}>
-              🎙
-            </div>
-            <div>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '1.2px', color: theme.bg, textTransform: 'uppercase' }}>AI Debrief</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: 'rgba(0,0,0,0.5)', marginTop: '3px', lineHeight: 1.5 }}>
-                Talk through your session. AI parses and logs everything.
-              </div>
-            </div>
+            ‹ Sessions
           </button>
-
-          {/* Quick Log */}
-          <button onClick={() => setScreen('quick')} style={{
-            width: '100%', background: theme.surface, border: `0.5px solid ${theme.border}`,
-            borderRadius: '6px', padding: '18px 20px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 16, textAlign: 'left',
-          }}>
-            <div style={{ width: 42, height: 42, borderRadius: '4px', background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px' }}>
-              📋
-            </div>
-            <div>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '1.2px', color: theme.textPrimary, textTransform: 'uppercase' }}>Quick Log</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '3px', lineHeight: 1.5 }}>
-                Gun, rounds, done. No frills.
-              </div>
-            </div>
+          <span style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '2px', color: theme.textSecondary, textTransform: 'uppercase' }}>
+            New Session
+          </span>
+          {/* Secondary: Debrief button — subtle, top-right */}
+          <button
+            onClick={() => { setMicPhase('idle'); setTranscript(''); setScreen('mic'); }}
+            style={{
+              position: 'absolute', right: 16,
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none',
+              border: `1px solid ${theme.border}`,
+              borderRadius: '4px',
+              padding: '6px 10px',
+              cursor: 'pointer',
+              color: theme.textSecondary,
+              fontFamily: mono,
+              fontSize: '10px',
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+            }}
+          >
+            <MicIcon size={12} color={theme.accent} />
+            Debrief
           </button>
+        </div>
 
-          {/* Date */}
-          <div style={{ ...sectionLabel, marginTop: '28px' }}>Date</div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-            {[{ label: 'Today', val: today }, { label: 'Yesterday', val: yesterday }].map(opt => (
-              <button key={opt.val} onClick={() => setForm(f => ({ ...f, date: opt.val }))} style={chipBtn(form.date === opt.val)}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
+
+          {/* ── FIREARM ── */}
+          <span style={{ ...fieldLabel, marginTop: '20px' }}>Firearm</span>
+          {selectedGun && editingField !== 'gun' ? (
+            <div
+              onClick={() => { setGunSearch(''); setEditingField('gun'); }}
+              style={{ ...inputBase, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <span>{gunName(selectedGun)}</span>
+              <span style={{ fontSize: '10px', color: theme.textMuted }}>Change</span>
+            </div>
+          ) : (
+            <input
+              style={inputBase}
+              placeholder="Search or select firearm..."
+              value={gunSearch}
+              onChange={e => { setGunSearch(e.target.value); setEditingField('gun'); }}
+            />
+          )}
+          {showGunPicker && (
+            <PickerList>
+              {filteredGuns.length === 0
+                ? <div style={{ padding: '8px 10px', fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>No matches</div>
+                : filteredGuns.map(g => (
+                  <PickerRow key={g.id} label={gunName(g)} sub={g.caliber} selected={form.gunId === g.id}
+                    onClick={() => { setForm(f => ({ ...f, gunId: g.id })); setGunSearch(''); setEditingField(null); }} />
+                ))}
+            </PickerList>
+          )}
+
+          {/* ── ROUNDS FIRED ── */}
+          <span style={fieldLabel}>Rounds Fired</span>
           <input
-            type="date" value={form.date}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-            style={{ ...inputBase, marginBottom: '20px', colorScheme: 'dark' }}
+            type="number"
+            inputMode="numeric"
+            style={inputBase}
+            placeholder="e.g. 50"
+            value={form.rounds}
+            onChange={e => setForm(f => ({ ...f, rounds: e.target.value }))}
           />
+          {/* History chips — top round counts from this gun's past sessions */}
+          {historyChips.length > 0 && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              {historyChips.map(n => (
+                <button
+                  key={n}
+                  onClick={() => setForm(f => ({ ...f, rounds: String(n) }))}
+                  style={{
+                    ...chipBtn(form.rounds === String(n)),
+                    padding: '6px 12px',
+                    fontSize: '10px',
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* Environment */}
-          <div style={sectionLabel}>Environment</div>
+          {/* ── AMMO ── */}
+          <span style={fieldLabel}>Ammo (optional)</span>
+          {autoSelectedAmmo && !editingField && (
+            <div style={{
+              fontFamily: mono, fontSize: '9px', letterSpacing: '0.5px',
+              color: theme.accent, marginBottom: '6px', opacity: 0.8,
+            }}>
+              Auto-selected: {autoSelectedAmmo.brand} {autoSelectedAmmo.productLine} · {autoSelectedAmmo.quantity} remaining
+            </div>
+          )}
+          {selectedAmmo && editingField !== 'ammo' ? (
+            <div
+              onClick={() => { setAmmoSearch(''); setEditingField('ammo'); }}
+              style={{ ...inputBase, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <span>{ammoLabel(selectedAmmo)}</span>
+              <span style={{ fontSize: '10px', color: theme.textMuted }}>Change</span>
+            </div>
+          ) : (
+            <input
+              style={inputBase}
+              placeholder="Search ammo inventory..."
+              value={ammoSearch}
+              onChange={e => { setAmmoSearch(e.target.value); setEditingField('ammo'); }}
+            />
+          )}
+          {showAmmoPicker && (
+            <PickerList>
+              {compatibleAmmo.length === 0
+                ? <div style={{ padding: '8px 10px', fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>No compatible ammo in inventory</div>
+                : filteredAmmo.map(a => (
+                  <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.quantity} remaining`} selected={form.ammoLotId === a.id}
+                    onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setAutoSelectedAmmo(null); setAmmoSearch(''); setEditingField(null); }} />
+                ))}
+            </PickerList>
+          )}
+
+          {/* ── DATE ── */}
+          <span style={fieldLabel}>Date</span>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {(['Indoor', 'Outdoor'] as const).map(e => (
-              <button key={e} onClick={() => setForm(f => ({ ...f, env: e }))} style={chipBtn(form.env === e)}>{e}</button>
-            ))}
+            <button style={chipBtn(form.date === today)} onClick={() => setForm(f => ({ ...f, date: today }))}>Today</button>
+            <button style={chipBtn(form.date === yesterday)} onClick={() => setForm(f => ({ ...f, date: yesterday }))}>Yesterday</button>
           </div>
 
-        </Body>
+          {/* ── INVENTORY DEDUCTION PREVIEW ── */}
+          {selectedAmmo && form.rounds && parseInt(form.rounds) > 0 && (
+            <div style={{
+              background: theme.surface,
+              border: `0.5px solid ${theme.border}`,
+              borderRadius: '4px',
+              padding: '10px 12px',
+              marginTop: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>Inventory deduction</span>
+              <span style={{ fontFamily: mono, fontSize: '11px', color: theme.red, fontWeight: 700 }}>
+                −{form.rounds} × {selectedAmmo.brand} {selectedAmmo.productLine}
+              </span>
+            </div>
+          )}
+
+          {/* ── MORE DETAILS ── */}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              width: '100%',
+              marginTop: '20px',
+              background: 'none',
+              border: 'none',
+              borderTop: `1px solid ${theme.border}`,
+              borderBottom: expanded ? 'none' : `1px solid ${theme.border}`,
+              padding: '12px 0',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: theme.textMuted,
+              fontFamily: mono,
+              fontSize: '10px',
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+            }}
+          >
+            More Details
+            {expanded ? <ChevronUpIcon color={theme.textMuted} /> : <ChevronDownIcon color={theme.textMuted} />}
+          </button>
+
+          {expanded && (
+            <div style={{ paddingBottom: '8px' }}>
+
+              {/* Location */}
+              <span style={fieldLabel}>Location</span>
+              <input
+                style={inputBase}
+                placeholder="Range name or location..."
+                value={form.location}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+              />
+
+              {/* Environment */}
+              <span style={fieldLabel}>Environment</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button style={chipBtn(form.env === 'Indoor')} onClick={() => setForm(f => ({ ...f, env: 'Indoor' }))}>Indoor</button>
+                <button style={chipBtn(form.env === 'Outdoor')} onClick={() => setForm(f => ({ ...f, env: 'Outdoor' }))}>Outdoor</button>
+              </div>
+
+              {/* Purpose */}
+              <span style={fieldLabel}>Purpose</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {PURPOSE_OPTIONS.map(p => (
+                  <button key={p} style={{ ...chipBtn(form.purpose.includes(p)), fontSize: '10px', padding: '7px 12px' }} onClick={() => togglePurpose(p)}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notes */}
+              <span style={fieldLabel}>Notes</span>
+              <textarea
+                style={{ ...inputBase, minHeight: '72px', resize: 'vertical', lineHeight: 1.6 }}
+                placeholder="Anything worth logging..."
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+          )}
+
+        </div>
+
+        <Footer label="Log Session" enabled={canSave} saving={saving} onPress={() => { if (!saving) { setSaving(true); doSave(); } }} />
       </div>
     );
   }
 
-  // ─── Screen: Mic ──────────────────────────────────────────────────────────
+  // ── SCREEN: Mic ──────────────────────────────────────────────────────────
+
   if (screen === 'mic') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.bg }}>
-        <Header title="AI Debrief" backLabel="Back" onBack={() => setScreen('select')} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '18px 20px 14px', position: 'relative',
+          borderBottom: `0.5px solid ${theme.border}`, flexShrink: 0,
+        }}>
+          <button onClick={() => { recognitionRef.current?.stop(); setScreen('form'); setMicPhase('idle'); setTranscript(''); }} style={{
+            position: 'absolute', left: 16, background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+            color: theme.accent, fontFamily: mono, fontSize: '11px', padding: '4px 0',
+          }}>
+            ‹ Cancel
+          </button>
+          <span style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '2px', color: theme.textSecondary, textTransform: 'uppercase' }}>
+            AI Debrief
+          </span>
+        </div>
 
-          {micPhase === 'idle' && (
-            <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.2px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '40px', textAlign: 'center', lineHeight: 1.8 }}>
-              Talk through your session.<br />AI will parse and log everything.
-            </div>
-          )}
-          {micPhase === 'listening' && (
-            <div style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '1px', color: theme.accent, textTransform: 'uppercase', marginBottom: '40px', textAlign: 'center' }}>
-              Listening…
-              {transcript && (
-                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '10px', fontStyle: 'italic', maxWidth: '280px', lineHeight: 1.6, textTransform: 'none', letterSpacing: 0 }}>
-                  {transcript}
-                </div>
-              )}
-            </div>
-          )}
-          {micPhase === 'processing' && (
-            <div style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '1px', color: theme.textSecondary, textTransform: 'uppercase', marginBottom: '40px', textAlign: 'center' }}>
-              Parsing session…
-            </div>
-          )}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px' }}>
+          <div style={{
+            fontFamily: mono,
+            fontSize: micPhase === 'listening' ? '11px' : '10px',
+            letterSpacing: '1.2px',
+            color: micPhase === 'listening' ? theme.accent : micPhase === 'processing' ? theme.textSecondary : theme.textMuted,
+            textTransform: 'uppercase',
+            marginBottom: '48px',
+            textAlign: 'center',
+            lineHeight: 1.8,
+            minHeight: '44px',
+          }}>
+            {micPhase === 'idle' && 'Talk through your session.\nAI will parse and log everything.'}
+            {micPhase === 'listening' && (
+              <>
+                Listening…
+                {transcript && (
+                  <div style={{ fontFamily: mono, fontSize: '10px', color: theme.textMuted, marginTop: '10px', fontStyle: 'italic', maxWidth: '280px', lineHeight: 1.6, textTransform: 'none', letterSpacing: 0 }}>
+                    {transcript}
+                  </div>
+                )}
+              </>
+            )}
+            {micPhase === 'processing' && 'Parsing session…'}
+          </div>
 
           <button
             onClick={micPhase === 'idle' ? startListening : micPhase === 'listening' ? stopListening : undefined}
@@ -461,265 +800,223 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
               border: `2px solid ${micPhase === 'listening' ? theme.accent : theme.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: micPhase === 'processing' ? 'default' : 'pointer',
-              fontSize: '36px',
               boxShadow: micPhase === 'listening' ? `0 0 32px ${theme.accent}44` : 'none',
               transition: 'all 0.2s',
             }}
           >
-            {micPhase === 'listening' ? '⏹' : '🎙'}
+            {micPhase === 'listening'
+              ? <StopIcon size={32} color={theme.bg} />
+              : <MicIcon size={34} color={micPhase === 'processing' ? theme.textMuted : theme.accent} />
+            }
           </button>
 
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '14px', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-            {micPhase === 'idle' ? 'Tap to start' : micPhase === 'listening' ? 'Tap to stop' : ''}
+          <div style={{ fontFamily: mono, fontSize: '9px', color: theme.textMuted, marginTop: '14px', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            {micPhase === 'idle' && 'Tap to start'}
+            {micPhase === 'listening' && 'Tap to stop'}
           </div>
-
         </div>
       </div>
     );
   }
 
-  // ─── Screen: Review ───────────────────────────────────────────────────────
+  // ── SCREEN: Review ────────────────────────────────────────────────────────
+
   if (screen === 'review') {
     const flagCount = Object.values(conf).filter(v => v === 'flagged').length;
+    const missingRequired = (conf.gun === 'missing' || conf.rounds === 'missing');
 
-    const filteredGuns = gunSearch
+    const reviewFilteredGuns = gunSearch
       ? guns.filter(g => gunName(g).toLowerCase().includes(gunSearch.toLowerCase()))
       : guns;
-    const filteredAmmo = ammoSearch
-      ? compatibleAmmo.filter(a => `${a.brand} ${a.productLine}`.toLowerCase().includes(ammoSearch.toLowerCase()))
+    const reviewFilteredAmmo = ammoSearch
+      ? compatibleAmmo.filter(a => ammoLabel(a).toLowerCase().includes(ammoSearch.toLowerCase()))
       : compatibleAmmo;
-
-    function ReviewField({
-      field, label, required, value, confValue, children,
-    }: {
-      field: string; label: string; required?: boolean; value: string | null; confValue: FieldConf; children: React.ReactNode;
-    }) {
-      const isEditing = editingField === field;
-      const borderColor = confValue === 'missing' && required ? theme.red
-        : confValue === 'flagged' ? theme.accent
-        : theme.border;
-      const bgColor = confValue === 'flagged' ? `${theme.accent}0a` : theme.surface;
-
-      return (
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, textTransform: 'uppercase' }}>
-              {label}
-              {confValue === 'flagged' && !isEditing && <span style={{ color: theme.accent, marginLeft: '6px' }}>◆ REVIEW</span>}
-              {confValue === 'missing' && required && <span style={{ color: theme.red, marginLeft: '6px' }}>◆ REQUIRED</span>}
-            </span>
-            <button onClick={() => setEditingField(isEditing ? null : field)} style={{ background: 'none', border: 'none', color: isEditing ? theme.accent : theme.textMuted, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', padding: '2px 0' }}>
-              {isEditing ? 'Done' : 'Edit'}
-            </button>
-          </div>
-          <div style={{ background: bgColor, border: `0.5px solid ${borderColor}`, borderRadius: '6px', padding: '11px 12px', fontFamily: 'monospace', fontSize: '12px', color: value ? theme.textPrimary : theme.textMuted }}>
-            {isEditing ? children : (value || 'Not detected — tap Edit')}
-          </div>
-        </div>
-      );
-    }
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.bg }}>
-        <Header title="Review Session" backLabel="Re-record" onBack={() => { setScreen('mic'); setMicPhase('idle'); setTranscript(''); }} />
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '18px 20px 14px', position: 'relative',
+          borderBottom: `0.5px solid ${theme.border}`, flexShrink: 0,
+        }}>
+          <button onClick={() => { setScreen('mic'); setMicPhase('idle'); setTranscript(''); }} style={{
+            position: 'absolute', left: 16, background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+            color: theme.accent, fontFamily: mono, fontSize: '11px', padding: '4px 0',
+          }}>
+            ‹ Re-record
+          </button>
+          <span style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '2px', color: theme.textSecondary, textTransform: 'uppercase' }}>
+            Review Session
+          </span>
+        </div>
+
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 8px' }}>
 
           {flagCount > 0 && (
-            <div style={{ background: `${theme.accent}0e`, border: `0.5px solid ${theme.accent}44`, borderRadius: '6px', padding: '10px 12px', fontFamily: 'monospace', fontSize: '10px', color: theme.accent, marginBottom: '16px', lineHeight: 1.5 }}>
-              ⚠ {flagCount} field{flagCount > 1 ? 's are' : ' is'} an AI best-guess — confirm before saving.
+            <div style={{
+              background: `${theme.accent}0e`, border: `0.5px solid ${theme.accent}44`,
+              borderRadius: '4px', padding: '10px 12px',
+              fontFamily: mono, fontSize: '10px', color: theme.accent,
+              marginBottom: '16px', lineHeight: 1.5,
+              display: 'flex', gap: '10px', alignItems: 'flex-start',
+            }}>
+              <AlertIcon size={14} color={theme.accent} />
+              {flagCount} field{flagCount > 1 ? 's' : ''} flagged. AI made its best guess — confirm before logging.
             </div>
           )}
 
-          {/* Gun */}
-          <ReviewField field="gun" label="Firearm" required value={selectedGun ? gunName(selectedGun) : null} confValue={conf.gun}>
-            <input autoFocus style={{ ...inputBase, marginBottom: '6px', background: 'transparent', border: 'none', padding: '0', fontSize: '11px' }}
-              placeholder="Search firearms…" value={gunSearch}
-              onChange={e => setGunSearch(e.target.value)} />
-            <PickerList>
-              {filteredGuns.length === 0
-                ? <div style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>No matches</div>
-                : filteredGuns.map(g => (
-                  <PickerRow key={g.id} label={gunName(g)} sub={g.caliber} selected={form.gunId === g.id}
-                    onClick={() => { setForm(f => ({ ...f, gunId: g.id })); setConf(c => ({ ...c, gun: 'confirmed' })); setGunSearch(''); setEditingField(null); }} />
-                ))}
-            </PickerList>
-          </ReviewField>
+          <ReviewField
+            label="Firearm" value={selectedGun ? gunName(selectedGun) : null}
+            confValue={conf.gun} required
+            editContent={
+              <>
+                <input autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0', fontSize: '11px', marginBottom: '6px' }}
+                  placeholder="Search firearms…" value={gunSearch} onChange={e => setGunSearch(e.target.value)} />
+                <PickerList>
+                  {reviewFilteredGuns.map(g => (
+                    <PickerRow key={g.id} label={gunName(g)} sub={g.caliber} selected={form.gunId === g.id}
+                      onClick={() => { setForm(f => ({ ...f, gunId: g.id })); setConf(c => ({ ...c, gun: 'confirmed' })); setGunSearch(''); }} />
+                  ))}
+                </PickerList>
+              </>
+            }
+          />
 
-          {/* Rounds */}
-          <ReviewField field="rounds" label="Rounds Fired" required value={form.rounds || null} confValue={conf.rounds}>
-            <input autoFocus type="number" inputMode="numeric" style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0' }}
-              placeholder="e.g. 50" value={form.rounds}
-              onChange={e => { setForm(f => ({ ...f, rounds: e.target.value })); setConf(c => ({ ...c, rounds: e.target.value ? 'confirmed' : 'missing' })); }} />
-          </ReviewField>
+          <ReviewField
+            label="Rounds Fired" value={form.rounds || null}
+            confValue={conf.rounds} required
+            editContent={
+              <input autoFocus type="number" inputMode="numeric" style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0' }}
+                placeholder="e.g. 50" value={form.rounds}
+                onChange={e => { setForm(f => ({ ...f, rounds: e.target.value })); setConf(c => ({ ...c, rounds: e.target.value ? 'confirmed' : 'missing' })); }} />
+            }
+          />
 
-          {/* Ammo */}
-          <ReviewField field="ammo" label="Ammo (optional)" value={selectedAmmo ? ammoLabel(selectedAmmo) : null} confValue={conf.ammo}>
-            <input autoFocus style={{ ...inputBase, marginBottom: '6px', background: 'transparent', border: 'none', padding: '0', fontSize: '11px' }}
-              placeholder="Search inventory…" value={ammoSearch}
-              onChange={e => setAmmoSearch(e.target.value)} />
-            <PickerList>
-              {compatibleAmmo.length === 0
-                ? <div style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>No compatible ammo</div>
-                : filteredAmmo.map(a => (
-                  <PickerRow key={a.id} label={ammoLabel(a)} sub={`qty ${a.quantity}`} selected={form.ammoLotId === a.id}
-                    onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setConf(c => ({ ...c, ammo: 'confirmed' })); setAmmoSearch(''); setEditingField(null); }} />
-                ))}
-            </PickerList>
-          </ReviewField>
+          <ReviewField
+            label="Ammo (optional)" value={selectedAmmo ? ammoLabel(selectedAmmo) : null}
+            confValue={conf.ammo}
+            editContent={
+              <>
+                <input autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0', fontSize: '11px', marginBottom: '6px' }}
+                  placeholder="Search inventory…" value={ammoSearch} onChange={e => setAmmoSearch(e.target.value)} />
+                <PickerList>
+                  {reviewFilteredAmmo.map(a => (
+                    <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.quantity} remaining`} selected={form.ammoLotId === a.id}
+                      onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setConf(c => ({ ...c, ammo: 'confirmed' })); setAmmoSearch(''); }} />
+                  ))}
+                </PickerList>
+              </>
+            }
+          />
 
-          {/* Location */}
-          <ReviewField field="location" label="Location (optional)" value={form.location || null} confValue={conf.location}>
-            <input autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0' }}
-              placeholder="Range name…" value={form.location}
-              onChange={e => { setForm(f => ({ ...f, location: e.target.value })); setConf(c => ({ ...c, location: e.target.value ? 'confirmed' : 'missing' })); }} />
-          </ReviewField>
+          <ReviewField
+            label="Location (optional)" value={form.location || null}
+            confValue={conf.location}
+            editContent={
+              <input autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0' }}
+                placeholder="Range name…" value={form.location}
+                onChange={e => { setForm(f => ({ ...f, location: e.target.value })); setConf(c => ({ ...c, location: e.target.value ? 'confirmed' : 'missing' })); }} />
+            }
+          />
 
-          {/* Notes */}
-          <ReviewField field="notes" label="Notes (optional)" value={form.notes || null} confValue={conf.notes}>
-            <textarea autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0', minHeight: '64px', resize: 'none' }}
-              placeholder="Any notes…" value={form.notes}
-              onChange={e => { setForm(f => ({ ...f, notes: e.target.value })); setConf(c => ({ ...c, notes: e.target.value ? 'confirmed' : 'missing' })); }} />
-          </ReviewField>
+          <ReviewField
+            label="Notes (optional)" value={form.notes || null}
+            confValue={conf.notes}
+            editContent={
+              <textarea autoFocus style={{ ...inputBase, background: 'transparent', border: 'none', padding: '0', minHeight: '64px', resize: 'none' }}
+                placeholder="Any notes…" value={form.notes}
+                onChange={e => { setForm(f => ({ ...f, notes: e.target.value })); setConf(c => ({ ...c, notes: e.target.value ? 'confirmed' : 'missing' })); }} />
+            }
+          />
 
-          {/* Issues */}
           {form.issues && (
-            <div style={{ background: 'rgba(255,107,107,0.07)', border: `0.5px solid ${theme.red}55`, borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.red, textTransform: 'uppercase', marginBottom: '6px' }}>Issue Flagged</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textPrimary, lineHeight: 1.5 }}>
+            <div style={{ background: 'rgba(255,107,107,0.07)', border: `0.5px solid ${theme.red}55`, borderRadius: '4px', padding: '12px', marginBottom: '12px' }}>
+              <div style={{ fontFamily: mono, fontSize: '9px', letterSpacing: '1px', color: theme.red, textTransform: 'uppercase', marginBottom: '6px' }}>Issue Flagged</div>
+              <div style={{ fontFamily: mono, fontSize: '11px', color: theme.textPrimary, lineHeight: 1.5 }}>
                 {form.issueDescription || form.issueTypes.join(', ') || 'Issue detected in debrief'}
               </div>
             </div>
           )}
 
-          {/* Deduction preview */}
           {selectedAmmo && form.rounds && parseInt(form.rounds) > 0 && (
-            <div style={{ background: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', padding: '10px 12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>Inventory deduction</span>
-              <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, fontWeight: 700 }}>
+            <div style={{ background: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '4px', padding: '10px 12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>Inventory deduction</span>
+              <span style={{ fontFamily: mono, fontSize: '11px', color: theme.red, fontWeight: 700 }}>
                 −{form.rounds} × {selectedAmmo.brand} {selectedAmmo.productLine}
               </span>
             </div>
           )}
 
         </div>
-        <Footer label="Log Session" enabled={canSave} saving={saving} onPress={() => { if (!saving) { setSaving(true); doSave(); } }} />
+
+        <Footer
+          label="Log Session"
+          enabled={canSave}
+          saving={saving}
+          onPress={() => { if (!saving) { setSaving(true); doSave(); } }}
+        />
       </div>
     );
   }
 
-  // ─── Screen: Quick ────────────────────────────────────────────────────────
-  if (screen === 'quick') {
-    const filteredGuns = gunSearch
-      ? guns.filter(g => gunName(g).toLowerCase().includes(gunSearch.toLowerCase()))
-      : guns;
-    const filteredAmmo = ammoSearch
-      ? compatibleAmmo.filter(a => `${a.brand} ${a.productLine}`.toLowerCase().includes(ammoSearch.toLowerCase()))
-      : compatibleAmmo;
-    const showGunPicker = editingField === 'gun' || (!selectedGun && guns.length > 0);
-    const showAmmoPicker = editingField === 'ammo';
+  // ── SCREEN: Confirm ───────────────────────────────────────────────────────
 
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.bg }}>
-        <Header title="Quick Log" backLabel="Back" onBack={() => setScreen('select')} />
-        <Body>
-
-          {/* Context pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '20px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{fmtDate(form.date)} · {form.env}</span>
-            <button onClick={() => setScreen('select')} style={{ background: 'none', border: 'none', color: theme.accent, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
-              Change
-            </button>
-          </div>
-
-          {/* Gun */}
-          <div style={sectionLabel}>Firearm *</div>
-          {selectedGun && editingField !== 'gun' ? (
-            <div style={{ ...inputBase, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: '16px' }}
-              onClick={() => { setGunSearch(''); setEditingField('gun'); }}>
-              <span>{gunName(selectedGun)}</span>
-              <span style={{ fontSize: '10px', color: theme.textMuted }}>Change</span>
-            </div>
-          ) : (
-            <input style={{ ...inputBase, marginBottom: '4px' }} placeholder="Search firearms…" value={gunSearch}
-              onChange={e => { setGunSearch(e.target.value); setEditingField('gun'); }} />
-          )}
-          {showGunPicker && (
-            <PickerList>
-              {filteredGuns.length === 0
-                ? <div style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>No matches</div>
-                : filteredGuns.map(g => (
-                  <PickerRow key={g.id} label={gunName(g)} sub={g.caliber} selected={form.gunId === g.id}
-                    onClick={() => { setForm(f => ({ ...f, gunId: g.id })); setGunSearch(''); setEditingField(null); }} />
-                ))}
-            </PickerList>
-          )}
-          {!showGunPicker && <div style={{ marginBottom: '16px' }} />}
-
-          {/* Rounds */}
-          <div style={sectionLabel}>Rounds Fired *</div>
-          <input type="number" inputMode="numeric" style={{ ...inputBase, marginBottom: '16px' }}
-            placeholder="e.g. 50" value={form.rounds}
-            onChange={e => setForm(f => ({ ...f, rounds: e.target.value }))} />
-
-          {/* Ammo */}
-          <div style={sectionLabel}>Ammo (optional)</div>
-          {selectedAmmo && editingField !== 'ammo' ? (
-            <div style={{ ...inputBase, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: '4px' }}
-              onClick={() => { setAmmoSearch(''); setEditingField('ammo'); }}>
-              <span>{ammoLabel(selectedAmmo)}</span>
-              <span style={{ fontSize: '10px', color: theme.textMuted }}>Change</span>
-            </div>
-          ) : (
-            <input style={{ ...inputBase, marginBottom: '4px' }} placeholder="Search ammo inventory…" value={ammoSearch}
-              onChange={e => { setAmmoSearch(e.target.value); setEditingField('ammo'); }} />
-          )}
-          {showAmmoPicker && (
-            <PickerList>
-              {compatibleAmmo.length === 0
-                ? <div style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>No compatible ammo in inventory</div>
-                : filteredAmmo.map(a => (
-                  <PickerRow key={a.id} label={ammoLabel(a)} sub={`qty ${a.quantity}`} selected={form.ammoLotId === a.id}
-                    onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setAmmoSearch(''); setEditingField(null); }} />
-                ))}
-            </PickerList>
-          )}
-
-          {/* Deduction preview */}
-          {selectedAmmo && form.rounds && parseInt(form.rounds) > 0 && (
-            <div style={{ background: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '6px', padding: '10px 12px', marginTop: '10px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>Inventory deduction</span>
-              <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, fontWeight: 700 }}>
-                −{form.rounds} × {selectedAmmo.brand} {selectedAmmo.productLine}
-              </span>
-            </div>
-          )}
-
-        </Body>
-        <Footer label="Log Session" enabled={canSave} saving={saving} onPress={() => { if (!saving) { setSaving(true); doSave(); } }} />
-      </div>
-    );
-  }
-
-  // ─── Screen: Confirm ──────────────────────────────────────────────────────
   if (screen === 'confirm') {
     const gun = guns.find(g => g.id === form.gunId);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.bg }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: `${theme.accent}18`, border: `2px solid ${theme.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', marginBottom: '20px' }}>
-            ✓
+
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: `${theme.accent}18`,
+            border: `2px solid ${theme.accent}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: '20px',
+          }}>
+            <CheckIcon size={28} color={theme.accent} />
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '1.5px', textTransform: 'uppercase', color: theme.textPrimary, marginBottom: '10px' }}>
+
+          <div style={{ fontFamily: mono, fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase', color: theme.textPrimary, marginBottom: '10px' }}>
             Session Logged
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'center', lineHeight: 1.9 }}>
+
+          <div style={{ fontFamily: mono, fontSize: '11px', color: theme.textMuted, textAlign: 'center', lineHeight: 2 }}>
             {gun && <>{gunName(gun)} · {form.rounds} rounds<br /></>}
             {savedAmmoName && <>Inventory updated<br /></>}
-            {form.issues && <span style={{ color: theme.red }}>Issue flagged for follow-up</span>}
+            {form.issues && <span style={{ color: theme.red }}>Issue flagged for follow-up<br /></span>}
           </div>
+
+          {/* Maintenance insight */}
+          {maintenanceInsight && (
+            <div style={{
+              marginTop: '20px',
+              background: `${theme.orange ?? '#ff9f43'}12`,
+              border: `0.5px solid ${theme.orange ?? '#ff9f43'}55`,
+              borderRadius: '4px',
+              padding: '10px 14px',
+              fontFamily: mono,
+              fontSize: '10px',
+              color: theme.orange ?? '#ff9f43',
+              letterSpacing: '0.5px',
+              lineHeight: 1.6,
+              maxWidth: '280px',
+              textAlign: 'center',
+            }}>
+              {maintenanceInsight}
+            </div>
+          )}
+
         </div>
+
         <div style={{ padding: '12px 20px 24px' }}>
-          <button onClick={onSaved} style={{ width: '100%', padding: '12px', background: 'none', border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textMuted, fontFamily: 'monospace', fontSize: '10px', letterSpacing: '0.8px', cursor: 'pointer' }}>
+          <button onClick={onSaved} style={{
+            width: '100%', padding: '12px', background: 'none',
+            border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+            color: theme.textMuted, fontFamily: mono, fontSize: '10px',
+            letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase',
+          }}>
             ← Back to Sessions
           </button>
         </div>

@@ -24,11 +24,18 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // E2E test bypass: if a fake user id is injected into localStorage, skip Supabase auth
+  const e2eUserId = typeof window !== 'undefined' && localStorage.getItem('gunvault_e2e_user');
+  const e2eUser = e2eUserId ? { id: e2eUserId, is_anonymous: true } as unknown as User : null;
+
+  const [user, setUser] = useState<User | null>(e2eUser);
+  const [loading, setLoading] = useState(e2eUser ? false : true);
   const isAnonymous = user?.is_anonymous ?? false;
 
   useEffect(() => {
+    // E2E mode — skip real auth
+    if (e2eUser) return;
+
     // Safety net: never hang on authLoading for more than 5 seconds
     const authTimeout = setTimeout(() => setLoading(false), 5000);
 
