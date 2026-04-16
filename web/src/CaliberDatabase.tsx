@@ -26,9 +26,12 @@ export function CaliberDatabase() {
     let filtered = allCartridges.filter(cart => {
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        if (!cart.name.toLowerCase().includes(search) &&
-            !cart.alternateNames?.some(n => n.toLowerCase().includes(search)) &&
-            !cart.countryOfOrigin.toLowerCase().includes(search)) return false;
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normSearch = normalize(search);
+        const nameMatch = cart.name.toLowerCase().includes(search) || normalize(cart.name).includes(normSearch);
+        const altMatch = cart.alternateNames?.some(n => n.toLowerCase().includes(search) || normalize(n).includes(normSearch));
+        const countryMatch = cart.countryOfOrigin.toLowerCase().includes(search);
+        if (!nameMatch && !altMatch && !countryMatch) return false;
       }
       if (filterType !== 'all' && cart.type.toLowerCase() !== filterType) return false;
       if (filterOwnership === 'ownGun' && !cart.ownGunForThis) return false;
