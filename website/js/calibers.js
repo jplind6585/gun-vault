@@ -485,6 +485,9 @@
   });
 
   // ── INIT ─────────────────────────────────────────────────────────────
+  const totalCount = CARTRIDGES.length;
+  document.getElementById('cartridge-count-sub').textContent = totalCount;
+  document.getElementById('cartridge-count-intro').textContent = totalCount;
   renderTable();
 
 })();
