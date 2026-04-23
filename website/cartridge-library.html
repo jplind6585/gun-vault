@@ -156,8 +156,8 @@
               <th class="sortable col-energy" data-sort="energy">
                 Energy <span class="sort-arrow">↕</span>
               </th>
-              <th class="col-military">Military</th>
-              <th class="col-avail">Availability</th>
+              <th class="col-military">Military <button class="col-help" data-help="military">?</button></th>
+              <th class="col-avail">Availability <button class="col-help" data-help="availability">?</button></th>
             </tr>
           </thead>
           <tbody id="caliber-tbody">
@@ -169,6 +169,12 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ── HELP POPOVER ── -->
+  <div class="help-popover" id="help-popover">
+    <div class="help-popover-title"></div>
+    <div class="help-popover-body"></div>
   </div>
 
   <!-- ── DETAIL BACKDROP ── -->

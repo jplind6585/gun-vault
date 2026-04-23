@@ -418,6 +418,7 @@
       const reportModal  = document.getElementById('report-modal');
       if (suggestModal.style.display === 'flex') closeModal('suggest-modal');
       if (reportModal.style.display  === 'flex') closeModal('report-modal');
+      document.getElementById('help-popover').classList.remove('open');
     }
   });
 
@@ -482,6 +483,52 @@
   // Nav scroll
   window.addEventListener('scroll', () => {
     document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // ── HELP POPOVERS ────────────────────────────────────────────────────
+  const helpContent = {
+    military: {
+      title: 'Military Adoption',
+      body: 'YES means this cartridge has documented military service by at least one national armed force.\n\nMilitary adoption generally indicates the cartridge met rigorous reliability, accuracy, and logistics standards. It does not mean the cartridge is obsolete or only for military use — many military cartridges (5.56×45mm, 9mm, .308 Win) are the most common civilian and competition rounds in use today.\n\nClick a row to see the full adoption timeline — which countries adopted it, for how long, and in which conflicts.'
+    },
+    availability: {
+      title: 'Availability',
+      body: 'How easy the cartridge is to find at retail today.\n\nABUNDANT — Available everywhere, year-round. Common calibers like 9mm, .223, .308.\n\nCOMMON — Widely stocked at most retailers, minor regional or seasonal variation.\n\nLIMITED — Found at specialty retailers or online; may have supply gaps. Includes newer or niche calibers.\n\nSCARCE — Difficult to source; may require special orders. Often obsolete or highly specialized cartridges.\n\nAvailability reflects peacetime retail conditions and can shift significantly during market disruptions.'
+    }
+  };
+
+  const $helpPopover = document.getElementById('help-popover');
+
+  document.querySelectorAll('.col-help').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.help;
+      const content = helpContent[key];
+      if (!content) return;
+
+      if ($helpPopover.classList.contains('open') && $helpPopover.dataset.active === key) {
+        $helpPopover.classList.remove('open');
+        return;
+      }
+
+      $helpPopover.querySelector('.help-popover-title').textContent = content.title;
+      $helpPopover.querySelector('.help-popover-body').textContent  = content.body;
+      $helpPopover.dataset.active = key;
+      $helpPopover.classList.add('open');
+
+      const rect = btn.getBoundingClientRect();
+      const popW = 300;
+      let left = rect.left;
+      if (left + popW > window.innerWidth - 16) left = window.innerWidth - popW - 16;
+      $helpPopover.style.left = left + 'px';
+      $helpPopover.style.top  = (rect.bottom + 8) + 'px';
+    });
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.col-help') && !e.target.closest('#help-popover')) {
+      $helpPopover.classList.remove('open');
+    }
   });
 
   // ── STICKY THEAD OFFSET ───────────────────────────────────────────────
