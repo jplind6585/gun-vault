@@ -656,6 +656,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
               style={inputBase}
               placeholder="Search ammo inventory..."
               value={ammoSearch}
+              onFocus={() => setEditingField('ammo')}
               onChange={e => { setAmmoSearch(e.target.value); setEditingField('ammo'); }}
             />
           )}
@@ -664,7 +665,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
               {compatibleAmmo.length === 0
                 ? <div style={{ padding: '8px 10px', fontFamily: mono, fontSize: '10px', color: theme.textMuted }}>No compatible ammo in inventory</div>
                 : filteredAmmo.map(a => (
-                  <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.quantity} remaining`} selected={form.ammoLotId === a.id}
+                  <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.caliber ?? ''}  ·  ${a.quantity} remaining`} selected={form.ammoLotId === a.id}
                     onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setAutoSelectedAmmo(null); setAmmoSearch(''); setEditingField(null); }} />
                 ))}
             </PickerList>
@@ -928,7 +929,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
                   placeholder="Search inventory…" value={ammoSearch} onChange={e => setAmmoSearch(e.target.value)} />
                 <PickerList>
                   {reviewFilteredAmmo.map(a => (
-                    <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.quantity} remaining`} selected={form.ammoLotId === a.id}
+                    <PickerRow key={a.id} label={ammoLabel(a)} sub={`${a.caliber ?? ''}  ·  ${a.quantity} remaining`} selected={form.ammoLotId === a.id}
                       onClick={() => { setForm(f => ({ ...f, ammoLotId: a.id })); setConf(c => ({ ...c, ammo: 'confirmed' })); setAmmoSearch(''); }} />
                   ))}
                 </PickerList>
