@@ -129,6 +129,13 @@
 
       <div id="loading-state" class="table-empty">Loading powder data…</div>
 
+      <div class="use-legend">
+        <span class="use-legend-label">USE KEY</span>
+        <span class="use-legend-item"><span class="use-tag use-pistol">P</span>Pistol</span>
+        <span class="use-legend-item"><span class="use-tag use-rifle">R</span>Rifle</span>
+        <span class="use-legend-item"><span class="use-tag use-shotgun">S</span>Shotgun</span>
+      </div>
+
       <div class="table-wrap" id="table-wrap" style="display:none">
         <table class="caliber-table">
           <thead>
@@ -136,9 +143,9 @@
               <th class="col-product sortable" data-sort="name">PRODUCT <span class="sort-arrow">↕</span></th>
               <th class="col-pbrand sortable" data-sort="brand">BRAND <span class="sort-arrow">↕</span></th>
               <th class="col-ptype">TYPE</th>
-              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE <span class="sort-arrow"></span></th>
+              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE <span class="sort-arrow"></span><button class="col-help" data-help="burn">?</button></th>
               <th class="col-use">BEST USE</th>
-              <th class="col-temp">TEMP</th>
+              <th class="col-temp">TEMP <button class="col-help" data-help="temp">?</button></th>
             </tr>
           </thead>
           <tbody id="powder-tbody"></tbody>
@@ -147,6 +154,12 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- ── HELP POPOVER ── -->
+  <div class="help-popover" id="help-popover">
+    <div class="help-popover-title"></div>
+    <div class="help-popover-body"></div>
   </div>
 
   <!-- ── DETAIL BACKDROP ── -->

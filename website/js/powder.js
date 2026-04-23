@@ -317,7 +317,58 @@
 
   $detailBackdrop.addEventListener('click', closeDetail);
   document.getElementById('detail-back').addEventListener('click', closeDetail);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeDetail();
+      document.getElementById('help-popover').classList.remove('open');
+    }
+  });
+
+  // ── HELP POPOVERS ──────────────────────────────────────────────────────
+  const helpContent = {
+    burn: {
+      title: 'Burn Rate',
+      body: 'Ranks powders fastest (1) to slowest (100+) relative to each other.\n\nFaster powders suit pistol and short-barreled loads — they ignite fully before the bullet leaves the barrel. Slower powders are better for rifle loads, building pressure over a longer distance.\n\nUse burn rate to find substitutes within a category. Never substitute based on burn rate alone — always consult a current reloading manual for safe charge weights.'
+    },
+    temp: {
+      title: 'Temperature Sensitivity',
+      body: 'How much velocity changes as temperature changes.\n\nLow: Minimal shift between cold and hot conditions. Best for hunting, long-range precision, or any situation where temperatures vary.\n\nModerate: Some variation at extremes — acceptable for most range use.\n\nHigh: Noticeable velocity change between cold and hot. Loads developed in summer may produce different results in winter.'
+    }
+  };
+
+  const $helpPopover = document.getElementById('help-popover');
+
+  document.querySelectorAll('.col-help').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.help;
+      const content = helpContent[key];
+      if (!content) return;
+
+      if ($helpPopover.classList.contains('open') && $helpPopover.dataset.active === key) {
+        $helpPopover.classList.remove('open');
+        return;
+      }
+
+      $helpPopover.querySelector('.help-popover-title').textContent = content.title;
+      $helpPopover.querySelector('.help-popover-body').textContent  = content.body;
+      $helpPopover.dataset.active = key;
+      $helpPopover.classList.add('open');
+
+      const rect = btn.getBoundingClientRect();
+      const popW = 300;
+      let left = rect.left;
+      if (left + popW > window.innerWidth - 16) left = window.innerWidth - popW - 16;
+      $helpPopover.style.left = left + 'px';
+      $helpPopover.style.top  = (rect.bottom + 8) + 'px';
+    });
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.col-help') && !e.target.closest('#help-popover')) {
+      $helpPopover.classList.remove('open');
+    }
+  });
 
   document.getElementById('suggest-btn').addEventListener('click', () => openModal('suggest-modal'));
   document.getElementById('report-btn').addEventListener('click',  () => openModal('report-modal'));
@@ -346,6 +397,15 @@
   window.addEventListener('scroll', () => {
     document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
   });
+
+  // ── STICKY THEAD OFFSET ───────────────────────────────────────────────
+  function setTheadTop() {
+    const fb = document.getElementById('filter-bar');
+    if (!fb) return;
+    document.documentElement.style.setProperty('--thead-top', (60 + fb.offsetHeight) + 'px');
+  }
+  setTheadTop();
+  window.addEventListener('resize', setTheadTop);
 
   // ── INIT ──────────────────────────────────────────────────────────────
   async function init() {

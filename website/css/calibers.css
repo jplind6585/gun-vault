@@ -267,10 +267,15 @@ body.calibers-page {
 
 .caliber-table thead tr {
   border-bottom: 0.5px solid var(--border);
-  background: rgba(255,255,255,0.02);
 }
 
 .caliber-table th {
+  position: sticky;
+  top: var(--thead-top, 160px);
+  z-index: 20;
+  background: rgba(7,7,26,0.97);
+  backdrop-filter: blur(8px);
+
   padding: 10px 14px;
   text-align: left;
   font-family: var(--mono);

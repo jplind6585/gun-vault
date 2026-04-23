@@ -484,6 +484,15 @@
     document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
   });
 
+  // ── STICKY THEAD OFFSET ───────────────────────────────────────────────
+  function setTheadTop() {
+    const fb = document.getElementById('filter-bar');
+    if (!fb) return;
+    document.documentElement.style.setProperty('--thead-top', (60 + fb.offsetHeight) + 'px');
+  }
+  setTheadTop();
+  window.addEventListener('resize', setTheadTop);
+
   // ── INIT ─────────────────────────────────────────────────────────────
   const totalCount = CARTRIDGES.length;
   document.getElementById('cartridge-count-sub').textContent = totalCount;

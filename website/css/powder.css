@@ -206,6 +206,81 @@ body.powder-page {
   vertical-align: middle;
 }
 
+/* ── COLUMN HELP BUTTON ───────────────────────────────────────────────── */
+.col-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.15);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 5px;
+  vertical-align: middle;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.col-help:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+
+/* ── HELP POPOVER ─────────────────────────────────────────────────────── */
+.help-popover {
+  position: fixed;
+  z-index: 500;
+  background: #12142a;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  max-width: 300px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: none;
+}
+.help-popover.open { display: block; }
+.help-popover-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.help-popover-body {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+/* ── USE LEGEND ───────────────────────────────────────────────────────── */
+.use-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 0 10px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+}
+.use-legend-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--dim);
+}
+.use-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+}
+
 /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .detail-panel { width: 100%; min-width: unset; max-width: unset; border-left: none; box-shadow: none; }
