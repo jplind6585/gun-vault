@@ -428,8 +428,8 @@
     if (!fb) return;
     document.documentElement.style.setProperty('--thead-top', (60 + fb.offsetHeight) + 'px');
   }
-  setTheadTop();
-  window.addEventListener('resize', setTheadTop);
+  requestAnimationFrame(() => requestAnimationFrame(setTheadTop));
+  window.addEventListener('resize', () => requestAnimationFrame(setTheadTop));
 
   // ── INIT ──────────────────────────────────────────────────────────────
   async function init() {
@@ -446,6 +446,7 @@
 
       $loading.style.display   = 'none';
       $tableWrap.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(setTheadTop));
     } catch (err) {
       console.error('Failed to load powder data:', err);
       $loading.textContent = 'Failed to load data. Please refresh the page.';

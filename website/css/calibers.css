@@ -254,7 +254,6 @@ body.calibers-page {
 
 /* ── TABLE ──────────────────────────────────────────────────────────── */
 .table-wrap {
-  overflow-x: auto;
   min-height: 400px;
 }
 
@@ -272,7 +271,7 @@ body.calibers-page {
 .caliber-table th {
   position: sticky;
   top: var(--thead-top, 160px);
-  z-index: 20;
+  z-index: 45;
   background: rgba(7,7,26,0.97);
   backdrop-filter: blur(8px);
 

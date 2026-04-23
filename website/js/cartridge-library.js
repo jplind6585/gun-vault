@@ -537,8 +537,8 @@
     if (!fb) return;
     document.documentElement.style.setProperty('--thead-top', (60 + fb.offsetHeight) + 'px');
   }
-  setTheadTop();
-  window.addEventListener('resize', setTheadTop);
+  requestAnimationFrame(() => requestAnimationFrame(setTheadTop));
+  window.addEventListener('resize', () => requestAnimationFrame(setTheadTop));
 
   // ── INIT ─────────────────────────────────────────────────────────────
   const totalCount = CARTRIDGES.length;
