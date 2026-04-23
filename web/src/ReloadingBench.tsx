@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { theme } from './theme';
 import { useResponsive } from './useResponsive';
-import { searchPowders, PowderResult } from './lib/referenceData';
+import { searchPowders } from './lib/referenceData';
+import type { PowderResult } from './lib/referenceData';
 
 interface LoadRecipe {
   id: string;
