@@ -93,6 +93,13 @@
         <select id="brand-filter" class="brand-select">
           <option value="all">ALL BRANDS</option>
         </select>
+        <div class="db-actions">
+          <span class="result-count" id="result-count">— powders</span>
+          <span class="db-sep">·</span>
+          <button class="db-action-btn" id="suggest-btn">+ Suggest powder</button>
+          <span class="db-sep">·</span>
+          <button class="db-action-btn" id="report-btn">⚑ Report error</button>
+        </div>
       </div>
 
       <div class="filter-row-2">
@@ -111,21 +118,11 @@
           <button class="chip" data-filter="use" data-value="Rifle">RIFLE</button>
           <button class="chip" data-filter="use" data-value="Shotgun">SHOTGUN</button>
         </div>
-        <div class="db-actions">
-          <span class="result-count" id="result-count">— powders</span>
-          <span class="db-sep">·</span>
-          <button class="db-action-btn" id="suggest-btn">+ Suggest powder</button>
-          <span class="db-sep">·</span>
-          <button class="db-action-btn" id="report-btn">⚑ Report error</button>
-        </div>
-      </div>
-
-      <div class="filter-row-3">
         <div class="chip-group">
           <span class="chip-label">TEMP</span>
           <button class="chip active" data-filter="temp" data-value="all">ALL</button>
           <button class="chip" data-filter="temp" data-value="Low">LOW</button>
-          <button class="chip" data-filter="temp" data-value="Moderate">MODERATE</button>
+          <button class="chip" data-filter="temp" data-value="Moderate">MOD</button>
           <button class="chip" data-filter="temp" data-value="High">HIGH</button>
         </div>
         <div class="chip-group">
@@ -146,7 +143,7 @@
       <div id="loading-state" class="table-empty">Loading powder data…</div>
 
       <div class="use-legend">
-        <span class="use-legend-label">USE KEY</span>
+        <span class="use-legend-label">BEST USE KEY</span>
         <span class="use-legend-item"><span class="use-tag use-pistol">P</span>Pistol</span>
         <span class="use-legend-item"><span class="use-tag use-rifle">R</span>Rifle</span>
         <span class="use-legend-item"><span class="use-tag use-shotgun">S</span>Shotgun</span>
@@ -158,10 +155,10 @@
             <tr>
               <th class="col-product sortable" data-sort="name">PRODUCT <span class="sort-arrow">↕</span></th>
               <th class="col-pbrand sortable" data-sort="brand">BRAND <span class="sort-arrow">↕</span></th>
-              <th class="col-ptype">TYPE</th>
-              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE <span class="sort-arrow"></span><button class="col-help" data-help="burn">?</button></th>
+              <th class="col-ptype sortable" data-sort="type">TYPE <span class="sort-arrow">↕</span></th>
+              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE<button class="col-help" data-help="burn">ⓘ</button> <span class="sort-arrow"></span></th>
               <th class="col-use">BEST USE</th>
-              <th class="col-temp">TEMP <button class="col-help" data-help="temp">?</button></th>
+              <th class="col-temp">TEMP<button class="col-help" data-help="temp">ⓘ</button></th>
             </tr>
           </thead>
           <tbody id="powder-tbody"></tbody>

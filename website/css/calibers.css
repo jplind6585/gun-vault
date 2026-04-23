@@ -881,25 +881,21 @@ th.sortable.sort-desc .sort-arrow { display: none; }
 
 /* ── COLUMN HELP BUTTON ─────────────────────────────────────────────── */
 .col-help {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.07);
-  border: 0.5px solid rgba(255,255,255,0.15);
+  background: none;
+  border: none;
   color: var(--dim);
   font-family: var(--mono);
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 400;
   cursor: pointer;
-  margin-left: 5px;
-  vertical-align: middle;
+  padding: 0 0 0 4px;
+  vertical-align: super;
   line-height: 1;
-  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s, color 0.15s;
 }
-.col-help:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+.col-help:hover { opacity: 1; color: var(--text); }
 
 /* ── HELP POPOVER ───────────────────────────────────────────────────── */
 .help-popover {

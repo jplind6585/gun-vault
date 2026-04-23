@@ -94,6 +94,7 @@
       switch (state.sortField) {
         case 'name':  av = a.productName.toLowerCase(); bv = b.productName.toLowerCase(); break;
         case 'brand': av = a.brand.toLowerCase();       bv = b.brand.toLowerCase();       break;
+        case 'type':  av = a.powderType.toLowerCase();  bv = b.powderType.toLowerCase();  break;
         case 'burn':  av = a.burnRateRank ?? 999;       bv = b.burnRateRank ?? 999;       break;
         default:      av = a.burnRateRank ?? 999;       bv = b.burnRateRank ?? 999;
       }

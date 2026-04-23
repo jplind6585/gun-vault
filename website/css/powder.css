@@ -206,36 +206,38 @@ body.powder-page {
   vertical-align: middle;
 }
 
-/* ── FILTER ROW 3 (powder-specific) ──────────────────────────────────── */
-.filter-row-3 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 10px;
+/* ── POWDER FILTER ROW 1 override (adds db-actions) ──────────────────── */
+.powder-page .filter-row-1 {
+  flex-wrap: nowrap;
 }
 
 /* ── USE LEGEND ───────────────────────────────────────────────────────── */
 .use-legend {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 9px 0 10px;
+  gap: 10px;
+  padding: 6px 0 8px;
   border-bottom: 0.5px solid rgba(255,255,255,0.04);
 }
 .use-legend-label {
   font-family: var(--mono);
   font-size: 8px;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: var(--dim);
+  margin-right: 2px;
 }
 .use-legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--muted);
+  color: var(--dim);
+}
+.use-legend .use-tag {
+  width: 14px;
+  height: 14px;
+  font-size: 7px;
 }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
