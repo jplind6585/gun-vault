@@ -13,6 +13,50 @@ export function getClaudeApiKey(): string { return localStorage.getItem(KEY_STOR
 export function setClaudeApiKey(key: string): void { localStorage.setItem(KEY_STORAGE, key.trim()); }
 export function hasClaudeApiKey(): boolean { return true; } // always true — key is in Edge Function
 
+// ── Usage cache (localStorage mirror — display only, not enforcement) ─────────
+
+interface UsageCache {
+  month: string; // 'YYYY-MM'
+  target_analysis_count: number;
+  narrative_count: number;
+}
+
+function getCurrentMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getUsageCache(): UsageCache {
+  const month = getCurrentMonth();
+  try {
+    const stored = localStorage.getItem('ai_usage_cache');
+    if (!stored) return { month, target_analysis_count: 0, narrative_count: 0 };
+    const parsed: UsageCache = JSON.parse(stored);
+    if (parsed.month !== month) return { month, target_analysis_count: 0, narrative_count: 0 };
+    return parsed;
+  } catch {
+    return { month, target_analysis_count: 0, narrative_count: 0 };
+  }
+}
+
+function incrementUsageCache(feature: string): void {
+  const cache = getUsageCache();
+  if (feature === 'target_analysis' || feature === 'target_coach') {
+    cache.target_analysis_count += 1;
+  } else if (feature === 'narrative') {
+    cache.narrative_count += 1;
+  }
+  localStorage.setItem('ai_usage_cache', JSON.stringify(cache));
+}
+
+/** Read current month's free-tier usage counts for display in UI. */
+export function getFeatureUsageCounts(): { targetAnalysis: number; narrative: number } {
+  const cache = getUsageCache();
+  return { targetAnalysis: cache.target_analysis_count, narrative: cache.narrative_count };
+}
+
+// ── Core fetch wrapper ────────────────────────────────────────────────────────
+
 async function callClaude(
   messages: object[],
   systemPrompt?: string,
@@ -43,10 +87,16 @@ async function callClaude(
       window.dispatchEvent(new CustomEvent('ai_budget_exceeded'));
       throw new Error('BUDGET_EXCEEDED');
     }
+    if (res.status === 402 && err.error === 'feature_limit_exceeded') {
+      const reason = (err.feature === 'narrative') ? 'narrative_limit' : 'target_analysis_limit';
+      window.dispatchEvent(new CustomEvent('show_upgrade_modal', { detail: { reason } }));
+      throw new Error(`FEATURE_LIMIT:${err.feature}`);
+    }
     throw new Error(err.error ?? `AI error ${res.status}`);
   }
 
   const data = await res.json();
+  incrementUsageCache(feature);
   return data.text ?? '';
 }
 
@@ -379,6 +429,19 @@ CAPABILITIES:
 
 TONE: Direct and practical — like a trusted gunsmith or experienced range instructor. Not preachy. Answer the question.`;
 
+// Phase 1 intelligence extensions — appended to system prompt, never replaces the core guardrail block above.
+const ASSISTANT_PHASE1_EXTENSIONS = `
+
+PROACTIVE INTELLIGENCE GUIDELINES (append to every conversation):
+
+MAINTENANCE (Feature 8): Beyond round count, factor in ammo type when assessing cleaning needs. Steel-case fouls roughly 2x faster than brass — note it if session data shows steel-case use. Suppressed use fouls 2-3x faster. Some calibers are inherently dirty (.22LR, steel-case 9mm, 5.56 carbines). Guns stored long-term need function checks regardless of round count.
+
+PRE-SESSION PREP (Feature 3): When asked about an upcoming session, check from vault data: last zero date + distance, ammo inventory for that caliber, rounds since last cleaning, any open issues on the gun, optic assignment. Deliver a focused 4-6 point checklist — not a wall of text.
+
+INVENTORY PROJECTION (Feature 5): When asked about ammo supply, compute from session history: sessions per month with that gun × avg rounds per session = burn rate. Current stock ÷ burn rate = time remaining. Give a specific timeline in both sessions and weeks. Flag multi-caliber shortage patterns proactively.
+
+DEBRIEF PATTERN RECOGNITION (Feature 11): If the context includes ammo issue correlation data, act on it — don't wait to be asked. 3+ sessions, same gun, same ammo, same issue type → ammo problem. 3+ sessions, same gun, varied ammo, same issue type → gun or technique problem. Always offer one specific diagnostic next step.`;
+
 export function buildVaultContext(guns: Gun[], sessions: Session[], ammoLots: AmmoLot[]): string {
   const lines: string[] = [`VAULT CONTEXT (${new Date().toLocaleDateString()}):\n`];
 
@@ -441,7 +504,17 @@ export function buildFullContext(
 ): string {
   const vaultSection = buildVaultContext(guns, sessions, ammoLots);
 
-  if (!profile) return vaultSection;
+  // Ammo correlation data for Feature 11 (session debrief pattern recognition)
+  const correlations = getAmmoCorrelation(sessions, ammoLots, guns);
+  const correlationSection = correlations.length > 0
+    ? '\nAMMO ISSUE PATTERNS:\n' + correlations.map(c =>
+        `  - ${c.gunName} + ${c.ammoName}: ${c.issueRate.toFixed(0)}% issue rate across ${c.sessions} sessions` +
+        (c.issueTypes.length ? ` (${c.issueTypes.join(', ')})` : '') +
+        (c.recommendation ? ` — ${c.recommendation}` : '')
+      ).join('\n')
+    : '';
+
+  if (!profile) return vaultSection + correlationSection;
 
   const lines: string[] = [vaultSection, '\nSHOOTER PROFILE:'];
 
@@ -494,7 +567,7 @@ export function buildFullContext(
     lines.push(`  Days since last session: ${profile.daysSinceLastSession}`);
   }
 
-  return lines.join('\n');
+  return lines.join('\n') + correlationSection;
 }
 
 export async function callArmoryAssistant(
@@ -503,7 +576,7 @@ export async function callArmoryAssistant(
   checkInTrigger: CheckInTrigger = 'none',
 ): Promise<string> {
   const probe = buildCheckInProbe(checkInTrigger);
-  const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${vaultContext}${probe}`;
+  const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}${ASSISTANT_PHASE1_EXTENSIONS}\n\n${vaultContext}${probe}`;
   return callClaude(
     messages.map(m => ({ role: m.role, content: m.content })),
     systemPrompt,

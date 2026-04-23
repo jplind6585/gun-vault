@@ -72,10 +72,6 @@ function AppCore() {
   const TAB_VIEWS: AppView[] = ['home', 'vault', 'sessions', 'more', 'arsenal'];
 
   function navigateTo(view: AppView) {
-    if ((view === 'assistant' || view === 'target-analysis') && !isPro) {
-      setShowUpgrade(true);
-      return;
-    }
     setViewHistory(prev => TAB_VIEWS.includes(view) ? [] : [...prev, currentView]);
     setCurrentView(view);
   }
@@ -120,7 +116,7 @@ function AppCore() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isPro, setIsPro] = useState(false);
 
-  const FREE_GUN_LIMIT = 10;
+  const [upgradeReason, setUpgradeReason] = useState<string | undefined>();
   const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
   const { profile, refresh: refreshProfile } = useShooterProfile();
@@ -163,11 +159,20 @@ function AppCore() {
     }
   }, [ready, profile]);
 
-  // Listen for global budget-exceeded event to show upgrade modal
+  // Listen for global budget-exceeded / feature-limit events to show upgrade modal
   useEffect(() => {
-    const handler = () => setShowUpgrade(true);
-    window.addEventListener('ai_budget_exceeded', handler);
-    return () => window.removeEventListener('ai_budget_exceeded', handler);
+    const budgetHandler = () => setShowUpgrade(true);
+    const limitHandler = (e: Event) => {
+      const reason = (e as CustomEvent<{ reason: string }>).detail?.reason;
+      setUpgradeReason(reason);
+      setShowUpgrade(true);
+    };
+    window.addEventListener('ai_budget_exceeded', budgetHandler);
+    window.addEventListener('show_upgrade_modal', limitHandler);
+    return () => {
+      window.removeEventListener('ai_budget_exceeded', budgetHandler);
+      window.removeEventListener('show_upgrade_modal', limitHandler);
+    };
   }, []);
 
   // Android hardware back button
@@ -253,10 +258,6 @@ function AppCore() {
   }
 
   function handleRequestAddGun() {
-    if (!isPro && allGuns.filter(g => g.status !== 'Decommissioned').length >= FREE_GUN_LIMIT) {
-      setShowUpgrade(true);
-      return;
-    }
     setShowAddForm(true);
   }
 
@@ -408,15 +409,15 @@ function AppCore() {
     if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} />;
     if (currentView === 'caliber')     return <CaliberDatabase />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
-    if (currentView === 'target-analysis') return <TargetAnalysis />;
+    if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={() => setShowUpgrade(true)} />;
     if (currentView === 'training')    return <TrainingLog />;
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist />;
     if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={navigateBack} onDeleted={() => { setSelectedOpticId(null); navigateTo('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
-    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => navigateTo(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} />;
-    if (currentView === 'assistant')   return <ArmoryAssistant />;
+    if (currentView === 'more')        return <MoreMenu onNavigate={(v) => navigateTo(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} isPro={isPro} />;
+    if (currentView === 'assistant')   return <ArmoryAssistant isPro={isPro} onUpgrade={() => setShowUpgrade(true)} />;
     if (currentView === 'field-guide') return <FieldGuide />;
     if (currentView === 'legal') return <LegalDocs />;
     return null;
@@ -473,7 +474,7 @@ function AppCore() {
         />
       )}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
-      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} onUpgradeSuccess={() => setIsPro(true)} />}
+      {showUpgrade && <UpgradeModal onClose={() => { setShowUpgrade(false); setUpgradeReason(undefined); }} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} onUpgradeSuccess={() => setIsPro(true)} reason={upgradeReason} />}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 

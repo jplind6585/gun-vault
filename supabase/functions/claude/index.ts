@@ -8,16 +8,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
-// Per-user monthly token budget (input + output combined)
-// Adjust based on your pricing tier
+// Per-user monthly token budget (input + output combined) — Pro backstop
 const MONTHLY_TOKEN_BUDGET = 100_000;
+// Free-tier monthly feature limits
+const FREE_FEATURE_LIMITS: Record<string, number> = {
+  target_analysis: 5,
+  target_coach: 5,   // counts toward same display limit as target_analysis
+  narrative: 5,
+};
+// Features with a hard block for free users (zero uses allowed)
+const PRO_ONLY_FEATURES = new Set(['assistant', 'onboarding']);
 
 interface RequestBody {
   messages: Array<{ role: string; content: unknown }>;
   systemPrompt?: string;
   model?: string;
   maxTokens?: number;
-  feature?: string; // for usage tracking: 'narrative' | 'target_analysis' | 'progress' | etc.
+  feature?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -45,7 +52,21 @@ Deno.serve(async (req: Request) => {
   const token = authHeader.replace('Bearer ', '');
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) {
-    return json({ error: 'Unauthorized' }, 401);
+    return json({ error: 'Unauthorized', detail: authError?.message ?? 'no user', tokenPrefix: token.slice(0, 20) }, 401);
+  }
+
+  // ── Parse request body (needed before feature checks) ────────────────────────
+  let body: RequestBody;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { messages, systemPrompt, model = DEFAULT_MODEL, maxTokens = 1024, feature = 'unknown' } = body;
+
+  if (!messages?.length) {
+    return json({ error: 'messages is required' }, 400);
   }
 
   // ── Check Pro status ─────────────────────────────────────────────────────────
@@ -59,7 +80,40 @@ Deno.serve(async (req: Request) => {
     (!profile.pro_expires_at || new Date(profile.pro_expires_at) > new Date());
 
   if (!isPro) {
-    // ── Monthly usage check ────────────────────────────────────────────────────
+    // ── Hard block: Pro-only features ─────────────────────────────────────────
+    if (PRO_ONLY_FEATURES.has(feature)) {
+      return json({ error: 'feature_limit_exceeded', feature, message: 'This feature requires Pro.' }, 402);
+    }
+
+    // ── Monthly feature limits ────────────────────────────────────────────────
+    if (feature in FREE_FEATURE_LIMITS) {
+      const limit = FREE_FEATURE_LIMITS[feature];
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // target_analysis and target_coach share the same display bucket
+      const countFeatures = (feature === 'target_analysis' || feature === 'target_coach')
+        ? ['target_analysis', 'target_coach']
+        : [feature];
+
+      const { count } = await supabase
+        .from('ai_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .in('feature', countFeatures)
+        .gte('created_at', startOfMonth.toISOString());
+
+      if ((count ?? 0) >= limit) {
+        return json({
+          error: 'feature_limit_exceeded',
+          feature,
+          message: 'Monthly limit reached for this feature.',
+        }, 402);
+      }
+    }
+
+    // ── Monthly token budget (backstop for all remaining free features) ────────
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -79,20 +133,6 @@ Deno.serve(async (req: Request) => {
     if (tokensUsed >= MONTHLY_TOKEN_BUDGET) {
       return json({ error: 'budget_exceeded', message: 'Monthly AI usage limit reached. Resets on the 1st.' }, 429);
     }
-  }
-
-  // ── Parse request ────────────────────────────────────────────────────────────
-  let body: RequestBody;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const { messages, systemPrompt, model = DEFAULT_MODEL, maxTokens = 1024, feature = 'unknown' } = body;
-
-  if (!messages?.length) {
-    return json({ error: 'messages is required' }, 400);
   }
 
   // ── Call Anthropic ───────────────────────────────────────────────────────────

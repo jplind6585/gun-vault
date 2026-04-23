@@ -15,6 +15,7 @@ interface ToolCard {
 interface MoreMenuProps {
   onNavigate: (view: string) => void;
   onFeedbackOpen?: () => void;
+  isPro?: boolean;
 }
 
 // ── SVG icons (24px viewBox, monochrome, consistent stroke) ──────────────────
@@ -171,7 +172,7 @@ function IconSupport({ size = 26, muted = false }: { size?: number; muted?: bool
   );
 }
 
-export function MoreMenu({ onNavigate, onFeedbackOpen }: MoreMenuProps) {
+export function MoreMenu({ onNavigate, onFeedbackOpen, isPro }: MoreMenuProps) {
   const tools: ToolCard[] = [
     {
       id: 'assistant',
@@ -253,7 +254,18 @@ export function MoreMenu({ onNavigate, onFeedbackOpen }: MoreMenuProps) {
               transition: 'border-color 0.15s',
             }}
           >
-            <tool.Icon size={26} muted={!tool.available} />
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <tool.Icon size={26} muted={!tool.available} />
+              {tool.id === 'assistant' && !isPro && (
+                <span style={{
+                  position: 'absolute', top: -6, right: -14,
+                  fontFamily: 'monospace', fontSize: '8px', fontWeight: 700,
+                  letterSpacing: '0.5px', color: theme.bg,
+                  backgroundColor: theme.accent, borderRadius: '4px',
+                  padding: '1px 4px',
+                }}>PRO</span>
+              )}
+            </div>
             <div style={{
               fontFamily: 'monospace',
               fontSize: '11px',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { theme } from './theme';
 import { useResponsive } from './useResponsive';
+import { searchPowders, PowderResult } from './lib/referenceData';
 
 interface LoadRecipe {
   id: string;
@@ -604,6 +605,19 @@ function RecipeForm({
   });
 
   const { isMobile } = useResponsive();
+  const [powderSuggestions, setPowderSuggestions] = useState<PowderResult[]>([]);
+  const [showPowderSuggestions, setShowPowderSuggestions] = useState(false);
+
+  async function handlePowderInput(value: string) {
+    setFormData(prev => ({ ...prev, powderType: value }));
+    if (value.length >= 2) {
+      const results = await searchPowders(value);
+      setPowderSuggestions(results);
+      setShowPowderSuggestions(results.length > 0);
+    } else {
+      setShowPowderSuggestions(false);
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -722,14 +736,46 @@ function RecipeForm({
 
             <div>
               <label style={labelStyle}>Powder Type *</label>
-              <input
-                type="text"
-                value={formData.powderType}
-                onChange={(e) => setFormData({ ...formData, powderType: e.target.value })}
-                style={inputStyle}
-                placeholder="e.g., Titegroup, Varget"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={formData.powderType}
+                  onChange={(e) => handlePowderInput(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowPowderSuggestions(false), 150)}
+                  style={inputStyle}
+                  placeholder="e.g., Titegroup, Varget"
+                  required
+                />
+                {showPowderSuggestions && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                    backgroundColor: theme.surface, border: '0.5px solid ' + theme.border,
+                    borderRadius: '8px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto',
+                  }}>
+                    {powderSuggestions.map((p, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          setFormData(prev => ({ ...prev, powderType: p.productName }));
+                          setShowPowderSuggestions(false);
+                        }}
+                        style={{
+                          display: 'flex', flexDirection: 'column', width: '100%',
+                          padding: '10px 14px', background: 'none', border: 'none',
+                          borderBottom: i < powderSuggestions.length - 1 ? '0.5px solid ' + theme.border : 'none',
+                          textAlign: 'left', cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary }}>{p.productName}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+                          {p.brand}{p.burnRateRank ? ` · Burn rate ${p.burnRateRank}` : ''}{p.powderType ? ` · ${p.powderType}` : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>

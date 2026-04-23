@@ -7,6 +7,19 @@ interface Props {
   onClose: () => void;
   onFeedback?: () => void;
   onUpgradeSuccess?: () => void;
+  reason?: string;
+}
+
+function getReasonHeadline(reason?: string): string | null {
+  if (!reason) return null;
+  const month = new Date().toLocaleString('default', { month: 'long' });
+  switch (reason) {
+    case 'assistant': return 'Unlock the Armory Assistant';
+    case 'ammo_scan': return 'Unlock Ammo Box Scanning';
+    case 'target_analysis_limit': return `You've used your 5 free Target Analyses for ${month}.`;
+    case 'narrative_limit': return `You've used your 5 free Debriefs for ${month}.`;
+    default: return null;
+  }
 }
 
 const PRO_FEATURES = [
@@ -17,7 +30,8 @@ const PRO_FEATURES = [
   'AI Armory Assistant',
 ];
 
-export function UpgradeModal({ onClose, onFeedback, onUpgradeSuccess }: Props) {
+export function UpgradeModal({ onClose, onFeedback, onUpgradeSuccess, reason }: Props) {
+  const reasonHeadline = getReasonHeadline(reason);
   const native = isNativePlatform();
 
   // Native: 'upgrade' → (billing sheet) → 'success'
@@ -188,6 +202,11 @@ export function UpgradeModal({ onClose, onFeedback, onUpgradeSuccess }: Props) {
           </div>
 
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            {reasonHeadline && (
+              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary, marginBottom: '10px', lineHeight: 1.4 }}>
+                {reasonHeadline}
+              </div>
+            )}
             <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, letterSpacing: '2px', color: theme.textPrimary }}>
               LINDCOTT ARMORY PRO
             </div>

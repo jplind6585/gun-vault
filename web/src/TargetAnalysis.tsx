@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { theme } from './theme';
 import { getTargetAnalyses, saveTargetAnalysis, updateTargetAnalysis, deleteTargetAnalysis, getAllGuns, getAllAmmo, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from './storage';
-import { callTargetCoach, hasClaudeApiKey } from './claudeApi';
+import { callTargetCoach, hasClaudeApiKey, getFeatureUsageCounts } from './claudeApi';
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
 import { getSettings } from './SettingsPanel';
@@ -422,7 +422,7 @@ function CropStep({ imageUrl, onCrop, onSkip }: {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function TargetAnalysis() {
+export function TargetAnalysis({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: () => void }) {
   const [step, setStep] = useState<Step>(1);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [distanceYds, setDistanceYds] = useState(100);
@@ -1328,6 +1328,23 @@ export function TargetAnalysis() {
               <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 10 }}>🎯</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>Target Analysis</div>
               <div style={{ fontSize: 13, color: theme.textSecondary }}>Upload a target photo to analyze your shot placement</div>
+              {!isPro && (() => {
+                const used = getFeatureUsageCounts().targetAnalysis;
+                if (used < 3) return null;
+                const remaining = Math.max(0, 5 - used);
+                return (
+                  <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, backgroundColor: theme.surface, border: `0.5px solid ${remaining === 0 ? theme.orange : theme.border}` }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: remaining === 0 ? theme.orange : theme.textSecondary }}>
+                      {remaining === 0
+                        ? `0 of 5 free analyses left this month — `
+                        : `${remaining} of 5 free analyses left this month — `}
+                    </span>
+                    <button onClick={onUpgrade} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'monospace', fontSize: '11px', color: theme.accent, cursor: 'pointer', textDecoration: 'underline' }}>
+                      Upgrade for unlimited
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px 20px', borderRadius: 14, background: theme.accent, color: '#000', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
               📷 Take Photo <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: 'none' }} />

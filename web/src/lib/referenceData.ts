@@ -218,3 +218,35 @@ export async function checkGunModel(make: string, model: string): Promise<GunMod
     return null;
   }
 }
+
+// ── Powder autocomplete ───────────────────────────────────────────────────────
+
+export interface PowderResult {
+  brand: string;
+  productName: string;
+  burnRateRank: number | null;
+  powderType: string | null;
+  description: string | null;
+}
+
+export async function searchPowders(query: string): Promise<PowderResult[]> {
+  if (!query.trim()) return [];
+  try {
+    const { data } = await supabase
+      .from('powder_brands')
+      .select('brand, product_name, burn_rate_rank, powder_type, description')
+      .or(`product_name.ilike.%${query}%,brand.ilike.%${query}%`)
+      .eq('discontinued', false)
+      .order('burn_rate_rank', { ascending: true, nullsFirst: false })
+      .limit(12);
+    return (data ?? []).map((r: { brand: string; product_name: string; burn_rate_rank: number; powder_type: string; description: string }) => ({
+      brand: r.brand,
+      productName: r.product_name,
+      burnRateRank: r.burn_rate_rank ?? null,
+      powderType: r.powder_type ?? null,
+      description: r.description ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}

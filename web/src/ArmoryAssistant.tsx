@@ -69,9 +69,96 @@ function TypingIndicator() {
   );
 }
 
+// ── Preview screen (free users) ───────────────────────────────────────────────
+
+const PREVIEW_CAPABILITIES = [
+  'Maintenance reminders based on round counts',
+  'Ammo inventory analysis and reorder alerts',
+  'Trending accuracy and session patterns',
+  'Pre-session prep and goal setting',
+  'Inventory cost and value projections',
+  'Long-range caliber and load comparisons',
+  'Drill recommendations for specific weaknesses',
+  'Debrief pattern recognition across sessions',
+  'Gear and optic compatibility checks',
+  'Legal and compliance questions (US)',
+  'Historical and technical firearm info',
+  'Personalized training plans',
+];
+
+const PREVIEW_EXAMPLES = [
+  {
+    q: 'What guns in my vault are due for cleaning?',
+    a: 'Your Ruger 10/22 is at 847 rounds since last cleaning — I\'d prioritize that before your next session.',
+  },
+  {
+    q: 'How is my shooting trending over the last month?',
+    a: 'Your average group size improved 18% at 100 yards. Your best sessions were early morning — worth noting.',
+  },
+  {
+    q: 'What should I focus on in my next range session?',
+    a: 'Based on your last 3 sessions, your 300-yard splits are inconsistent. A positional drill at that distance would help most.',
+  },
+];
+
+function AssistantPreviewScreen({ onUpgrade }: { onUpgrade: () => void }) {
+  return (
+    <div style={{ padding: '24px 20px 40px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
+      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        <IconSparkle size={32} />
+        <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, letterSpacing: '2px', color: theme.textPrimary, marginTop: '12px' }}>
+          ARMORY ASSISTANT
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, marginTop: '6px', lineHeight: 1.5 }}>
+          Your AI coach with full vault context.
+        </div>
+      </div>
+
+      {/* Example interactions */}
+      <div style={{ marginBottom: '28px' }}>
+        {PREVIEW_EXAMPLES.map((ex, i) => (
+          <div key={i} style={{ marginBottom: '16px', backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', border: '0.5px solid ' + theme.border }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.accent, marginBottom: '6px' }}>YOU</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary, marginBottom: '10px' }}>{ex.q}</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '4px' }}>ASSISTANT</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, lineHeight: 1.5 }}>{ex.a}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Capabilities */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.5px', color: theme.textMuted, marginBottom: '14px' }}>12 CAPABILITIES</div>
+        {PREVIEW_CAPABILITIES.map((cap, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+            <span style={{ color: theme.accent, fontSize: '14px', flexShrink: 0 }}>✓</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textSecondary }}>{cap}</span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onUpgrade}
+        style={{
+          width: '100%', padding: '15px',
+          backgroundColor: theme.accent, border: 'none',
+          borderRadius: '10px', color: theme.bg,
+          fontFamily: 'monospace', fontSize: '13px',
+          fontWeight: 700, letterSpacing: '1.5px', cursor: 'pointer',
+        }}
+      >
+        UNLOCK PRO — $5/MO
+      </button>
+      <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'center', marginTop: '8px' }}>
+        50% early access discount
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ArmoryAssistant() {
+export function ArmoryAssistant({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -146,6 +233,10 @@ export function ArmoryAssistant() {
   }
 
   const isEmpty = messages.length === 0;
+
+  if (!isPro) {
+    return <AssistantPreviewScreen onUpgrade={onUpgrade ?? (() => {})} />;
+  }
 
   return (
     <div style={{
