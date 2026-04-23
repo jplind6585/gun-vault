@@ -20,6 +20,32 @@ import { haptic } from './haptic';
 type Screen = 'form' | 'mic' | 'review' | 'confirm';
 type FieldConf = 'confirmed' | 'flagged' | 'missing';
 
+// Caliber equivalency groups — strings in the same group are treated as compatible
+const CALIBER_GROUPS: string[][] = [
+  ['5.56 nato', '5.56x45mm', '5.56x45mm nato', '.223 rem', '.223 remington', '.223/5.56', '5.56'],
+  ['.308 win', '.308 winchester', '7.62 nato', '7.62x51mm', '7.62x51mm nato', '7.62x51'],
+  ['9mm', '9x19mm', '9x19', '9mm luger', '9mm parabellum', '9x19 parabellum'],
+  ['.45 acp', '.45 auto'],
+  ['.40 s&w', '.40 sw', '40 s&w'],
+  ['.38 special', '.38 spl', '.38 spec'],
+  ['.357 magnum', '.357 mag'],
+  ['.44 magnum', '.44 mag'],
+  ['.22 lr', '.22 long rifle', '.22lr'],
+  ['6.5 creedmoor', '6.5cm', '6.5 cm'],
+  ['300 blackout', '.300 blackout', '.300 blk', '300 blk', '7.62x35mm'],
+];
+
+function caliberMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const norm = (s: string) => s.toLowerCase().trim();
+  const na = norm(a), nb = norm(b);
+  if (na === nb) return true;
+  for (const group of CALIBER_GROUPS) {
+    if (group.includes(na) && group.includes(nb)) return true;
+  }
+  return false;
+}
+
 const PURPOSE_OPTIONS: SessionPurpose[] = ['Warmup', 'Drills', 'Zeroing', 'Qualification', 'Competition', 'Fun', 'Carry Eval'];
 
 interface FormData {
@@ -332,7 +358,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
     // Auto-select ammo if exactly 1 compatible lot
     const gun = guns.find(g => g.id === form.gunId);
     if (gun) {
-      const compatible = ammoLots.filter(a => a.caliber === gun.caliber);
+      const compatible = ammoLots.filter(a => caliberMatches(a.caliber, gun.caliber));
       if (compatible.length === 1 && !form.ammoLotId) {
         setForm(f => ({ ...f, ammoLotId: compatible[0].id }));
         setAutoSelectedAmmo(compatible[0]);
@@ -350,7 +376,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
 
   const selectedGun = guns.find(g => g.id === form.gunId) ?? null;
   const compatibleAmmo = selectedGun
-    ? ammoLots.filter(a => a.caliber === selectedGun.caliber)
+    ? ammoLots.filter(a => caliberMatches(a.caliber, selectedGun.caliber))
     : ammoLots;
   const selectedAmmo = ammoLots.find(a => a.id === form.ammoLotId) ?? null;
   const canSave = !!form.gunId && !!form.rounds && parseInt(form.rounds) > 0;
