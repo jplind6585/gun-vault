@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cartridge Library — Lindcott Armory Field Guide</title>
+  <meta name="description" content="Searchable database of 323 firearm cartridges. Ballistics, history, military adoption timelines, and specifications for rifle, pistol, revolver, shotgun, and rimfire cartridges." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/calibers.css" />
+  <link rel="canonical" href="https://lindcottarmory.com/cartridge-library" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lindcottarmory.com/cartridge-library" />
+  <meta property="og:title" content="Cartridge Library — Lindcott Armory Field Guide" />
+  <meta property="og:description" content="Searchable database of 323 firearm cartridges. Ballistics, history, military adoption timelines, and specifications for rifle, pistol, revolver, shotgun, and rimfire cartridges." />
+  <meta property="og:image" content="https://lindcottarmory.com/assets/images/screenshots/dashboard.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cartridge Library — Lindcott Armory Field Guide" />
+  <meta name="twitter:description" content="Searchable database of 323 firearm cartridges. Ballistics, history, military adoption timelines, and specifications for rifle, pistol, revolver, shotgun, and rimfire cartridges." />
+  <meta name="twitter:image" content="https://lindcottarmory.com/assets/images/screenshots/dashboard.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Firearm Cartridge Library",
+    "description": "Searchable database of 323 firearm cartridges with ballistics, history, military adoption timelines, and specifications.",
+    "url": "https://lindcottarmory.com/cartridge-library",
+    "publisher": { "@type": "Organization", "name": "Lindcott Armory" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://lindcottarmory.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Field Guide", "item": "https://lindcottarmory.com/field-guide" },
+      { "@type": "ListItem", "position": 3, "name": "Cartridge Library", "item": "https://lindcottarmory.com/cartridge-library" }
+    ]
+  }
+  </script>
+</head>
+<body class="calibers-page">
+
+  <!-- ── NAV ── -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="nav-logo-img">LINDCOTT ARMORY</a>
+    <div class="nav-links">
+      <a href='/#features'>Features</a>
+      <a class='nav-active' href='/field-guide'>Field Guide</a>
+      <a href='/#privacy'>Privacy</a>
+      <a class='nav-cta' href='/#email-cta'>Get Early Access</a>
+    </div>
+    <button class="nav-mobile-cta" onclick="location.href='index.html#email-cta'">Get Early Access</button>
+  </nav>
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="calibers-header">
+    <div class="container">
+      <div class="section-label"><a class='breadcrumb' href='/field-guide'>FIELD GUIDE</a> / CARTRIDGE LIBRARY</div>
+      <h1 class="calibers-title">Cartridge Library</h1>
+      <p class="calibers-sub"><span id="cartridge-count-sub">323</span> cartridges — ballistics, history, and military timelines. Search, sort, and compare.</p>
+    </div>
+  </div>
+
+  <!-- ── SEO INTRO ── static text for crawlers ── -->
+  <div class="seo-intro">
+    <div class="container">
+      <p>This reference covers <span id="cartridge-count-intro">323</span> cartridges across six categories: rifle, pistol, revolver, shotgun, rimfire, and wildcat. Each entry includes bullet diameter, common grain weights, muzzle velocity, energy at the muzzle, military adoption history, and current availability. Search by name, caliber designation, or alternate name — for example, ".308 Win" will find 7.62×51mm NATO.</p>
+      <p>Cartridges with military service history are flagged and sortable by year introduced. Select up to four cartridges to compare ballistics side-by-side. Common cartridges covered include 9mm Luger, .223 Remington / 5.56×45mm NATO, .308 Winchester / 7.62×51mm NATO, 6.5 Creedmoor, .45 ACP, .30-06 Springfield, 7.62×39mm, .300 Blackout, .338 Lapua Magnum, and many more.</p>
+    </div>
+  </div>
+
+  <!-- ── FILTER BAR ── sticky -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="container">
+
+      <div class="filter-row-1">
+        <div class="search-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search" placeholder="Search cartridges, calibers, alternate names…" autocomplete="off" />
+          <button class="search-clear" id="search-clear" style="display:none">×</button>
+        </div>
+        <button class="compare-btn" id="compare-btn">COMPARE</button>
+      </div>
+
+      <div class="filter-row-2">
+        <div class="chip-group">
+          <span class="chip-label">TYPE</span>
+          <button class="chip active" data-filter="type" data-value="all">ALL</button>
+          <button class="chip" data-filter="type" data-value="Rifle">RIFLE</button>
+          <button class="chip" data-filter="type" data-value="Pistol">PISTOL</button>
+          <button class="chip" data-filter="type" data-value="Revolver">REVOLVER</button>
+          <button class="chip" data-filter="type" data-value="Shotgun">SHOTGUN</button>
+          <button class="chip" data-filter="type" data-value="Rimfire">RIMFIRE</button>
+        </div>
+        <div class="chip-group">
+          <span class="chip-label">STATUS</span>
+          <button class="chip active" data-filter="status" data-value="all">ALL</button>
+          <button class="chip" data-filter="status" data-value="Active">ACTIVE</button>
+          <button class="chip" data-filter="status" data-value="Limited">LIMITED</button>
+          <button class="chip" data-filter="status" data-value="Obsolete">OBSOLETE</button>
+        </div>
+        <div class="db-actions">
+          <span class="result-count" id="result-count">323 cartridges</span>
+          <span class="db-sep">·</span>
+          <button class="db-action-btn" id="suggest-btn">+ Suggest addition</button>
+          <button class="db-action-btn" id="report-btn">⚑ Report error</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── COMPARE BANNER ── -->
+  <div class="compare-banner" id="compare-banner" style="display:none">
+    <div class="container">
+      <span id="compare-count">0 selected</span>
+      <span class="compare-hint">Select 2–4 cartridges to compare</span>
+      <button class="btn-primary compare-go" id="compare-go" disabled>COMPARE</button>
+      <button class="compare-cancel" id="compare-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ── MAIN LAYOUT ── -->
+  <div class="calibers-body">
+    <div class="container">
+      <div class="table-wrap">
+        <table class="caliber-table" id="caliber-table">
+          <thead>
+            <tr>
+              <th class="sortable col-name" data-sort="name">
+                Cartridge <span class="sort-arrow">↕</span>
+              </th>
+              <th class="sortable col-type" data-sort="type">
+                Type <span class="sort-arrow">↕</span>
+              </th>
+              <th class="sortable col-year" data-sort="year">
+                Year <span class="sort-arrow">↕</span>
+              </th>
+              <th class="sortable col-dia" data-sort="bulletDia">
+                BULLET DIA <span class="sort-arrow">↕</span>
+              </th>
+              <th class="col-grains">Gr. Weights</th>
+              <th class="sortable col-vel" data-sort="velocity">
+                Velocity <span class="sort-arrow">↕</span>
+              </th>
+              <th class="sortable col-energy" data-sort="energy">
+                Energy <span class="sort-arrow">↕</span>
+              </th>
+              <th class="col-military">Military</th>
+              <th class="col-avail">Availability</th>
+            </tr>
+          </thead>
+          <tbody id="caliber-tbody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+        <div class="table-empty" id="table-empty" style="display:none">
+          No cartridges match your filters.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DETAIL BACKDROP ── -->
+  <div class="detail-backdrop" id="detail-backdrop"></div>
+
+  <!-- ── DETAIL DRAWER ── -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-overlay-header" id="detail-overlay-header">
+      <button class="detail-back" id="detail-close-btn">← Back to list</button>
+    </div>
+    <div class="detail-inner" id="detail-inner">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ── COMPARISON TABLE (modal) ── -->
+  <div class="compare-modal" id="compare-modal" style="display:none">
+    <div class="compare-modal-inner">
+      <div class="compare-modal-header">
+        <span>COMPARISON</span>
+        <button id="compare-close">×</button>
+      </div>
+      <div class="compare-scroll">
+        <table class="compare-table" id="compare-table">
+          <!-- Populated by JS -->
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUGGEST ADDITION MODAL ── -->
+  <div class="form-modal" id="suggest-modal" style="display:none">
+    <div class="form-modal-inner">
+      <div class="form-modal-header">
+        <span>SUGGEST AN ADDITION</span>
+        <button class="form-modal-close" data-modal="suggest-modal">×</button>
+      </div>
+      <div class="form-modal-body">
+        <p class="form-modal-desc">Know a cartridge we're missing? Let us know and we'll review it for the next update.</p>
+        <form id='suggest-form' method='POST' name='suggest-addition'>
+          <input type="hidden" name="form-name" value="suggest-addition" />
+          <div class="form-field">
+            <label for="suggest-name">Cartridge Name <span class="req">*</span></label>
+            <input type="text" id="suggest-name" name="cartridge-name" required placeholder="e.g., .300 HAM'R" />
+          </div>
+          <div class="form-field">
+            <label for="suggest-link">Link to Supporting Info</label>
+            <input type="url" id="suggest-link" name="source-link" placeholder="https://..." />
+          </div>
+          <div class="form-field">
+            <label for="suggest-reason">Why It Should Be Added <span class="req">*</span></label>
+            <textarea id="suggest-reason" name="reason" rows="4" required placeholder="Historical significance, commercial availability, notable use cases…"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="form-cancel" data-modal="suggest-modal">Cancel</button>
+            <button type="submit" class="btn-primary">Submit</button>
+          </div>
+        </form>
+        <div class="form-success" id="suggest-success" style="display:none">
+          <div class="form-success-icon">✓</div>
+          <p>Submitted. We review suggestions weekly — thanks for helping improve the database.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REPORT INACCURACY MODAL ── -->
+  <div class="form-modal" id="report-modal" style="display:none">
+    <div class="form-modal-inner">
+      <div class="form-modal-header">
+        <span>REPORT AN INACCURACY</span>
+        <button class="form-modal-close" data-modal="report-modal">×</button>
+      </div>
+      <div class="form-modal-body">
+        <p class="form-modal-desc">Found an error in the data? Select the cartridge and field, and tell us what's wrong.</p>
+        <form id='report-form' method='POST' name='report-inaccuracy'>
+          <input type="hidden" name="form-name" value="report-inaccuracy" />
+          <div class="form-field">
+            <label for="report-cartridge">Cartridge <span class="req">*</span></label>
+            <select id="report-cartridge" name="cartridge" required>
+              <option value="">Select a cartridge…</option>
+              <!-- Populated by JS from CARTRIDGES array -->
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="report-field">What's Incorrect <span class="req">*</span></label>
+            <select id="report-field" name="field" required>
+              <option value="">Select a field…</option>
+              <option>Name / Alternate Names</option>
+              <option>Type (Rifle/Pistol/etc)</option>
+              <option>Year Introduced</option>
+              <option>Country of Origin</option>
+              <option>Bullet Diameter</option>
+              <option>Velocity Range</option>
+              <option>Energy Range</option>
+              <option>Max Pressure</option>
+              <option>Effective Range</option>
+              <option>Grain Weights</option>
+              <option>Availability / Production Status</option>
+              <option>Military Adoption</option>
+              <option>History / Description</option>
+              <option>Notable Firearms</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="report-correction">Correction <span class="req">*</span></label>
+            <textarea id="report-correction" name="correction" rows="4" required placeholder="Describe what's wrong and what the correct information is…"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="form-cancel" data-modal="report-modal">Cancel</button>
+            <button type="submit" class="btn-primary">Submit</button>
+          </div>
+        </form>
+        <div class="form-success" id="report-success" style="display:none">
+          <div class="form-success-icon">✓</div>
+          <p>Reported. We review corrections weekly — thanks for keeping the data accurate.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INLINE CTA ── -->
+  <div class="calibers-cta" id="email-cta-inline">
+    <div class="container">
+      <div class="cta-content">
+        <div>
+          <div class="section-label">IN THE APP</div>
+          <h3>Your vault knows which ones you own.</h3>
+          <p>The full cartridge database is in Lindcott Armory — linked to your guns, your ammo inventory, and your session history.</p>
+        </div>
+        <form class="email-capture" id="calibers-email-form">
+          <input type="email" placeholder="your@email.com" class="email-input" required />
+          <button type="submit" class="btn-primary">Get Early Access</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="footer-logo-img">LINDCOTT ARMORY</div>
+          <div class="footer-sub">A Lindcott Farms product</div>
+        </div>
+        <div class="footer-links">
+          <a href='/field-guide'>Field Guide</a>
+          <a href='/privacy'>Privacy Policy</a>
+          <a href='/privacy#terms'>Terms of Service</a>
+          <a href="mailto:support@lindcottarmory.com">Support</a>
+        </div>
+      </div>
+      <div class="footer-copy">© 2026 Lindcott Armory LLC. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="js/supabase-loader.js"></script>
+  <script>
+    (async function () {
+      try {
+        const rows = await supabaseFetchAll('cartridges');
+        window.CARTRIDGES = transformCartridges(rows);
+      } catch (e) {
+        console.error('Failed to load cartridge data from Supabase:', e);
+        window.CARTRIDGES = [];
+      }
+      const s = document.createElement('script');
+      s.src = 'js/cartridge-library.js';
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
+</html>

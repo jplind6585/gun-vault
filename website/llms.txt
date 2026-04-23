@@ -8,7 +8,7 @@ Built by a competitive shooter, reloader, and aspiring gunsmith.
 
 - [Home](https://lindcottarmory.com/): App overview, features, early access signup, and charter member offer
 - [Field Guide](https://lindcottarmory.com/field-guide): Reference hub for firearms knowledge
-- [Cartridge Database](https://lindcottarmory.com/calibers): Searchable database of 323 firearm cartridges with ballistics, history, military adoption timelines, and specifications
+- [Cartridge Library](https://lindcottarmory.com/cartridge-library): Searchable database of 323 firearm cartridges with ballistics, history, military adoption timelines, and specifications
 - [Powder Library](https://lindcottarmory.com/powder): Searchable database of 320+ reloading powders with burn rate rankings, powder type, best use by application, temperature sensitivity, and recommended calibers
 - [History of Firearms](https://lindcottarmory.com/history): Visual timeline of 45 landmark firearms from the flintlock musket to the XM7
 - [Military Firearms Timeline](https://lindcottarmory.com/military): 85 service weapons across every major military, explorable by country, year, or role

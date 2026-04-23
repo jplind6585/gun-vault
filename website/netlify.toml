@@ -1,2 +1,8 @@
 [build]
   publish = "."
+
+[[redirects]]
+  from = "/calibers"
+  to = "/cartridge-library"
+  status = 301
+  force = true
