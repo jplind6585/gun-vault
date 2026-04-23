@@ -58,6 +58,27 @@ function transformGunHistory(rows) {
   }));
 }
 
+function transformPowders(rows) {
+  return rows.map(p => ({
+    id:                     p.id,
+    brand:                  p.brand                  || '',
+    productName:            p.product_name           || '',
+    burnRateRank:           p.burn_rate_rank         ?? null,
+    powderType:             p.powder_type            || '',
+    bestUse:                p.best_use               || [],
+    recommendedCalibers:    p.recommended_calibers   || [],
+    temperatureSensitivity: p.temperature_sensitivity || '',
+    discontinued:           p.discontinued           || false,
+    countryOfOrigin:        p.country_of_origin      || '',
+    description:            p.description            || '',
+    meteringGrade:          p.metering_grade         || '',
+    muzzleFlashRating:      p.muzzle_flash_rating    || '',
+    parentCompany:          p.parent_company         || '',
+    manufacturer:           p.manufacturer           || '',
+    distributor:            p.distributor            || '',
+  }));
+}
+
 function transformCartridges(rows) {
   return rows.map(c => ({
     name:                c.name,
