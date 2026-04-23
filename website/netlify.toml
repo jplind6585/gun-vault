@@ -6,3 +6,9 @@
   to = "/cartridge-library"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/powder"
+  to = "/powder-library"
+  status = 301
+  force = true
