@@ -78,7 +78,10 @@ export function OnboardingConversation({ onComplete, onDismiss }: Props) {
       setMessages([{ role: 'assistant', content: display, rawContent: reply }]);
       if (ready) setProfileReady(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to start — sign in to use AI features.');
+      const msg = e instanceof Error ? e.message : '';
+      if (!msg.startsWith('FEATURE_LIMIT:') && !msg.startsWith('BUDGET_EXCEEDED')) {
+        setError(msg || 'Failed to start — sign in to use AI features.');
+      }
     } finally {
       setLoading(false);
     }
@@ -117,7 +120,10 @@ export function OnboardingConversation({ onComplete, onDismiss }: Props) {
       setMessages(prev => [...prev, { role: 'assistant', content: display, rawContent: reply }]);
       if (ready) setProfileReady(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      const msg = e instanceof Error ? e.message : '';
+      if (!msg.startsWith('FEATURE_LIMIT:') && !msg.startsWith('BUDGET_EXCEEDED')) {
+        setError(msg || 'Something went wrong.');
+      }
     } finally {
       setLoading(false);
     }

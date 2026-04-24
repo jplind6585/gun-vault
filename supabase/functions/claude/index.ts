@@ -17,7 +17,7 @@ const FREE_FEATURE_LIMITS: Record<string, number> = {
   narrative: 5,
 };
 // Features with a hard block for free users (zero uses allowed)
-const PRO_ONLY_FEATURES = new Set(['assistant', 'onboarding']);
+const PRO_ONLY_FEATURES = new Set(['assistant']);
 
 interface RequestBody {
   messages: Array<{ role: string; content: unknown }>;
