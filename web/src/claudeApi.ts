@@ -3,7 +3,7 @@
 import type { Session, Gun, AmmoLot, TargetPhotoAnalysis, SessionPurpose, IssueType } from './types';
 import type { ShooterProfile } from './shooterProfile';
 import type { CheckInTrigger } from './profileInference';
-import { SUPABASE_URL } from './lib/supabase';
+import { supabase, SUPABASE_URL } from './lib/supabase';
 
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/claude`;
 
@@ -63,14 +63,20 @@ async function callClaude(
   feature = 'unknown',
   maxTokens = 1024,
 ): Promise<string> {
-  // Read token directly from localStorage — supabase.auth.getSession() acquires a PKCE lock
-  // that deadlocks when called concurrently with AuthProvider's onAuthStateChange listener.
-  const storageKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+  // Get a fresh, auto-refreshed token via getSession().
+  // Fall back to raw localStorage read only if getSession() fails (e.g. PKCE race on initial auth).
   let accessToken: string | null = null;
   try {
-    const raw = localStorage.getItem(storageKey);
-    accessToken = raw ? JSON.parse(raw).access_token : null;
+    const { data } = await supabase.auth.getSession();
+    accessToken = data.session?.access_token ?? null;
   } catch { /* ignore */ }
+  if (!accessToken) {
+    try {
+      const storageKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+      const raw = localStorage.getItem(storageKey);
+      accessToken = raw ? JSON.parse(raw).access_token : null;
+    } catch { /* ignore */ }
+  }
   if (!accessToken) throw new Error('Sign in to use AI features.');
   const res = await fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
