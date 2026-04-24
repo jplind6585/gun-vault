@@ -57,35 +57,44 @@ export function getFeatureUsageCounts(): { targetAnalysis: number; narrative: nu
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
 
+async function getAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) return data.session.access_token;
+  } catch { /* ignore */ }
+  // Fallback: force a refresh, then try again
+  try {
+    const { data } = await supabase.auth.refreshSession();
+    if (data.session?.access_token) return data.session.access_token;
+  } catch { /* ignore */ }
+  return null;
+}
+
 async function callClaude(
   messages: object[],
   systemPrompt?: string,
   feature = 'unknown',
   maxTokens = 1024,
 ): Promise<string> {
-  // Get a fresh, auto-refreshed token via getSession().
-  // Fall back to raw localStorage read only if getSession() fails (e.g. PKCE race on initial auth).
-  let accessToken: string | null = null;
-  try {
-    const { data } = await supabase.auth.getSession();
-    accessToken = data.session?.access_token ?? null;
-  } catch { /* ignore */ }
-  if (!accessToken) {
-    try {
-      const storageKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
-      const raw = localStorage.getItem(storageKey);
-      accessToken = raw ? JSON.parse(raw).access_token : null;
-    } catch { /* ignore */ }
-  }
+  let accessToken = await getAccessToken();
   if (!accessToken) throw new Error('Sign in to use AI features.');
-  const res = await fetch(EDGE_FUNCTION_URL, {
+
+  const doFetch = (token: string) => fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ messages, systemPrompt, feature, maxTokens }),
   });
+
+  let res = await doFetch(accessToken);
+
+  // On 401, force-refresh the session once and retry — handles stale tokens after long idle
+  if (res.status === 401) {
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      const fresh = data.session?.access_token;
+      if (fresh) res = await doFetch(fresh);
+    } catch { /* fall through to error handling below */ }
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
