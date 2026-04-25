@@ -90,24 +90,32 @@
           <button class="search-clear" id="search-clear" style="display:none">×</button>
         </div>
         <button class="compare-btn" id="compare-btn">COMPARE</button>
+        <button class="col-chooser-btn" id="col-chooser-btn">COLUMNS</button>
       </div>
 
       <div class="filter-row-2">
         <div class="chip-group">
           <span class="chip-label">TYPE</span>
-          <button class="chip active" data-filter="type" data-value="all">ALL</button>
-          <button class="chip" data-filter="type" data-value="Rifle">RIFLE</button>
-          <button class="chip" data-filter="type" data-value="Pistol">PISTOL</button>
-          <button class="chip" data-filter="type" data-value="Revolver">REVOLVER</button>
-          <button class="chip" data-filter="type" data-value="Shotgun">SHOTGUN</button>
-          <button class="chip" data-filter="type" data-value="Rimfire">RIMFIRE</button>
+          <button class="chip active" data-filter="type" data-value="all">ALL<span class="chip-count" id="chip-count-type-all"></span></button>
+          <button class="chip" data-filter="type" data-value="Rifle">RIFLE<span class="chip-count" id="chip-count-type-rifle"></span></button>
+          <button class="chip" data-filter="type" data-value="Pistol">PISTOL<span class="chip-count" id="chip-count-type-pistol"></span></button>
+          <button class="chip" data-filter="type" data-value="Revolver">REVOLVER<span class="chip-count" id="chip-count-type-revolver"></span></button>
+          <button class="chip" data-filter="type" data-value="Shotgun">SHOTGUN<span class="chip-count" id="chip-count-type-shotgun"></span></button>
+          <button class="chip" data-filter="type" data-value="Rimfire">RIMFIRE<span class="chip-count" id="chip-count-type-rimfire"></span></button>
         </div>
         <div class="chip-group">
           <span class="chip-label">STATUS</span>
-          <button class="chip active" data-filter="status" data-value="all">ALL</button>
-          <button class="chip" data-filter="status" data-value="Active">ACTIVE</button>
-          <button class="chip" data-filter="status" data-value="Limited">LIMITED</button>
-          <button class="chip" data-filter="status" data-value="Obsolete">OBSOLETE</button>
+          <button class="chip active" data-filter="status" data-value="all">ALL<span class="chip-count" id="chip-count-status-all"></span></button>
+          <button class="chip" data-filter="status" data-value="Active">ACTIVE<span class="chip-count" id="chip-count-status-active"></span></button>
+          <button class="chip" data-filter="status" data-value="Limited">LIMITED<span class="chip-count" id="chip-count-status-limited"></span></button>
+          <button class="chip" data-filter="status" data-value="Obsolete">OBSOLETE<span class="chip-count" id="chip-count-status-obsolete"></span></button>
+        </div>
+        <div class="avail-legend">
+          <span class="avail-legend-label">AVAIL:</span>
+          <span class="badge-avail avail-abundant">ABUNDANT</span>
+          <span class="badge-avail avail-common">COMMON</span>
+          <span class="badge-avail avail-limited">LIMITED</span>
+          <span class="badge-avail avail-scarce">SCARCE</span>
         </div>
         <div class="db-actions">
           <span class="result-count" id="result-count">323 cartridges</span>
@@ -177,6 +185,19 @@
     <div class="help-popover-body"></div>
   </div>
 
+  <!-- ── COLUMN CHOOSER POPOVER ── -->
+  <div class="col-chooser-popover" id="col-chooser-popover">
+    <div class="col-chooser-title">VISIBLE COLUMNS</div>
+    <label class="col-chooser-item"><input type="checkbox" data-col="type" checked> Type</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="year" checked> Year</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="dia" checked> Bullet Dia</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="grains" checked> Gr. Weights</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="vel" checked> Velocity</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="energy" checked> Energy</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="military" checked> Military</label>
+    <label class="col-chooser-item"><input type="checkbox" data-col="avail" checked> Availability</label>
+  </div>
+
   <!-- ── DETAIL BACKDROP ── -->
   <div class="detail-backdrop" id="detail-backdrop"></div>
 
@@ -184,6 +205,7 @@
   <div class="detail-panel" id="detail-panel">
     <div class="detail-overlay-header" id="detail-overlay-header">
       <button class="detail-back" id="detail-close-btn">← Back to list</button>
+      <a href="#" class="detail-page-link" id="detail-page-link" target="_blank">Full page ↗</a>
     </div>
     <div class="detail-inner" id="detail-inner">
       <!-- Populated by JS -->
@@ -344,7 +366,7 @@
         window.CARTRIDGES = [];
       }
       const s = document.createElement('script');
-      s.src = 'js/cartridge-library.js';
+      s.src = 'js/cartridge-library.js?v=2';
       document.body.appendChild(s);
     })();
   </script>

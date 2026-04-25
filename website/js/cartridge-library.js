@@ -14,7 +14,15 @@
     selected: null,
     compareMode: false,
     compareIds: new Set(),
+    hiddenCols: new Set(),
   };
+
+  function nameToSlug(name) {
+    return name.toLowerCase()
+      .replace(/×/g, 'x')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
 
   // ── ELEMENTS ─────────────────────────────────────────────────────────
   const $search        = document.getElementById('search');
@@ -35,16 +43,29 @@
   const $compareClose  = document.getElementById('compare-close');
 
   // ── FILTER & SORT ────────────────────────────────────────────────────
+  function normSearch(s) {
+    return s.toLowerCase().replace(/[\s.\-×xX,]/g, '').replace(/^0+(?=\d)/, '');
+  }
+
   function getFiltered() {
     let list = CARTRIDGES.filter(c => {
       if (state.search) {
-        const q = state.search.toLowerCase();
-        const match =
-          c.name.toLowerCase().includes(q) ||
-          (c.alternateNames || []).some(n => n.toLowerCase().includes(q)) ||
-          (c.countryOfOrigin || '').toLowerCase().includes(q) ||
-          (c.description || '').toLowerCase().includes(q);
-        if (!match) return false;
+        const decadeMatch = state.search.match(/^(\d{4})s$/i);
+        if (decadeMatch) {
+          const decStart = parseInt(decadeMatch[1]);
+          if (!c.yearIntroduced || c.yearIntroduced < decStart || c.yearIntroduced > decStart + 9) return false;
+        } else {
+          const q = state.search.toLowerCase();
+          const nq = normSearch(state.search);
+          const match =
+            c.name.toLowerCase().includes(q) ||
+            normSearch(c.name).includes(nq) ||
+            (c.alternateNames || []).some(n => n.toLowerCase().includes(q) || normSearch(n).includes(nq)) ||
+            (c.countryOfOrigin || '').toLowerCase().includes(q) ||
+            (c.description || '').toLowerCase().includes(q) ||
+            (c.primaryUse || []).some(u => u.toLowerCase().includes(q));
+          if (!match) return false;
+        }
       }
       if (state.filterType !== 'all' && c.type !== state.filterType) return false;
       if (state.filterStatus !== 'all' && c.productionStatus !== state.filterStatus) return false;
@@ -92,8 +113,8 @@
 
       return `<tr data-name="${esc(c.name)}" class="${isActive ? 'active' : ''}${isSelected ? ' compare-selected' : ''}">
         <td class="col-name td-name">
-          ${checkboxHtml}${esc(c.name)}
-          ${altNames ? `<span class="td-alt">${esc(altNames)}</span>` : ''}
+          ${checkboxHtml}${highlight(c.name, state.search)}
+          ${altNames ? `<span class="td-alt">${highlight(altNames, state.search)}</span>` : ''}
         </td>
         <td class="col-type td-type">${esc(c.type.toUpperCase())}</td>
         <td class="col-year td-number">${c.yearIntroduced || '—'}</td>
@@ -108,6 +129,8 @@
 
     $tbody.innerHTML = html;
     updateSortHeaders();
+    updateChipCounts();
+    applyColumnVisibility();
   }
 
   function fmtRange(r) {
@@ -126,6 +149,75 @@
   function esc(s) {
     if (!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function highlight(text, query) {
+    if (!query || !text) return esc(text || '');
+    const decadeMatch = query.match(/^(\d{4})s$/i);
+    if (decadeMatch) return esc(text); // decade search — no substring to highlight
+    const lc = text.toLowerCase();
+    const q = query.toLowerCase();
+    const idx = lc.indexOf(q);
+    if (idx === -1) return esc(text);
+    return esc(text.slice(0, idx)) +
+      '<mark class="search-hl">' + esc(text.slice(idx, idx + q.length)) + '</mark>' +
+      esc(text.slice(idx + q.length));
+  }
+
+  function getCountForChip(filter, value) {
+    return CARTRIDGES.filter(c => {
+      if (state.search) {
+        const decadeMatch = state.search.match(/^(\d{4})s$/i);
+        if (decadeMatch) {
+          const decStart = parseInt(decadeMatch[1]);
+          if (!c.yearIntroduced || c.yearIntroduced < decStart || c.yearIntroduced > decStart + 9) return false;
+        } else {
+          const q = state.search.toLowerCase();
+          const nq = normSearch(state.search);
+          const match =
+            c.name.toLowerCase().includes(q) ||
+            normSearch(c.name).includes(nq) ||
+            (c.alternateNames || []).some(n => n.toLowerCase().includes(q) || normSearch(n).includes(nq)) ||
+            (c.countryOfOrigin || '').toLowerCase().includes(q) ||
+            (c.description || '').toLowerCase().includes(q) ||
+            (c.primaryUse || []).some(u => u.toLowerCase().includes(q));
+          if (!match) return false;
+        }
+      }
+      if (filter === 'type') {
+        if (state.filterStatus !== 'all' && c.productionStatus !== state.filterStatus) return false;
+        if (value !== 'all' && c.type !== value) return false;
+      } else {
+        if (state.filterType !== 'all' && c.type !== state.filterType) return false;
+        if (value !== 'all' && c.productionStatus !== value) return false;
+      }
+      return true;
+    }).length;
+  }
+
+  function updateChipCounts() {
+    [
+      { filter: 'type',   value: 'all',      id: 'chip-count-type-all' },
+      { filter: 'type',   value: 'Rifle',     id: 'chip-count-type-rifle' },
+      { filter: 'type',   value: 'Pistol',    id: 'chip-count-type-pistol' },
+      { filter: 'type',   value: 'Revolver',  id: 'chip-count-type-revolver' },
+      { filter: 'type',   value: 'Shotgun',   id: 'chip-count-type-shotgun' },
+      { filter: 'type',   value: 'Rimfire',   id: 'chip-count-type-rimfire' },
+      { filter: 'status', value: 'all',       id: 'chip-count-status-all' },
+      { filter: 'status', value: 'Active',    id: 'chip-count-status-active' },
+      { filter: 'status', value: 'Limited',   id: 'chip-count-status-limited' },
+      { filter: 'status', value: 'Obsolete',  id: 'chip-count-status-obsolete' },
+    ].forEach(({ filter, value, id }) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = getCountForChip(filter, value);
+    });
+  }
+
+  function applyColumnVisibility() {
+    const table = document.getElementById('caliber-table');
+    ['type','year','dia','grains','vel','energy','military','avail'].forEach(col => {
+      table.classList.toggle('col-hidden-' + col, state.hiddenCols.has(col));
+    });
   }
 
   // ── SORT HEADERS ─────────────────────────────────────────────────────
@@ -245,6 +337,9 @@
     }
 
     $detailInner.innerHTML = leftHtml + rightHtml;
+
+    const $pageLink = document.getElementById('detail-page-link');
+    if ($pageLink) $pageLink.href = '/cartridge/' + nameToSlug(c.name);
 
     $detailPanel.classList.add('open');
     $detailBackdrop.classList.add('open');
@@ -419,6 +514,13 @@
       if (suggestModal.style.display === 'flex') closeModal('suggest-modal');
       if (reportModal.style.display  === 'flex') closeModal('report-modal');
       document.getElementById('help-popover').classList.remove('open');
+      document.getElementById('col-chooser-popover').classList.remove('open');
+      document.getElementById('col-chooser-btn').classList.remove('active');
+    }
+    if (e.key === '/' && !e.target.closest('input, textarea, select')) {
+      e.preventDefault();
+      $search.focus();
+      $search.select();
     }
   });
 
@@ -445,6 +547,42 @@
   $compareClose.addEventListener('click', () => { $compareModal.style.display = 'none'; });
   $compareModal.addEventListener('click', e => {
     if (e.target === $compareModal) $compareModal.style.display = 'none';
+  });
+
+  // Column chooser
+  const $colChooserBtn = document.getElementById('col-chooser-btn');
+  const $colChooserPop = document.getElementById('col-chooser-popover');
+
+  $colChooserBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = $colChooserPop.classList.contains('open');
+    $colChooserPop.classList.toggle('open', !isOpen);
+    $colChooserBtn.classList.toggle('active', !isOpen);
+    if (!isOpen) {
+      const rect = $colChooserBtn.getBoundingClientRect();
+      $colChooserPop.style.right = (window.innerWidth - rect.right) + 'px';
+      $colChooserPop.style.top  = (rect.bottom + 8) + 'px';
+      $colChooserPop.style.left = 'auto';
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#col-chooser-btn') && !e.target.closest('#col-chooser-popover')) {
+      $colChooserPop.classList.remove('open');
+      $colChooserBtn.classList.remove('active');
+    }
+  });
+
+  document.querySelectorAll('.col-chooser-item input').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const col = cb.dataset.col;
+      if (cb.checked) {
+        state.hiddenCols.delete(col);
+      } else {
+        state.hiddenCols.add(col);
+      }
+      applyColumnVisibility();
+    });
   });
 
   // Suggest / Report buttons
@@ -544,6 +682,6 @@
   const totalCount = CARTRIDGES.length;
   document.getElementById('cartridge-count-sub').textContent = totalCount;
   document.getElementById('cartridge-count-intro').textContent = totalCount;
-  renderTable();
+  renderTable(); // also calls updateChipCounts + applyColumnVisibility
 
 })();

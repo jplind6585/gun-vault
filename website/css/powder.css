@@ -38,7 +38,7 @@ body.powder-page {
 .brand-select option { background: #0d0f1a; color: var(--text); }
 
 /* ── TABLE COLUMNS ────────────────────────────────────────────────────── */
-.col-product { min-width: 150px; }
+.col-product { min-width: 200px; }
 .col-pbrand  { min-width: 100px; }
 .col-ptype   { min-width: 90px; }
 .col-burn    { min-width: 130px; }
@@ -48,7 +48,7 @@ body.powder-page {
 .td-pbrand {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.75);
 }
 
 /* ── TYPE BADGES ──────────────────────────────────────────────────────── */
@@ -118,7 +118,7 @@ body.powder-page {
   left: 0;
   top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #5dade2 0%, var(--accent) 50%, #e74c3c 100%);
+  background: linear-gradient(90deg, hsl(216,72%,55%) 0%, hsl(173,72%,55%) 25%, hsl(90,65%,55%) 50%, hsl(38,80%,55%) 75%, hsl(10,80%,55%) 100%);
   border-radius: 3px;
 }
 
@@ -153,17 +153,20 @@ body.powder-page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
+  padding: 0 3px;
   border-radius: 3px;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
   margin-right: 2px;
 }
-.use-pistol  { background: rgba(52,152,219,0.12); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.25); }
-.use-rifle   { background: rgba(46,204,113,0.10); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.20); }
-.use-shotgun { background: rgba(230,126,34,0.10); color: #f0a070; border: 0.5px solid rgba(230,126,34,0.20); }
+.use-pistol        { background: rgba(52,152,219,0.12); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.25); }
+.use-rifle         { background: rgba(46,204,113,0.10); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.20); }
+.use-shotgun       { background: rgba(230,126,34,0.10); color: #f0a070; border: 0.5px solid rgba(230,126,34,0.20); }
+.use-magnum-pistol { background: rgba(52,152,219,0.18); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.40); }
+.use-magnum-rifle  { background: rgba(46,204,113,0.16); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.35); }
 
 /* Full use tags (detail panel) */
 .use-tag-full {
@@ -175,9 +178,11 @@ body.powder-page {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
-.use-tag-full.use-pistol  { background: rgba(52,152,219,0.12); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.25); }
-.use-tag-full.use-rifle   { background: rgba(46,204,113,0.10); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.20); }
-.use-tag-full.use-shotgun { background: rgba(230,126,34,0.10); color: #f0a070; border: 0.5px solid rgba(230,126,34,0.20); }
+.use-tag-full.use-pistol        { background: rgba(52,152,219,0.12); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.25); }
+.use-tag-full.use-rifle         { background: rgba(46,204,113,0.10); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.20); }
+.use-tag-full.use-shotgun       { background: rgba(230,126,34,0.10); color: #f0a070; border: 0.5px solid rgba(230,126,34,0.20); }
+.use-tag-full.use-magnum-pistol { background: rgba(52,152,219,0.18); color: #5dade2; border: 0.5px solid rgba(52,152,219,0.40); }
+.use-tag-full.use-magnum-rifle  { background: rgba(46,204,113,0.16); color: #58d68d; border: 0.5px solid rgba(46,204,113,0.35); }
 
 /* ── TEMP BADGE ───────────────────────────────────────────────────────── */
 .temp-badge {
@@ -240,6 +245,67 @@ body.powder-page {
   font-size: 7px;
 }
 
+/* ── CALIBER CHIPS BAR ────────────────────────────────────────────────── */
+.caliber-chips-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 10px 8px;
+}
+.caliber-chips-bar:empty { display: none; }
+
+.cal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,212,59,0.10);
+  border: 0.5px solid rgba(255,212,59,0.28);
+  border-radius: 4px;
+  padding: 2px 5px 2px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.cal-chip-remove {
+  background: none;
+  border: none;
+  color: var(--accent);
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 0 0 0 3px;
+  font-size: 14px;
+  line-height: 1;
+}
+.cal-chip-remove:hover { opacity: 1; }
+
+/* ── CALIBER SUGGESTIONS ──────────────────────────────────────────── */
+.caliber-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #12142a;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 200;
+  display: none;
+}
+.caliber-suggestions.open { display: block; }
+
+.cal-suggestion {
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.cal-suggestion:hover { background: rgba(255,255,255,0.05); }
+.cal-suggestion-match { color: var(--accent); font-weight: 700; }
+
 /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .detail-panel { width: 100%; min-width: unset; max-width: unset; border-left: none; box-shadow: none; }
@@ -263,4 +329,51 @@ body.powder-page {
 @media (max-width: 420px) {
   .db-action-btn { font-size: 8px; }
   .burn-bar-wrap { width: 40px; }
+}
+
+/* ── BURN RATE BAND HEADERS ────────────────────────────────────────────── */
+.band-header {
+  background: rgba(255,255,255,0.025) !important;
+  cursor: default !important;
+  pointer-events: none;
+}
+.band-header td {
+  padding: 10px 14px 6px;
+  border-bottom: none;
+}
+.band-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.band-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-right: 10px;
+}
+.band-sub {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--dim);
+  letter-spacing: 0.3px;
+}
+
+/* ── CALIBER HINT ──────────────────────────────────────────────────────── */
+.caliber-hint {
+  padding: 5px 34px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+}
+.caliber-hint strong {
+  color: var(--muted);
+  font-weight: 700;
 }

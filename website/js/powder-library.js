@@ -6,8 +6,10 @@
 
   // ── STATE ─────────────────────────────────────────────────────────────
   let allPowders = [];
+  let allCalibers = [];
   let state = {
-    search:       '',
+    search:        '',
+    caliberChips:  [],
     filterType:   'all',
     filterUse:    'all',
     filterBrand:  'all',
@@ -29,6 +31,20 @@
   const $detailPanel   = document.getElementById('detail-panel');
   const $detailBackdrop = document.getElementById('detail-backdrop');
   const $brandSelect   = document.getElementById('brand-filter');
+  const $chipsBar      = document.getElementById('caliber-chips-bar');
+  const $suggestions   = document.getElementById('caliber-suggestions');
+
+  // ── SLUG & COLOR HELPERS ──────────────────────────────────────────────
+  function powderToSlug(productName) {
+    return productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  function burnColor(pct) {
+    const h = pct <= 50
+      ? Math.round(216 - (pct / 50) * 166)   // 216 (blue) → 50 (amber)
+      : Math.round(50  - ((pct - 50) / 50) * 45); // 50 (amber) → 5 (red)
+    return `hsl(${h},72%,55%)`;
+  }
 
   // ── HELPERS ───────────────────────────────────────────────────────────
   function esc(str) {
@@ -61,11 +77,34 @@
 
   function useClass(use) {
     switch (use) {
-      case 'Pistol':  return 'use-pistol';
-      case 'Rifle':   return 'use-rifle';
-      case 'Shotgun': return 'use-shotgun';
-      default:        return '';
+      case 'Pistol':        return 'use-pistol';
+      case 'Rifle':         return 'use-rifle';
+      case 'Shotgun':       return 'use-shotgun';
+      case 'Magnum Pistol': return 'use-magnum-pistol';
+      case 'Magnum Rifle':  return 'use-magnum-rifle';
+      default:              return '';
     }
+  }
+
+  function useAbbr(use) {
+    switch (use) {
+      case 'Pistol':        return 'P';
+      case 'Rifle':         return 'R';
+      case 'Shotgun':       return 'S';
+      case 'Magnum Pistol': return 'MP';
+      case 'Magnum Rifle':  return 'MR';
+      default:              return use.charAt(0);
+    }
+  }
+
+  // ── CALIBER FUZZY MATCH ───────────────────────────────────────────────
+  function normCal(s) {
+    return s.toLowerCase().replace(/[\s.\-×xX,]/g, '').replace(/^0+(?=\d)/, '');
+  }
+
+  function calMatchesPowder(cal, p) {
+    const nc = normCal(cal);
+    return (p.recommendedCalibers || []).some(c => normCal(c).includes(nc) || nc.includes(normCal(c)));
   }
 
   // ── FILTER & SORT ─────────────────────────────────────────────────────
@@ -77,8 +116,11 @@
           p.productName.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
           (p.description || '').toLowerCase().includes(q) ||
-          (p.recommendedCalibers || []).some(c => c.toLowerCase().includes(q));
+          (p.recommendedCalibers || []).some(c => normCal(c).includes(normCal(state.search)) || c.toLowerCase().includes(q));
         if (!match) return false;
+      }
+      if (state.caliberChips.length > 0) {
+        if (!state.caliberChips.some(cal => calMatchesPowder(cal, p))) return false;
       }
       if (state.filterType   !== 'all' && p.powderType !== state.filterType) return false;
       if (state.filterUse    !== 'all' && !(p.bestUse || []).includes(state.filterUse)) return false;
@@ -96,6 +138,8 @@
         case 'brand': av = a.brand.toLowerCase();       bv = b.brand.toLowerCase();       break;
         case 'type':  av = a.powderType.toLowerCase();  bv = b.powderType.toLowerCase();  break;
         case 'burn':  av = a.burnRateRank ?? 999;       bv = b.burnRateRank ?? 999;       break;
+        case 'use':   av = (a.bestUse || [])[0] || ''; bv = (b.bestUse || [])[0] || ''; break;
+        case 'temp':  { const o = {Low:0,Moderate:1,High:2}; av = o[a.temperatureSensitivity] ?? 9; bv = o[b.temperatureSensitivity] ?? 9; break; }
         default:      av = a.burnRateRank ?? 999;       bv = b.burnRateRank ?? 999;
       }
       if (av < bv) return state.sortDir === 'asc' ? -1 : 1;
@@ -110,16 +154,17 @@
   function renderBurnCell(rank) {
     if (!rank && rank !== 0) return '<span style="color:var(--dim)">—</span>';
     const pct = Math.min(100, Math.max(1, rank));
+    const color = burnColor(pct);
     return `<div class="burn-cell">
-      <span class="burn-rank">${pct}</span>
-      <div class="burn-bar-wrap"><div class="burn-bar-fill" style="width:${pct}%"></div></div>
+      <span class="burn-rank" style="color:${color}">${pct}</span>
+      <div class="burn-bar-wrap"><div class="burn-bar-fill" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
   }
 
   function renderUseTags(uses) {
     if (!uses || !uses.length) return '<span style="color:var(--dim)">—</span>';
     return uses.map(u =>
-      `<span class="use-tag ${useClass(u)}" title="${esc(u)}">${u.charAt(0)}</span>`
+      `<span class="use-tag ${useClass(u)}" title="${esc(u)}">${useAbbr(u)}</span>`
     ).join('');
   }
 
@@ -138,9 +183,24 @@
     </tr>`;
   }
 
+  const BURN_BANDS = [
+    { max: 25,   label: 'FAST',       sub: 'Pistol & Shotgun',         color: 'hsl(173,72%,50%)' },
+    { max: 50,   label: 'MEDIUM',     sub: 'Pistol to Mid Rifle',      color: 'hsl(90,65%,48%)'  },
+    { max: 75,   label: 'SLOW',       sub: 'Full-Length Rifle',        color: 'hsl(38,80%,52%)'  },
+    { max: 100,  label: 'VERY SLOW',  sub: 'Magnum & Large Rifle',     color: 'hsl(16,80%,52%)'  },
+    { max: 9999, label: 'UNRATED',    sub: 'No burn rate position',    color: 'rgba(255,255,255,0.25)' },
+  ];
+
+  function updateCaliberHint() {
+    const $hint = document.getElementById('caliber-hint');
+    if (!$hint) return;
+    $hint.style.display = (!state.search && !state.caliberChips.length) ? '' : 'none';
+  }
+
   function renderTable() {
     const list = getFiltered();
     $count.textContent = list.length + (list.length === 1 ? ' powder' : ' powders');
+    updateCaliberHint();
 
     if (!list.length) {
       $tbody.innerHTML = '';
@@ -148,9 +208,34 @@
       return;
     }
     $empty.style.display = 'none';
-    $tbody.innerHTML = list.map(renderRow).join('');
 
-    $tbody.querySelectorAll('tr').forEach((row, i) => {
+    const showBands = state.sortField === 'burn' && state.sortDir === 'asc';
+    let currentBand = -1;
+    let html = '';
+
+    list.forEach(p => {
+      if (showBands) {
+        const rank = p.burnRateRank || 9999;
+        const bandIdx = BURN_BANDS.findIndex(b => rank <= b.max);
+        if (bandIdx !== currentBand && bandIdx !== -1) {
+          currentBand = bandIdx;
+          const b = BURN_BANDS[bandIdx];
+          html += `<tr class="band-header">
+            <td colspan="6">
+              <span class="band-dot" style="background:${b.color}"></span>
+              <span class="band-label">${b.label}</span>
+              <span class="band-sub">${b.sub}</span>
+            </td>
+          </tr>`;
+        }
+      }
+      html += renderRow(p);
+    });
+
+    $tbody.innerHTML = html;
+
+    const dataRows = $tbody.querySelectorAll('tr:not(.band-header)');
+    dataRows.forEach((row, i) => {
       row.addEventListener('click', () => openDetail(list[i]));
     });
   }
@@ -160,7 +245,7 @@
     $tbody.querySelectorAll('tr').forEach(r => r.classList.remove('active'));
     const list = getFiltered();
     const idx = list.indexOf(p);
-    if (idx >= 0) $tbody.querySelectorAll('tr')[idx]?.classList.add('active');
+    if (idx >= 0) $tbody.querySelectorAll('tr:not(.band-header)')[idx]?.classList.add('active');
 
     const rank = p.burnRateRank;
     const pct  = rank ? Math.min(100, Math.max(1, rank)) : 0;
@@ -171,6 +256,33 @@
 
     const useTags = (p.bestUse || [])
       .map(u => `<span class="use-tag-full ${useClass(u)}">${esc(u)}</span>`).join(' ');
+
+    // Similar powders
+    let similarHtml = '';
+    if (rank) {
+      const similar = allPowders
+        .filter(q => q.burnRateRank &&
+          Math.abs(q.burnRateRank - rank) <= 5 &&
+          q.productName !== p.productName)
+        .sort((a, b) => Math.abs(a.burnRateRank - rank) - Math.abs(b.burnRateRank - rank))
+        .slice(0, 6);
+      if (similar.length) {
+        similarHtml = `
+          <div class="detail-section">
+            <div class="detail-section-title">SIMILAR BURN RATE (±5 RANKS)</div>
+            <div class="firearms-list">
+              ${similar.map(s =>
+                `<button class="firearm-tag similar-btn" data-name="${esc(s.productName)}">${esc(s.productName)}<span style="opacity:0.4;font-size:9px;margin-left:5px">${s.burnRateRank}</span></button>`
+              ).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Full-page link
+    const $pageLink = document.getElementById('detail-page-link');
+    if ($pageLink) $pageLink.href = '/powder/' + powderToSlug(p.productName);
 
     $detailInner.innerHTML = `
       <div class="detail-name">${esc(p.productName)}</div>
@@ -221,7 +333,16 @@
           ${p.distributor  ? `<div class="spec-item"><div class="spec-label">DISTRIBUTOR</div><div class="spec-value">${esc(p.distributor)}</div></div>` : ''}
         </div>
       </div>` : ''}
+
+      ${similarHtml}
     `;
+
+    $detailInner.querySelectorAll('.similar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pw = allPowders.find(q => q.productName === btn.dataset.name);
+        if (pw) openDetail(pw);
+      });
+    });
 
     $detailPanel.classList.add('open');
     $detailBackdrop.classList.add('open');
@@ -271,17 +392,81 @@
     });
   }
 
+  // ── CALIBER CHIPS & SUGGESTIONS ───────────────────────────────────────
+  function renderChips() {
+    $chipsBar.innerHTML = state.caliberChips.map(c =>
+      `<span class="cal-chip">${esc(c)}<button class="cal-chip-remove" data-cal="${esc(c)}" aria-label="Remove">×</button></span>`
+    ).join('');
+    $chipsBar.querySelectorAll('.cal-chip-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        state.caliberChips = state.caliberChips.filter(c => c !== btn.dataset.cal);
+        renderChips();
+        updateClearBtn();
+        renderTable();
+      });
+    });
+    updateCaliberHint();
+  }
+
+  function updateClearBtn() {
+    $searchClear.style.display = (state.search || state.caliberChips.length) ? 'block' : 'none';
+  }
+
+  function getSuggestions(q) {
+    if (!q || q.length < 2) return [];
+    const nq = normCal(q);
+    return allCalibers
+      .filter(c => !state.caliberChips.includes(c) && normCal(c).includes(nq))
+      .slice(0, 8);
+  }
+
+  function renderSuggestions() {
+    const q = $search.value.trim();
+    const list = getSuggestions(q);
+    if (!list.length) { $suggestions.classList.remove('open'); return; }
+    $suggestions.innerHTML = list.map(c => `<div class="cal-suggestion" data-cal="${esc(c)}">${esc(c)}</div>`).join('');
+    $suggestions.querySelectorAll('.cal-suggestion').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault(); // prevent input blur
+        addCaliberChip(el.dataset.cal);
+      });
+    });
+    $suggestions.classList.add('open');
+  }
+
+  function addCaliberChip(cal) {
+    if (!state.caliberChips.includes(cal)) {
+      state.caliberChips.push(cal);
+      renderChips();
+      renderTable();
+    }
+    $search.value = '';
+    state.search  = '';
+    $suggestions.classList.remove('open');
+    updateClearBtn();
+  }
+
+  $search.addEventListener('blur', () => {
+    setTimeout(() => $suggestions.classList.remove('open'), 150);
+  });
+
   // ── EVENTS ────────────────────────────────────────────────────────────
   $search.addEventListener('input', () => {
     state.search = $search.value.trim();
-    $searchClear.style.display = state.search ? 'block' : 'none';
+    updateClearBtn();
+    updateCaliberHint();
+    renderSuggestions();
     renderTable();
   });
 
   $searchClear.addEventListener('click', () => {
     $search.value = '';
-    state.search = '';
-    $searchClear.style.display = 'none';
+    state.search  = '';
+    state.caliberChips = [];
+    renderChips();
+    $suggestions.classList.remove('open');
+    updateClearBtn();
     renderTable();
   });
 
@@ -346,13 +531,18 @@
       closeDetail();
       document.getElementById('help-popover').classList.remove('open');
     }
+    if (e.key === '/' && !e.target.closest('input, textarea, select')) {
+      e.preventDefault();
+      $search.focus();
+      $search.select();
+    }
   });
 
   // ── HELP POPOVERS ──────────────────────────────────────────────────────
   const helpContent = {
     burn: {
       title: 'Burn Rate',
-      body: 'Ranks powders fastest (1) to slowest (100+) relative to each other.\n\nFaster powders suit pistol and short-barreled loads — they ignite fully before the bullet leaves the barrel. Slower powders are better for rifle loads, building pressure over a longer distance.\n\nUse burn rate to find substitutes within a category. Never substitute based on burn rate alone — always consult a current reloading manual for safe charge weights.'
+      body: 'Ranks powders fastest (1) to slowest (100+) relative to each other.\n\nFaster powders suit pistol and short-barreled loads. Slower powders build pressure over a longer distance, better for rifle loads.\n\nFamiliar landmarks: Hodgdon Titegroup ≈ 5 (fast pistol) · Alliant Power Pistol ≈ 35 · Hodgdon Varget ≈ 65 (medium rifle) · Hodgdon H4350 ≈ 78 · Hodgdon H4831SC ≈ 88 (slow magnum rifle).\n\nUse burn rate to find substitutes within a category. Never substitute based on burn rate alone — always consult a current reloading manual for safe charge weights.'
     },
     temp: {
       title: 'Temperature Sensitivity',
@@ -440,9 +630,14 @@
       document.getElementById('powder-count-sub').textContent   = allPowders.length;
       document.getElementById('powder-count-intro').textContent = allPowders.length;
 
+      const calSet = new Set();
+      allPowders.forEach(p => (p.recommendedCalibers || []).forEach(c => calSet.add(c)));
+      allCalibers = Array.from(calSet).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+
       populateBrandFilter(allPowders);
       updateSortHeaders();
       renderTable();
+      updateCaliberHint();
 
       $loading.style.display   = 'none';
       $tableWrap.style.display = 'block';

@@ -13,3 +13,19 @@
   to = "/powder-library"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/cartridge/*"
+  to = "/cartridge"
+  status = 200
+
+[[redirects]]
+  from = "/powder/*"
+  to = "/powder-detail"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+  force = true

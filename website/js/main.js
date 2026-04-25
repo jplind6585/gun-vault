@@ -63,3 +63,21 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
+
+// ── AI CHAT STAGGERED REVEAL ──────────────────────────────────────────
+const chatExchanges = document.querySelectorAll('.chat-exchange');
+if (chatExchanges.length) {
+  const chatObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const exchanges = entry.target.querySelectorAll('.chat-exchange');
+        exchanges.forEach((el, i) => {
+          setTimeout(() => el.classList.add('visible'), i * 400);
+        });
+        chatObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  const chatBody = document.querySelector('.chat-body');
+  if (chatBody) chatObserver.observe(chatBody);
+}

@@ -83,12 +83,17 @@
 
       <div class="filter-row-1">
         <div class="search-wrap">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <input type="text" id="search" placeholder="Search powders, brands, calibers…" autocomplete="off" />
-          <button class="search-clear" id="search-clear" style="display:none">×</button>
+          <div class="search-input-line">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="search" placeholder="Search powders, brands, calibers…" autocomplete="off" />
+            <button class="search-clear" id="search-clear" style="display:none">×</button>
+          </div>
+          <div class="caliber-chips-bar" id="caliber-chips-bar"></div>
+          <div class="caliber-hint" id="caliber-hint">Type a caliber to filter — e.g. <strong>.308 Win</strong>, <strong>6.5 Creedmoor</strong>, <strong>9mm</strong></div>
+          <div class="caliber-suggestions" id="caliber-suggestions"></div>
         </div>
         <select id="brand-filter" class="brand-select">
           <option value="all">ALL BRANDS</option>
@@ -145,7 +150,9 @@
       <div class="use-legend">
         <span class="use-legend-label">BEST USE KEY</span>
         <span class="use-legend-item"><span class="use-tag use-pistol">P</span>Pistol</span>
+        <span class="use-legend-item"><span class="use-tag use-magnum-pistol">MP</span>Magnum Pistol</span>
         <span class="use-legend-item"><span class="use-tag use-rifle">R</span>Rifle</span>
+        <span class="use-legend-item"><span class="use-tag use-magnum-rifle">MR</span>Magnum Rifle</span>
         <span class="use-legend-item"><span class="use-tag use-shotgun">S</span>Shotgun</span>
       </div>
 
@@ -156,9 +163,9 @@
               <th class="col-product sortable" data-sort="name">PRODUCT <span class="sort-arrow">↕</span></th>
               <th class="col-pbrand sortable" data-sort="brand">BRAND <span class="sort-arrow">↕</span></th>
               <th class="col-ptype sortable" data-sort="type">TYPE <span class="sort-arrow">↕</span></th>
-              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE<button class="col-help" data-help="burn">ⓘ</button> <span class="sort-arrow"></span></th>
-              <th class="col-use">BEST USE</th>
-              <th class="col-temp">TEMP<button class="col-help" data-help="temp">ⓘ</button></th>
+              <th class="col-burn sortable sort-asc" data-sort="burn">BURN RATE <span class="sort-arrow">↕</span><button class="col-help" data-help="burn">ⓘ</button></th>
+              <th class="col-use sortable" data-sort="use">BEST USE <span class="sort-arrow">↕</span></th>
+              <th class="col-temp sortable" data-sort="temp">TEMP <span class="sort-arrow">↕</span><button class="col-help" data-help="temp">ⓘ</button></th>
             </tr>
           </thead>
           <tbody id="powder-tbody"></tbody>
@@ -185,6 +192,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         BACK
       </button>
+      <a href="#" class="detail-page-link" id="detail-page-link" target="_blank">Full page ↗</a>
     </div>
     <div class="detail-inner" id="detail-inner"></div>
   </div>

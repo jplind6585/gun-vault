@@ -115,7 +115,10 @@ function transformCartridges(rows) {
     maxRangeYards:       c.max_range_yards,
     primaryUse:          c.primary_use || [],
     huntingGameSize:     c.hunting_game_size || [],
-    militaryAdoption:    c.military_adoption || [],
+    militaryAdoption:    (c.military_adoption || []).map(m => {
+      if (typeof m !== 'string') return m;
+      try { return JSON.parse(m); } catch(e) { return { country: m }; }
+    }),
     currentMilitaryUse:  c.current_military_use || [],
     lawEnforcementUse:   c.law_enforcement_use,
     similarCartridges:   c.similar_cartridges || [],
