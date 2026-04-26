@@ -176,7 +176,7 @@ export function MoreMenu({ onNavigate, onFeedbackOpen }: MoreMenuProps) {
     {
       id: 'assistant',
       Icon: IconAssistant,
-      label: 'AI Assistant',
+      label: 'The Armorer',
       sub: 'Ask your vault',
       available: true,
       onPress: () => onNavigate('assistant'),

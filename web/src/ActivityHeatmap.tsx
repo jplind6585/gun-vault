@@ -1,254 +1,244 @@
-// GitHub-style contribution heatmap — range activity
-// Modes: '12W' = last 12 weeks heatmap, '12M' = rolling 12-month bar chart
-import { useState, useRef, useEffect } from 'react';
+// GitHub-style range activity heatmap
+// Mon (top) → Sun (bottom), columns = weeks oldest → newest
+// Time window: 3M / 6M / 12M selector (top-right of card)
+// Fixed card height — no layout shift between windows
+import { useState } from 'react';
 import { theme } from './theme';
 import type { Session } from './types';
 
+type TimeWindow = '3M' | '6M' | '12M';
+
 interface ActivityHeatmapProps {
   sessions: Session[];
-  mode?: '12W' | '12M';
 }
+
+const CELL = 10;
+const GAP  = 2;
+const DAY_LABEL_W = 10;
+const STRIDE = CELL + GAP;
+
+const WINDOW_WEEKS: Record<TimeWindow, number> = {
+  '3M':  13,
+  '6M':  26,
+  '12M': 52,
+};
+
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 function getRoundColor(rounds: number): string {
-  if (rounds === 0) return 'rgba(255,255,255,0.05)';
-  if (rounds < 50)  return 'rgba(255, 212, 59, 0.25)';
-  if (rounds < 150) return 'rgba(255, 212, 59, 0.5)';
-  if (rounds < 300) return 'rgba(255, 212, 59, 0.75)';
-  return theme.accent;
+  if (rounds === 0)   return 'rgba(255,255,255,0.05)';
+  if (rounds <= 50)   return '#b5a015';
+  if (rounds <= 150)  return '#c8b020';
+  if (rounds <= 300)  return '#e0c42a';
+  return '#ffd43b';
 }
 
-// ── 12-MONTH BAR CHART ────────────────────────────────────────────────────────
-function MonthBarChart({ sessions }: { sessions: Session[] }) {
-  const [tooltip, setTooltip] = useState<{ label: string; sessions: number; rounds: number; index: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const CHART_HEIGHT = 80;
-
-  // Build 12 months rolling — oldest first, current month last
-  const now = new Date();
-  const months: Array<{ key: string; label: string; rounds: number; sessionCount: number; isFuture: boolean }> = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-    months.push({ key, label, rounds: 0, sessionCount: 0, isFuture: false });
-  }
-
-  sessions.forEach(s => {
-    const monthKey = s.date.slice(0, 7);
-    const m = months.find(m => m.key === monthKey);
-    if (m) { m.rounds += s.roundsExpended; m.sessionCount += 1; }
-  });
-
-  const maxRounds = Math.max(...months.map(m => m.rounds), 1);
-
-  return (
-    <div ref={containerRef} style={{ width: '100%', position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: CHART_HEIGHT + 20, paddingBottom: '20px' }}>
-        {months.map((m, i) => {
-          const barH = m.rounds > 0 ? Math.max(4, (m.rounds / maxRounds) * (CHART_HEIGHT * 0.8)) : 2;
-          const hasData = m.rounds > 0;
-          return (
-            <div
-              key={m.key}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', cursor: hasData ? 'pointer' : 'default', position: 'relative' }}
-              onClick={() => hasData && setTooltip(tooltip?.index === i ? null : { label: m.label, sessions: m.sessionCount, rounds: m.rounds, index: i })}
-            >
-              {/* Value label above bar */}
-              {hasData && (
-                <span style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted, marginBottom: '2px', lineHeight: 1 }}>
-                  {m.rounds}
-                </span>
-              )}
-              {/* Bar */}
-              <div style={{
-                width: '100%',
-                height: barH,
-                backgroundColor: hasData ? theme.accent : 'rgba(255,255,255,0.12)',
-                borderRadius: '2px 2px 0 0',
-                opacity: tooltip && tooltip.index !== i ? 0.5 : 1,
-                transition: 'opacity 0.15s',
-              }} />
-              {/* Month label */}
-              <span style={{
-                position: 'absolute', bottom: 0,
-                fontFamily: 'monospace', fontSize: '7px',
-                color: theme.textMuted,
-                letterSpacing: '0.3px',
-                userSelect: 'none',
-              }}>
-                {m.label}
-              </span>
-              {/* Tooltip */}
-              {tooltip?.index === i && (
-                <div style={{
-                  position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                  backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
-                  borderRadius: '4px', padding: '4px 8px',
-                  fontFamily: 'monospace', fontSize: '9px', color: theme.textPrimary,
-                  whiteSpace: 'nowrap', zIndex: 100, pointerEvents: 'none',
-                  marginBottom: '4px',
-                }}>
-                  {m.label} · {m.sessionCount} session{m.sessionCount !== 1 ? 's' : ''} · {m.rounds} rds
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+function fmtTooltipDate(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// ── HEATMAP ────────────────────────────────────────────────────────────────────
-export function ActivityHeatmap({ sessions, mode = '12W' }: ActivityHeatmapProps) {
-  if (mode === '12M') return <MonthBarChart sessions={sessions} />;
+export function ActivityHeatmap({ sessions }: ActivityHeatmapProps) {
+  const [win, setWin]       = useState<TimeWindow>('3M');
+  const [tooltip, setTooltip] = useState<{ date: string; rounds: number; location?: string } | null>(null);
 
-  const [tooltip, setTooltip] = useState<{ date: string; rounds: number; x: number; y: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [cellSize, setCellSize] = useState(10);
-  const GAP = 2;
+  const weekCount = WINDOW_WEEKS[win];
 
-  const weekCount = 12;
-
-  // Always fit to container width — no horizontal scroll
-  useEffect(() => {
-    function measure() {
-      if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const size = Math.floor((w - (weekCount - 1) * GAP) / weekCount);
-      setCellSize(Math.max(32, Math.min(size, 44)));
-    }
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (containerRef.current) ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, [weekCount]);
-
-  // Build a map of date → total rounds
-  const roundsByDate = new Map<string, number>();
+  // Build date → { rounds, location } aggregation
+  const dayData = new Map<string, { rounds: number; location?: string }>();
   sessions.forEach(s => {
-    const prev = roundsByDate.get(s.date) || 0;
-    roundsByDate.set(s.date, prev + s.roundsExpended);
+    const prev = dayData.get(s.date);
+    dayData.set(s.date, {
+      rounds: (prev?.rounds || 0) + s.roundsExpended,
+      location: prev?.location || s.location || undefined,
+    });
   });
 
-  // Build exactly weekCount weeks ending today, aligned to Sunday
-  const today = new Date();
+  // Anchor to most recent Monday on or before today
+  const today    = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (weekCount * 7) + 1);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
+  const dow      = today.getDay();                      // 0 = Sun
+  const toMon    = dow === 0 ? 6 : dow - 1;
+  const anchor   = new Date(today);
+  anchor.setDate(today.getDate() - toMon - (weekCount - 1) * 7);
 
-  const weeks: Array<Array<{ dateStr: string; rounds: number; isFuture: boolean }>> = [];
-  let current = new Date(startDate);
+  // Build grid: weeks[col][row 0=Mon..6=Sun]
+  type Cell = { dateStr: string; rounds: number; location?: string; isFuture: boolean };
+  const weeks: Cell[][] = [];
+  const cur = new Date(anchor);
 
   for (let w = 0; w < weekCount; w++) {
-    const week: Array<{ dateStr: string; rounds: number; isFuture: boolean }> = [];
+    const week: Cell[] = [];
     for (let d = 0; d < 7; d++) {
-      const dateStr = current.toISOString().split('T')[0];
-      const isFuture = dateStr > todayStr;
-      week.push({ dateStr, rounds: roundsByDate.get(dateStr) || 0, isFuture });
-      current.setDate(current.getDate() + 1);
+      const dateStr = cur.toISOString().split('T')[0];
+      const data    = dayData.get(dateStr);
+      week.push({
+        dateStr,
+        rounds:   data?.rounds   || 0,
+        location: data?.location || undefined,
+        isFuture: dateStr > todayStr,
+      });
+      cur.setDate(cur.getDate() + 1);
     }
     weeks.push(week);
   }
 
-  // Month labels — one per month change
-  const monthLabels: Array<{ label: string; col: number }> = [];
-  let lastMonth = -1;
+  // Month labels — one per month change across week-start dates
+  const monthLabels: { label: string; col: number }[] = [];
+  let lastM = -1;
   weeks.forEach((week, wi) => {
     const m = new Date(week[0].dateStr + 'T12:00:00').getMonth();
-    if (m !== lastMonth) {
+    if (m !== lastM) {
       monthLabels.push({
         label: new Date(week[0].dateStr + 'T12:00:00').toLocaleString('en-US', { month: 'short' }),
         col: wi,
       });
-      lastMonth = m;
+      lastM = m;
     }
   });
 
-  const stride = cellSize + GAP;
+  const gridW = weekCount * STRIDE - GAP;
+  const gridH = 7 * STRIDE - GAP;
 
   return (
-    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden', position: 'relative' }}>
-      {/* Month labels */}
-      <div style={{ position: 'relative', height: '14px', marginBottom: '2px' }}>
-        {monthLabels.map(({ label, col }) => (
-          <span
-            key={label + '-' + col}
-            style={{
-              position: 'absolute',
-              left: col * stride,
-              fontFamily: 'monospace',
-              fontSize: '8px',
-              color: theme.textMuted,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-            }}
-          >
-            {label}
-          </span>
-        ))}
+    <div onClick={() => setTooltip(null)}>
+
+      {/* Header: label + window selector */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          Range Activity
+        </div>
+        <div style={{ display: 'flex', gap: '2px' }}>
+          {(['3M', '6M', '12M'] as TimeWindow[]).map(w => (
+            <button
+              key={w}
+              onClick={e => { e.stopPropagation(); setWin(w); setTooltip(null); }}
+              style={{
+                background:   win === w ? theme.textMuted : 'none',
+                border:       `0.5px solid ${win === w ? theme.textMuted : theme.border}`,
+                borderRadius: '3px',
+                color:        win === w ? theme.bg : theme.textMuted,
+                fontFamily:   'monospace',
+                fontSize:     '8px',
+                cursor:       'pointer',
+                padding:      '2px 6px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {w}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Grid */}
-      <div style={{ display: 'flex', gap: GAP }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
-            {week.map(({ dateStr, rounds, isFuture }) => (
-              <div
-                key={dateStr}
-                onMouseEnter={(e) => {
-                  if (!isFuture) {
-                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                    setTooltip({ date: dateStr, rounds, x: rect.left, y: rect.top });
-                  }
-                }}
-                onMouseLeave={() => setTooltip(null)}
-                style={{
-                  width: cellSize,
-                  height: cellSize,
-                  borderRadius: 2,
-                  backgroundColor: isFuture ? 'transparent' : getRoundColor(rounds),
-                  cursor: rounds > 0 && !isFuture ? 'pointer' : 'default',
-                  flexShrink: 0,
-                }}
-              />
-            ))}
+      {/* Scrollable grid area */}
+      <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+        <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: DAY_LABEL_W + 4 + gridW }}>
+
+          {/* Month labels row */}
+          <div style={{ display: 'flex', marginLeft: DAY_LABEL_W + 4 }}>
+            <div style={{ position: 'relative', height: '14px', marginBottom: '2px', width: gridW }}>
+              {monthLabels.map(({ label, col }) => (
+                <span
+                  key={label + col}
+                  style={{
+                    position: 'absolute',
+                    left: col * STRIDE,
+                    fontFamily: 'monospace',
+                    fontSize: '8px',
+                    color: theme.textMuted,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
-        ))}
+
+          {/* Day labels + grid */}
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+
+            {/* Day-of-week labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '4px', width: DAY_LABEL_W, flexShrink: 0 }}>
+              {DAY_LABELS.map((lbl, i) => (
+                <div key={i} style={{ height: CELL, display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted, lineHeight: 1 }}>
+                    {lbl}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Cell grid */}
+            <div style={{ display: 'flex', gap: GAP, position: 'relative', height: gridH }}>
+              {weeks.map((week, wi) => (
+                <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+                  {week.map(({ dateStr, rounds, location, isFuture }) => {
+                    const isActive = tooltip?.date === dateStr;
+                    return (
+                      <div
+                        key={dateStr}
+                        onClick={e => {
+                          if (isFuture) return;
+                          e.stopPropagation();
+                          setTooltip(isActive ? null : { date: dateStr, rounds, location });
+                        }}
+                        style={{
+                          width:           CELL,
+                          height:          CELL,
+                          borderRadius:    2,
+                          backgroundColor: isFuture ? 'transparent' : getRoundColor(rounds),
+                          cursor:          isFuture ? 'default' : 'pointer',
+                          flexShrink:      0,
+                          position:        'relative',
+                        }}
+                      >
+                        {isActive && (
+                          <div
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                              position:        'absolute',
+                              bottom:          '100%',
+                              left:            '50%',
+                              transform:       'translateX(-50%)',
+                              marginBottom:    '4px',
+                              backgroundColor: theme.surface,
+                              border:          `0.5px solid ${theme.border}`,
+                              borderRadius:    '4px',
+                              padding:         '4px 8px',
+                              fontFamily:      'monospace',
+                              fontSize:        '9px',
+                              color:           theme.textPrimary,
+                              whiteSpace:      'nowrap',
+                              zIndex:          100,
+                              pointerEvents:   'none',
+                            }}
+                          >
+                            {rounds > 0
+                              ? `${fmtTooltipDate(dateStr)} · ${rounds} rds${location ? ' · ' + location : ''}`
+                              : `${fmtTooltipDate(dateStr)} · No session`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>LESS</span>
-        {[0, 30, 100, 200, 400].map(r => (
-          <div key={r} style={{ width: cellSize, height: cellSize, borderRadius: 2, backgroundColor: getRoundColor(r) }} />
+        {[0, 25, 100, 200, 400].map(r => (
+          <div key={r} style={{ width: CELL, height: CELL, borderRadius: 2, backgroundColor: getRoundColor(r), flexShrink: 0 }} />
         ))}
         <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>MORE</span>
       </div>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div style={{
-          position: 'fixed',
-          top: tooltip.y - 40,
-          left: tooltip.x,
-          backgroundColor: theme.surface,
-          border: '0.5px solid ' + theme.border,
-          borderRadius: '4px',
-          padding: '4px 8px',
-          fontFamily: 'monospace',
-          fontSize: '10px',
-          color: theme.textPrimary,
-          pointerEvents: 'none',
-          zIndex: 9999,
-          whiteSpace: 'nowrap',
-        }}>
-          {tooltip.rounds > 0
-            ? tooltip.rounds + ' rounds · ' + tooltip.date
-            : 'No range · ' + tooltip.date}
-        </div>
-      )}
     </div>
   );
 }

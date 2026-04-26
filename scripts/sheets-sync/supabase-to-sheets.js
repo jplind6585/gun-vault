@@ -39,6 +39,8 @@ const TABLES = [
   'gun_ranges',
   'gun_clubs',
   'cartridges',
+  'retailers',
+  'retailer_categories',
 ];
 
 // Columns to put first in each tab (rest follow alphabetically).
@@ -53,7 +55,9 @@ const COLUMN_ORDER_HINTS = {
   primer_types:   ['name', 'category', 'brand', 'common_calibers'],
   gun_ranges:     ['name', 'city', 'state', 'range_types', 'max_distance_yards'],
   gun_clubs:      ['name', 'city', 'state', 'affiliations', 'founded_year'],
-  cartridges:     ['name', 'type', 'caliber', 'year_introduced', 'country_of_origin'],
+  cartridges:          ['name', 'type', 'caliber', 'year_introduced', 'country_of_origin'],
+  retailers:           ['name', 'ownership_type', 'url', 'active', 'notes'],
+  retailer_categories: ['retailer_id', 'primary_category', 'secondary_categories', 'featured'],
 };
 
 // Tab colors per table (hex). Optional — comment out any line to use default.
@@ -67,7 +71,9 @@ const TAB_COLORS = {
   primer_types:   '#e8f8ec',
   gun_ranges:     '#f8f0e8',
   gun_clubs:      '#e8ecf8',
-  cartridges:     '#f0e8f8',
+  cartridges:          '#f0e8f8',
+  retailers:           '#e8f8f0',
+  retailer_categories: '#f8f8e8',
 };
 
 // ── Entry points ─────────────────────────────────────────────────────────────
