@@ -114,7 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signOut() {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Server-side revocation failed — still clear locally and reload
+    }
+    window.location.reload();
   }
 
   return (

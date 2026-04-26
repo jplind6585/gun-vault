@@ -272,7 +272,7 @@ export function MoreMenu({ onNavigate, onFeedbackOpen, isPro }: MoreMenuProps) {
           >
             <div style={{ position: 'relative', display: 'inline-flex' }}>
               <tool.Icon size={26} muted={!tool.available} />
-              {tool.id === 'reloading' && !isPro && (
+              {(tool.id === 'reloading' || tool.id === 'assistant') && !isPro && (
                 <span style={{
                   position: 'absolute', top: -6, right: -14,
                   fontFamily: 'monospace', fontSize: '8px', fontWeight: 700,
