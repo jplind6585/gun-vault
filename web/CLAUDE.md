@@ -291,7 +291,7 @@ npx cap sync android
 cd android && fastlane internal
 
 # 5. Push to git (Netlify auto-deploys web from develop)
-cd .. && git push origin develop
+cd .. && git push origin main
 ```
 
 **E2e test gate (step 0):**
@@ -300,7 +300,7 @@ cd .. && git push origin develop
 - If a test fails because a UI flow was intentionally reworked (not a regression), flag it to James rather than silently patching the test to pass — the test may need to be updated to match the new intended behavior.
 - Tests run against the dev server (`npm run dev`), so they catch logic/UI regressions but not build-time TypeScript errors.
 
-**Exception:** If James says "quick push" or "web only" → `git push origin develop` only. Skip the Android build AND skip the e2e tests.
+**Exception:** If James says "quick push" or "web only" → `git push origin main` only. Skip the Android build AND skip the e2e tests.
 
 ### Fastlane lanes (`android/fastlane/Fastfile`)
 
@@ -314,9 +314,9 @@ Run `fastlane` directly. Do NOT use `bundle exec fastlane`.
 Key file: `android/fastlane/play-store-key.json` (gitignored).
 
 ### Web (Netlify)
-Fires automatically on `git push origin develop`. No extra step needed. Live in ~60 seconds at `app.lindcottarmory.com`.
+Fires automatically on `git push origin main`. No extra step needed. Live in ~60 seconds at `app.lindcottarmory.com`.
 
-`main` is reserved for store-release snapshots. Do not push feature work to `main`.
+Netlify is configured to watch `main` — confirmed 2026-04-26. The `develop` branch exists but Netlify does not deploy from it.
 
 ### versionCode
 Must increment before every Play Store upload. **Current: 20** (v20 is live in Google Closed Testing and is the iOS v1 baseline). Play Store rejects any build ≤ last uploaded value.
