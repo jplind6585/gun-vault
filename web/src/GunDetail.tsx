@@ -1863,6 +1863,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
         <SessionLoggingModal
           gun={gun}
           onClose={() => setShowLogSession(false)}
+          onViewSessions={onViewSessions ? () => onViewSessions(gun.id) : undefined}
           onSessionLogged={handleSessionLogged}
         />
       )}

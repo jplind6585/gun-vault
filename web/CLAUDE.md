@@ -153,8 +153,8 @@ src/
 | Caliber Database | Complete (198 cartridges) |
 | Field Guide | Complete — Cartridges, Platforms, Ballistics, Glossary, Optics sections live |
 | Reloading Bench | Complete |
-| Training Log | Complete |
-| Gear Locker | Complete |
+| Training Log | Built but hidden — needs full redesign (HIGH PRIORITY) |
+| Gear Locker | Built but hidden — needs redesign (lower priority) |
 | Wishlist | Complete |
 | Armory Assistant (AI) | Complete |
 | Backup & Restore | Complete |

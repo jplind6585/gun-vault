@@ -83,9 +83,9 @@
 - [x] Caliber database (323 cartridges — expanded April 16, 2026; Supabase-synced; auto-refreshes in app)
 - [x] Field Guide — Cartridges, Platforms, Ballistics, Glossary, Optics sections
 - [x] Optics tracker (mounts, zeros, swap history, torque confirmation)
-- [x] Gear Locker
+- [x] Gear Locker *(UI built; hidden from More menu 2026-04-26 — needs full redesign before re-exposing, lower priority)*
 - [x] Wishlist
-- [x] Training Log (drill tracker)
+- [x] Training Log (drill tracker) *(UI built; hidden from More menu 2026-04-26 — needs full redesign before re-exposing, HIGH PRIORITY)*
 - [x] Reloading Bench
 - [x] Backup & Restore (full JSON vault export/import)
 - [x] Insurance export (CSV)
@@ -193,6 +193,23 @@ Audit every form and hardcoded array. Confirmed targets: manufacturer list (1E),
 ### 9. Website SEO/GEO *(high — website chat only)*
 Technical SEO: sitemap.xml, robots.txt audit, canonical tags, unique title + meta description per page, Google Search Console setup. Structured data: SoftwareApplication JSON-LD, Organization schema, Article schema on blog posts, FAQPage where applicable. GEO: entity definition paragraph on homepage, About page, declarative fact statements, AI comparison FAQ ("How does Lindcott Armory compare to myArmsCache / Gun Log SPC?"). Blog audit: H1/H2 structure, internal linking, consistent CTA block.
 *Note: Handle in website chat, not this one.*
+
+---
+
+## Deferred Modules — Needs Redesign Before Re-Exposing
+
+### Training Log *(HIGH PRIORITY)*
+- UI exists in `TrainingLog.tsx` but hidden from More menu as of 2026-04-26
+- Needs full UX redesign before re-exposing — current implementation is a basic form, not compelling enough
+- Vision: structured drill library, progression tracking, personal records, goal-setting, cadence streaks
+- Should tie into session data (rounds fired per drill, distance, accuracy)
+- *Gate: plan this out before building — do not add back to More menu without a full spec*
+
+### Gear Locker *(lower priority)*
+- UI exists in `GearLocker.tsx` but hidden from More menu as of 2026-04-26
+- Needs UX audit — current state is functional but not differentiated
+- Vision: categorized gear inventory (bags, cleaning kits, electronics, safety gear), condition tracking, cost tracking
+- *Gate: deprioritized until Training Log and freemium gating are complete*
 
 ---
 
