@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { theme } from './theme';
-import { getAllGuns, getAllSessions } from './storage';
+import { getAllGuns, getAllSessions, getPinnedGunIds, togglePinnedGun } from './storage';
 import type { Gun, GunStatus, GunPurpose } from './types';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
 import { SessionLoggingModal } from './SessionLoggingModal';
@@ -28,8 +28,12 @@ const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting R
 const ALL_PURPOSES: GunPurpose[] = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'];
 
 export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }: GunVaultProps) {
-  const [guns, setGuns]         = useState<Gun[]>([]);
-  const [lastShotMap, setLastShotMap] = useState<Record<string, string>>({});
+  const [guns, setGuns]               = useState<Gun[]>([]);
+  const [lastShotMap, setLastShotMap]         = useState<Record<string, string>>({});
+  const [sessionCountMap, setSessionCountMap] = useState<Record<string, number>>({});
+  const [pinnedGunIds, setPinnedGunIds]       = useState<string[]>(() => getPinnedGunIds());
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [contextMenuGun, setContextMenuGun]   = useState<Gun | null>(null);
   const [search, setSearch]     = useState('');
   const [typeFilter, setTypeFilter]   = useState<TypeFilter>('All');
   const [caliberFilter, setCaliberFilter] = useState<string>('');
@@ -46,13 +50,16 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
     const allGuns = getAllGuns();
     setGuns(allGuns);
 
-    // Build last-shot map from sessions
+    // Build last-shot and session count maps
     const sessions = getAllSessions();
     const map: Record<string, string> = {};
+    const countMap: Record<string, number> = {};
     for (const s of sessions) {
       if (!map[s.gunId] || s.date > map[s.gunId]) map[s.gunId] = s.date;
+      countMap[s.gunId] = (countMap[s.gunId] || 0) + 1;
     }
     setLastShotMap(map);
+    setSessionCountMap(countMap);
   }, [refreshKey]);
 
   // ── Step 1: type-filtered set (used to derive cascading options) ───────────
@@ -269,15 +276,15 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
         </button>
       )}
 
-      {/* ── SEARCH + SORT ROW ── */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+      {/* ── SEARCH ROW ── */}
+      <div style={{ marginBottom: '10px' }}>
         <input
           type="text"
           placeholder="Search make, model, caliber..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{
-            flex: 1,
+            width: '100%',
             padding: '10px 12px',
             backgroundColor: theme.surface,
             border: `0.5px solid ${theme.border}`,
@@ -286,131 +293,180 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
             fontFamily: 'monospace',
             fontSize: '12px',
             outline: 'none',
+            boxSizing: 'border-box',
           }}
         />
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as SortOption)}
-          style={{
-            padding: '10px 8px',
-            backgroundColor: theme.surface,
-            border: `0.5px solid ${theme.border}`,
-            borderRadius: '6px',
-            color: theme.textMuted,
-            fontFamily: 'monospace',
-            fontSize: '10px',
-            cursor: 'pointer',
-            outline: 'none',
-            flexShrink: 0,
-          }}
-        >
-          <option value="make">A–Z</option>
-          <option value="acquiredPriceDesc">Price ↓</option>
-          <option value="acquiredPriceAsc">Price ↑</option>
-          <option value="lastShot">Last Shot</option>
-        </select>
       </div>
 
-      {/* ── TYPE CHIPS ROW ── */}
-      <div style={{ marginBottom: '10px' }}>
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '2px' }}>
+      {/* ── TYPE METADATA STRIP + SORT & FILTER ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
           {(['Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[])
             .filter(t => typeCounts[t] > 0)
-            .map(t => {
+            .map((t, i, arr) => {
               const label = t === 'Pistol' ? 'Handgun' : t;
-              const active = typeFilter === t;
+              const isActive = typeFilter === t;
               return (
-                <button key={t}
-                  onClick={() => { setTypeFilter(active ? 'All' : t); setCaliberFilter(''); setActionFilter(''); }}
-                  style={{
-                    padding: '6px 11px',
-                    backgroundColor: active ? theme.accent : 'transparent',
-                    border: `0.5px solid ${active ? theme.accent : theme.border}`,
-                    borderRadius: '20px',
-                    color: active ? theme.bg : theme.textMuted,
-                    fontFamily: 'monospace', fontSize: '10px',
-                    letterSpacing: '0.5px',
-                    fontWeight: active ? 700 : 400,
-                    cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  }}
-                >
-                  {label} – {typeCounts[t]}
-                </button>
+                <span key={t} style={{
+                  fontFamily: 'monospace',
+                  fontSize: '10px',
+                  color: isActive ? theme.accent : theme.textMuted,
+                  fontWeight: isActive ? 700 : 400,
+                  letterSpacing: '0.3px',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {label} {typeCounts[t]}{i < arr.length - 1 ? ' ·' : ''}
+                </span>
               );
             })}
-          {/* Spacer so last chip border isn't clipped by overflow */}
-          <div style={{ flexShrink: 0, width: '4px' }} />
         </div>
+        <button
+          onClick={() => setShowFilters(true)}
+          style={{
+            padding: '6px 10px',
+            backgroundColor: (activeFilterCount > 0 || typeFilter !== 'All') ? 'rgba(255,212,59,0.08)' : theme.surface,
+            border: `0.5px solid ${(activeFilterCount > 0 || typeFilter !== 'All') ? theme.accent : theme.border}`,
+            borderRadius: '5px',
+            color: (activeFilterCount > 0 || typeFilter !== 'All') ? theme.accent : theme.textMuted,
+            fontFamily: 'monospace',
+            fontSize: '9px',
+            letterSpacing: '0.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            flexShrink: 0,
+            marginLeft: '8px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {(activeFilterCount > 0 || typeFilter !== 'All')
+            ? `SORT & FILTER (${activeFilterCount + (typeFilter !== 'All' ? 1 : 0)})`
+            : 'SORT & FILTER'}
+        </button>
       </div>
 
-      {/* ── EXPANDED FILTERS ── */}
+      {/* ── CLEANING STATUS LEGEND ── */}
+      {guns.some(g => g.lastCleanedRoundCount != null) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#ffd43b', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.3px' }}>Near threshold</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#ff4444', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, letterSpacing: '0.3px' }}>Cleaning overdue</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── SORT & FILTER BOTTOM SHEET ── */}
       {showFilters && (
-        <div style={{
-          backgroundColor: theme.surface,
-          border: `0.5px solid ${theme.border}`,
-          borderRadius: '8px',
-          padding: '14px',
-          marginBottom: '10px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-        }}>
-
-          {/* Row 1: Caliber + Action */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <div style={filterLabel}>Caliber</div>
-              <select value={caliberFilter} onChange={e => { setCaliberFilter(e.target.value); setActionFilter(''); }} style={selectStyle}>
-                <option value="">All Calibers</option>
-                {availableCalibers.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowFilters(false); }}
+        >
+          <div style={{ width: '100%', maxWidth: '480px', backgroundColor: theme.surface, borderRadius: '12px 12px 0 0', padding: '20px 16px 40px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '1px' }}>SORT & FILTER</div>
+              <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer', padding: '0 4px' }}>×</button>
             </div>
-            <div>
-              <div style={filterLabel}>Action</div>
-              <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={selectStyle}>
-                <option value="">All Actions</option>
-                {availableActions.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+
+            {/* Sort */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={filterLabel}>Sort By</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {([['make', 'A–Z'], ['lastShot', 'Last Shot'], ['acquiredPriceDesc', 'Price ↓'], ['acquiredPriceAsc', 'Price ↑']] as [SortOption, string][]).map(([val, lbl]) => (
+                  <button key={val} onClick={() => setSortBy(val)} style={{
+                    padding: '5px 10px',
+                    backgroundColor: sortBy === val ? theme.accent : 'transparent',
+                    border: `0.5px solid ${sortBy === val ? theme.accent : theme.border}`,
+                    borderRadius: '4px',
+                    color: sortBy === val ? theme.bg : theme.textMuted,
+                    fontFamily: 'monospace', fontSize: '10px',
+                    cursor: 'pointer', fontWeight: sortBy === val ? 700 : 400,
+                  }}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Type */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={filterLabel}>Type</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {(['All', 'Pistol', 'Rifle', 'Shotgun', 'NFA', 'Suppressor'] as TypeFilter[]).filter(t => t === 'All' || typeCounts[t] > 0).map(t => {
+                  const lbl = t === 'Pistol' ? 'Handgun' : t === 'All' ? 'All Types' : t;
+                  return (
+                    <button key={t} onClick={() => { setTypeFilter(t); setCaliberFilter(''); setActionFilter(''); }} style={{
+                      padding: '5px 10px',
+                      backgroundColor: typeFilter === t ? theme.accent : 'transparent',
+                      border: `0.5px solid ${typeFilter === t ? theme.accent : theme.border}`,
+                      borderRadius: '4px',
+                      color: typeFilter === t ? theme.bg : theme.textMuted,
+                      fontFamily: 'monospace', fontSize: '10px',
+                      cursor: 'pointer', fontWeight: typeFilter === t ? 700 : 400,
+                    }}>{lbl}{t !== 'All' ? ` ${typeCounts[t]}` : ''}</button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Caliber + Action */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
+              <div>
+                <div style={filterLabel}>Caliber</div>
+                <select value={caliberFilter} onChange={e => { setCaliberFilter(e.target.value); setActionFilter(''); }} style={selectStyle}>
+                  <option value="">All</option>
+                  {availableCalibers.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={filterLabel}>Action</div>
+                <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={selectStyle}>
+                  <option value="">All</option>
+                  {availableActions.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Status + Purpose */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+              <div>
+                <div style={filterLabel}>Status</div>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as GunStatus | '')} style={selectStyle}>
+                  <option value="">All</option>
+                  {availableStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={filterLabel}>Purpose</div>
+                <select value={purposeFilter} onChange={e => setPurposeFilter(e.target.value as GunPurpose | '')} style={{ ...selectStyle, color: availablePurposes.length === 0 ? theme.textMuted : theme.textSecondary }} disabled={availablePurposes.length === 0}>
+                  <option value="">All</option>
+                  {availablePurposes.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(activeFilterCount > 0 || typeFilter !== 'All') && (
+                <button onClick={clearAllFilters} style={{
+                  flex: 1, padding: '10px',
+                  backgroundColor: 'transparent',
+                  border: `0.5px solid ${theme.border}`,
+                  borderRadius: '5px',
+                  color: theme.textMuted,
+                  fontFamily: 'monospace', fontSize: '10px',
+                  letterSpacing: '0.8px', cursor: 'pointer',
+                }}>CLEAR ALL</button>
+              )}
+              <button onClick={() => setShowFilters(false)} style={{
+                flex: 1, padding: '10px',
+                backgroundColor: theme.accent, border: 'none',
+                borderRadius: '5px', color: theme.bg,
+                fontFamily: 'monospace', fontSize: '10px',
+                fontWeight: 700, letterSpacing: '0.8px', cursor: 'pointer',
+              }}>DONE</button>
             </div>
           </div>
-
-          {/* Row 2: Status + Purpose */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <div style={filterLabel}>Status</div>
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as GunStatus | '')} style={selectStyle}>
-                <option value="">All Statuses</option>
-                {availableStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <div style={filterLabel}>Purpose</div>
-              <select
-                value={purposeFilter}
-                onChange={e => setPurposeFilter(e.target.value as GunPurpose | '')}
-                style={{ ...selectStyle, color: availablePurposes.length === 0 ? theme.textMuted : theme.textSecondary }}
-                disabled={availablePurposes.length === 0}
-              >
-                <option value="">All Purposes</option>
-                {availablePurposes.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Clear filters */}
-          {activeFilterCount > 0 && (
-            <button onClick={clearAllFilters} style={{
-              padding: '9px',
-              backgroundColor: 'rgba(255,212,59,0.06)',
-              border: `0.5px solid ${theme.accent}`,
-              borderRadius: '5px',
-              color: theme.accent,
-              fontFamily: 'monospace', fontSize: '10px',
-              letterSpacing: '0.8px', cursor: 'pointer', fontWeight: 600,
-            }}>
-              CLEAR {activeFilterCount} FILTER{activeFilterCount !== 1 ? 'S' : ''}
-            </button>
-          )}
         </div>
       )}
 
@@ -457,18 +513,48 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
         </div>
       )}
 
+      {/* ── PINNED STRIP ── */}
+      {pinnedGunIds.length > 0 && (() => {
+        const pinnedGuns = pinnedGunIds.map(id => guns.find(g => g.id === id)).filter(Boolean) as Gun[];
+        if (pinnedGuns.length === 0) return null;
+        return (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px', color: theme.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>PINNED</div>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '2px' }}>
+              {pinnedGuns.map(gun => {
+                const accent = typeAccent[gun.type] || theme.textMuted;
+                return (
+                  <button
+                    key={gun.id}
+                    onClick={() => onGunSelect(gun)}
+                    style={{
+                      flexShrink: 0, width: '110px',
+                      backgroundColor: theme.surface,
+                      border: `0.5px solid ${theme.border}`,
+                      borderRadius: '8px', padding: '10px 8px',
+                      cursor: 'pointer', textAlign: 'center',
+                    }}
+                  >
+                    <GunSilhouetteImage gun={gun} color={accent} size={40} />
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', fontWeight: 700, color: theme.textPrimary, marginTop: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {gun.model}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.caliberRed, marginTop: '2px' }}>{gun.caliber}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── GUN LIST ── */}
       {filtered.length === 0 ? (
-        <div style={{
-          padding: '48px 24px', textAlign: 'center',
-          backgroundColor: theme.surface, borderRadius: '8px',
-          border: `0.5px solid ${theme.border}`,
-        }}>
+        <div style={{ padding: '48px 24px', textAlign: 'center', backgroundColor: theme.surface, borderRadius: '8px', border: `0.5px solid ${theme.border}` }}>
           {guns.length === 0 ? (
             <>
-              <div style={{ fontSize: '36px', marginBottom: '12px', opacity: 0.3 }}>🔒</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px' }}>
-                VAULT IS EMPTY
+              <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textSecondary, marginBottom: '6px', opacity: 0.4 }}>
+                YOUR COLLECTION STARTS HERE
               </div>
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '20px', lineHeight: 1.6 }}>
                 Add your first firearm to start tracking round counts, maintenance, and session history.
@@ -477,41 +563,121 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
                 padding: '11px 24px', backgroundColor: theme.accent,
                 border: 'none', borderRadius: '6px', color: theme.bg,
                 fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
-                cursor: 'pointer', letterSpacing: '0.8px',
+                cursor: 'pointer', letterSpacing: '0.8px', width: '100%',
               }}>
-                ADD YOUR FIRST GUN
+                + ADD YOUR FIRST FIREARM
               </button>
             </>
           ) : (
             <>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '12px' }}>
-                NO RESULTS
-              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '12px' }}>NO RESULTS</div>
+              {activeFilterCount > 0 && (
+                <button onClick={clearAllFilters} style={{ padding: '8px 16px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer' }}>
+                  CLEAR FILTERS
+                </button>
+              )}
             </>
           )}
-          {guns.length > 0 && activeFilterCount > 0 && (
-            <button onClick={clearAllFilters} style={{
-              padding: '8px 16px', backgroundColor: 'transparent',
-              border: `0.5px solid ${theme.border}`, borderRadius: '6px',
-              color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer',
-            }}>
-              CLEAR FILTERS
-            </button>
-          )}
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filtered.map(gun => (
-            <GunListRow
-              key={gun.id}
-              gun={gun}
-              lastShot={lastShotMap[gun.id]}
-              onClick={() => onGunSelect(gun)}
-              onQuickLog={(e) => { e.stopPropagation(); setQuickLogGun(gun); }}
-            />
-          ))}
+      ) : (() => {
+        // Group into sections
+        const SECTIONS: { key: string; label: string; types: string[] }[] = [
+          { key: 'handguns',  label: 'HANDGUNS',  types: ['Pistol'] },
+          { key: 'rifles',    label: 'RIFLES',     types: ['Rifle'] },
+          { key: 'shotguns',  label: 'SHOTGUNS',   types: ['Shotgun'] },
+          { key: 'other',     label: 'OTHER',      types: ['NFA', 'Suppressor'] },
+        ];
+
+        // If filtering by a specific type, skip sectioning
+        const useSection = typeFilter === 'All' && filtered.length > 0;
+
+        if (!useSection) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {filtered.map(gun => (
+                <GunListRow
+                  key={gun.id}
+                  gun={gun}
+                  lastShot={lastShotMap[gun.id]}
+                  sessionCount={sessionCountMap[gun.id] || 0}
+                  onClick={() => onGunSelect(gun)}
+                  onQuickLog={(e) => { e.stopPropagation(); setQuickLogGun(gun); }}
+                  onLongPress={() => {
+                    togglePinnedGun(gun.id);
+                    setPinnedGunIds(getPinnedGunIds());
+                  }}
+                  isPinned={pinnedGunIds.includes(gun.id)}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {SECTIONS.map(section => {
+              const sectionGuns = filtered.filter(g => section.types.includes(g.type));
+              if (sectionGuns.length === 0) return null;
+              const isCollapsed = collapsedSections[section.key] === true;
+              return (
+                <div key={section.key} style={{ marginBottom: '12px' }}>
+                  {/* Section header */}
+                  <button
+                    onClick={() => setCollapsedSections(prev => ({ ...prev, [section.key]: !isCollapsed }))}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '6px 0', background: 'none', border: 'none',
+                      borderBottom: `0.5px solid ${theme.border}`, cursor: 'pointer', marginBottom: '6px',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px', color: theme.textMuted, textTransform: 'uppercase' }}>
+                      {section.label}
+                      <span style={{ color: theme.accent, marginLeft: '8px' }}>{sectionGuns.length}</span>
+                    </span>
+                    <span style={{ color: theme.textMuted, fontSize: '12px', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.15s' }}>›</span>
+                  </button>
+                  {!isCollapsed && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {sectionGuns.map(gun => (
+                        <GunListRow
+                          key={gun.id}
+                          gun={gun}
+                          lastShot={lastShotMap[gun.id]}
+                          sessionCount={sessionCountMap[gun.id] || 0}
+                          onClick={() => onGunSelect(gun)}
+                          onQuickLog={(e) => { e.stopPropagation(); setQuickLogGun(gun); }}
+                          onLongPress={() => {
+                            togglePinnedGun(gun.id);
+                            setPinnedGunIds(getPinnedGunIds());
+                          }}
+                          isPinned={pinnedGunIds.includes(gun.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* ── CONTEXT MENU (pin feedback) ── */}
+      {contextMenuGun && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setContextMenuGun(null)}>
+          <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '16px', minWidth: '200px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary, marginBottom: '12px' }}>
+              {contextMenuGun.make} {contextMenuGun.model}
+            </div>
+            <button onClick={() => { togglePinnedGun(contextMenuGun.id); setPinnedGunIds(getPinnedGunIds()); setContextMenuGun(null); }} style={{ display: 'block', width: '100%', padding: '10px', background: 'none', border: `0.5px solid ${theme.border}`, borderRadius: '6px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', marginBottom: '6px' }}>
+              {pinnedGunIds.includes(contextMenuGun.id) ? 'Unpin' : pinnedGunIds.length >= 3 ? 'Pin (replace oldest)' : 'Pin to top'}
+            </button>
+            <button onClick={() => setContextMenuGun(null)} style={{ display: 'block', width: '100%', padding: '10px', background: 'none', border: 'none', color: theme.textMuted, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer' }}>Cancel</button>
+          </div>
         </div>
       )}
+
       {quickLogGun && (
         <SessionLoggingModal
           gun={quickLogGun}
@@ -521,11 +687,14 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
             const allGuns = getAllGuns();
             const sessions = getAllSessions();
             const map: Record<string, string> = {};
+            const countMap: Record<string, number> = {};
             for (const s of sessions) {
               if (!map[s.gunId] || s.date > map[s.gunId]) map[s.gunId] = s.date;
+              countMap[s.gunId] = (countMap[s.gunId] || 0) + 1;
             }
             setGuns(allGuns);
             setLastShotMap(map);
+            setSessionCountMap(countMap);
           }}
         />
       )}
@@ -673,19 +842,103 @@ export function exportInsuranceClaim(guns: Gun[]): void {
 
 // ── Row component ─────────────────────────────────────────────────────────────
 
-function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
+function cleaningBorderColor(gun: Gun, typeAccentColor: string): string {
+  if (gun.lastCleanedRoundCount == null) return typeAccentColor;
+  const shots = (gun.roundCount || 0) - gun.lastCleanedRoundCount;
+  if (shots >= 500) return '#ff4444';
+  if (shots >= 400) return '#ffd43b';
+  return typeAccentColor;
+}
+
+// Circular arc showing round count progress toward cleaning threshold
+function CleaningArc({ gun }: { gun: Gun }) {
+  const rounds = gun.roundCount || 0;
+  const threshold = 500; // hardcoded threshold
+  const hasData = gun.lastCleanedRoundCount != null;
+
+  if (!hasData) {
+    // Plain number, no arc
+    return (
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1 }}>
+          {rounds.toLocaleString()}
+        </div>
+        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px', letterSpacing: '0.5px' }}>
+          ROUNDS
+        </div>
+      </div>
+    );
+  }
+
+  const shotsSince = rounds - gun.lastCleanedRoundCount!;
+  const pct = Math.min(shotsSince / threshold, 1);
+  const arcColor = pct >= 1 ? '#ff4444' : pct >= 0.8 ? '#ffd43b' : '#51cf66';
+
+  const R = 18;
+  const cx = 22;
+  const cy = 22;
+  const circumference = 2 * Math.PI * R;
+  const dash = pct * circumference;
+
+  return (
+    <svg width="44" height="44" style={{ flexShrink: 0 }}>
+      {/* Track */}
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+      {/* Progress */}
+      <circle
+        cx={cx} cy={cy} r={R}
+        fill="none"
+        stroke={arcColor}
+        strokeWidth="3"
+        strokeDasharray={`${dash} ${circumference - dash}`}
+        strokeDashoffset={circumference / 4}
+        strokeLinecap="round"
+        style={{ transition: 'stroke-dasharray 0.3s' }}
+      />
+      {/* Round count */}
+      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={theme.textPrimary} fontFamily="monospace" fontSize="8" fontWeight="700">
+        {rounds >= 1000 ? `${(rounds / 1000).toFixed(1)}k` : rounds}
+      </text>
+    </svg>
+  );
+}
+
+function GunListRow({ gun, lastShot, sessionCount, onClick, onQuickLog, onLongPress, isPinned }: {
   gun: Gun;
   lastShot?: string;
+  sessionCount: number;
   onClick: () => void;
   onQuickLog: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onLongPress: () => void;
+  isPinned: boolean;
 }) {
   const accent = typeAccent[gun.type] || theme.textMuted;
+  const borderColor = cleaningBorderColor(gun, accent);
+  const neverShot = sessionCount === 0;
 
   const daysSince = lastShot
     ? Math.floor((new Date().getTime() - new Date(lastShot + 'T12:00:00').getTime()) / 86400000)
     : null;
 
+  // Recency fade: ≤30d = 100%, 31-90d = 85%, 90+ = 75%
+  const opacity = daysSince === null ? 1 : daysSince <= 30 ? 1 : daysSince <= 90 ? 0.85 : 0.75;
+
   const [pressed, setPressed] = useState(false);
+  const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function startLongPress() {
+    longPressTimer.current = setTimeout(() => {
+      onLongPress();
+      longPressTimer.current = null;
+    }, 600);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
 
   // Flag guns that might need attention
   const needsAttention =
@@ -694,22 +947,25 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
   return (
     <div
       onClick={onClick}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      onMouseLeave={() => setPressed(false)}
-      onTouchStart={() => setPressed(true)}
-      onTouchEnd={() => setPressed(false)}
-      onTouchCancel={() => setPressed(false)}
+      onMouseDown={() => { setPressed(true); startLongPress(); }}
+      onMouseUp={() => { setPressed(false); cancelLongPress(); }}
+      onMouseLeave={() => { setPressed(false); cancelLongPress(); }}
+      onTouchStart={() => { setPressed(true); startLongPress(); }}
+      onTouchEnd={() => { setPressed(false); cancelLongPress(); }}
+      onTouchCancel={() => { setPressed(false); cancelLongPress(); }}
       style={{
         width: '100%',
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: '12px 14px',
         backgroundColor: pressed ? theme.bg : theme.surface,
-        border: `0.5px solid ${pressed ? theme.accent : theme.border}`,
+        border: neverShot
+          ? `0.5px dashed rgba(255,255,255,0.15)`
+          : `0.5px solid ${pressed ? theme.accent : theme.border}`,
         borderRadius: '8px',
-        borderLeft: `3px solid ${accent}`,
+        borderLeft: `3px solid ${borderColor}`,
         cursor: 'pointer', textAlign: 'left', boxSizing: 'border-box',
         transition: 'background-color 0.1s, border-color 0.1s',
+        opacity,
       }}
     >
       {/* Silhouette */}
@@ -760,26 +1016,27 @@ function GunListRow({ gun, lastShot, onClick, onQuickLog }: {
             </span>
           )}
         </div>
+        {neverShot && (
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '3px', letterSpacing: '0.3px' }}>
+            No sessions logged yet
+          </div>
+        )}
+        {isPinned && (
+          <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.accent, marginTop: '2px', letterSpacing: '0.5px' }}>PINNED</div>
+        )}
       </div>
 
-      {/* Round count + quick-log */}
-      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
-        <div>
-          <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1 }}>
-            {(gun.roundCount || 0).toLocaleString()}
-          </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px', letterSpacing: '0.5px' }}>
-            ROUNDS
-          </div>
-        </div>
+      {/* Round count arc + quick-log */}
+      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+        <CleaningArc gun={gun} />
         {daysSince === 0 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.green, textAlign: 'right', flexShrink: 0 }}>today</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.green, textAlign: 'right' }}>today</div>
         ) : daysSince === 1 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>yesterday</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right' }}>yesterday</div>
         ) : daysSince !== null && daysSince <= 30 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, textAlign: 'right' }}>{daysSince}d ago</div>
         ) : daysSince !== null && daysSince > 30 ? (
-          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.red, textAlign: 'right', flexShrink: 0 }}>{daysSince}d ago</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.red, textAlign: 'right' }}>{daysSince}d ago</div>
         ) : null}
         <button
           onClick={onQuickLog}

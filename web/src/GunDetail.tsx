@@ -53,6 +53,9 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [aiPrecisionResult, setAiPrecisionResult] = useState<string | null>(null);
   const [aiPrecisionLoading, setAiPrecisionLoading] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(false);
+  const [heroCollapsed, setHeroCollapsed] = useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // ── Precision metrics (computed from target analyses) ─────────────────────
   const [analyses, setAnalyses] = useState<TargetAnalysisRecord[]>([]);
@@ -269,55 +272,136 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: theme.bg,
-      maxWidth: '480px',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      paddingBottom: '100px',
-    }}>
+    <div
+      ref={scrollRef}
+      onScroll={e => setHeroCollapsed((e.currentTarget.scrollTop) > 90)}
+      style={{
+        height: '100vh',
+        overflowY: 'auto',
+        backgroundColor: theme.bg,
+        maxWidth: '480px',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        paddingBottom: '100px',
+      }}
+    >
 
-      {/* ── TOP BAR ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px' }}>
+      {/* ── SLIM STICKY BAR ── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 30,
+        backgroundColor: theme.bg,
+        borderBottom: heroCollapsed ? `0.5px solid ${theme.border}` : 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 16px',
+        transition: 'border-color 0.15s',
+      }}>
         <button onClick={onBack} style={{
-          padding: '8px 14px', backgroundColor: 'transparent',
+          padding: '6px 12px', backgroundColor: 'transparent',
           border: `0.5px solid ${theme.border}`, borderRadius: '6px',
           color: theme.textSecondary, fontFamily: 'monospace',
-          fontSize: '11px', cursor: 'pointer', letterSpacing: '0.5px',
+          fontSize: '11px', cursor: 'pointer', letterSpacing: '0.5px', flexShrink: 0,
         }}>
           ← VAULT
         </button>
+
+        {/* Center — only visible when hero collapsed */}
+        {heroCollapsed && (
+          <div style={{ flex: 1, textAlign: 'center', padding: '0 10px', minWidth: 0 }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {gun.displayName || `${gun.make} ${gun.model}`}
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: accent, letterSpacing: '0.5px' }}>
+              {gun.caliber}
+            </div>
+          </div>
+        )}
+
         <button onClick={() => setShowLogSession(true)} style={{
-          padding: '8px 16px', backgroundColor: theme.accent,
+          padding: '6px 14px', backgroundColor: theme.accent,
           border: 'none', borderRadius: '6px', color: theme.bg,
           fontFamily: 'monospace', fontSize: '11px',
-          letterSpacing: '0.8px', fontWeight: 700, cursor: 'pointer',
+          letterSpacing: '0.8px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
         }}>
-          + LOG SESSION
+          + LOG
         </button>
       </div>
 
-      {/* ── TABS (at very top) ── */}
-      <div style={{ display: 'flex', margin: '0 16px 12px', border: `0.5px solid ${theme.border}`, borderRadius: '6px', overflow: 'hidden' }}>
-        {([
-          ['overview', 'OVERVIEW'],
-          ['sessions', sessions.length > 0 ? 'SESSIONS (' + sessions.length + ')' : 'SESSIONS'],
-          ['maintenance', 'MAINT'],
-          ['ammo', 'AMMO'],
-          ['timeline', 'TIMELINE'],
-        ] as [DetailTab, string][]).map(([t, label]) => (
-          <button key={t} onClick={() => handleTabChange(t)} style={{
-            flex: 1, padding: '10px 2px',
-            backgroundColor: tab === t ? theme.textPrimary : 'transparent',
-            border: 'none', color: tab === t ? theme.bg : theme.textMuted,
-            fontFamily: 'monospace', fontSize: '9px',
-            letterSpacing: '0.5px', fontWeight: tab === t ? 700 : 400,
-            cursor: 'pointer', textTransform: 'uppercase',
+      {/* ── HERO ── */}
+      <div style={{ padding: '12px 16px 0', textAlign: 'center' }}>
+
+        {/* Large silhouette */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+          <GunSilhouetteImage gun={gun} color={accent} size={120} />
+        </div>
+
+        {/* Gun name */}
+        <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1.2, marginBottom: '8px' }}>
+          {gun.displayName || `${gun.make} ${gun.model}`}
+        </div>
+
+        {/* Caliber + status row */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+          <span style={{
+            padding: '3px 10px', backgroundColor: theme.surface,
+            border: `0.5px solid ${accent}`,
+            borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px',
+            color: accent, letterSpacing: '0.5px', fontWeight: 600,
           }}>
-            {label}
-          </button>
-        ))}
+            {gun.caliber}
+          </span>
+          <span style={{
+            padding: '3px 8px', backgroundColor: theme.surface,
+            border: `0.5px solid ${gun.status === 'Active' ? theme.green : theme.border}`,
+            borderRadius: '4px', fontFamily: 'monospace', fontSize: '10px',
+            color: gun.status === 'Active' ? theme.green : theme.textMuted,
+            letterSpacing: '0.5px',
+          }}>
+            {gun.status?.toUpperCase() || 'UNKNOWN'}
+          </span>
+          {gun.crFlag && (
+            <span style={{ padding: '3px 8px', backgroundColor: theme.surface, border: `0.5px solid ${accent}`, borderRadius: '4px', fontFamily: 'monospace', fontSize: '9px', color: accent, letterSpacing: '0.5px' }}>C&R</span>
+          )}
+          {gun.nfaItem && (
+            <span style={{ padding: '3px 8px', backgroundColor: theme.surface, border: `0.5px solid ${theme.red}`, borderRadius: '4px', fontFamily: 'monospace', fontSize: '9px', color: theme.red, letterSpacing: '0.5px' }}>NFA</span>
+          )}
+        </div>
+
+        {/* Round count */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '32px', fontWeight: 700, color: accent, lineHeight: 1 }}>
+            {(gun.roundCount || 0).toLocaleString()}
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginTop: '4px' }}>
+            TOTAL ROUNDS
+          </div>
+        </div>
+      </div>
+
+      {/* ── TABS (sticky below slim bar) ── */}
+      <div style={{
+        position: 'sticky', top: '44px', zIndex: 20,
+        backgroundColor: theme.bg, paddingBottom: '2px',
+      }}>
+        <div style={{ display: 'flex', margin: '0 16px 12px', border: `0.5px solid ${theme.border}`, borderRadius: '6px', overflow: 'hidden' }}>
+          {([
+            ['overview', 'OVERVIEW'],
+            ['sessions', sessions.length > 0 ? 'SESSIONS (' + sessions.length + ')' : 'SESSIONS'],
+            ['maintenance', 'MAINT'],
+            ['ammo', 'AMMO'],
+            ['timeline', 'TIMELINE'],
+          ] as [DetailTab, string][]).map(([t, label]) => (
+            <button key={t} onClick={() => handleTabChange(t)} style={{
+              flex: 1, padding: '10px 2px',
+              backgroundColor: tab === t ? theme.textPrimary : 'transparent',
+              border: 'none', color: tab === t ? theme.bg : theme.textMuted,
+              fontFamily: 'monospace', fontSize: '9px',
+              letterSpacing: '0.5px', fontWeight: tab === t ? 700 : 400,
+              cursor: 'pointer', textTransform: 'uppercase',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ padding: '0 16px' }}>
@@ -326,92 +410,48 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
         {tab === 'overview' && (
           <>
 
-            {/* ── GUN BANNER ── */}
-            <div style={{
-              ...card,
-              padding: '12px 14px',
-              borderLeft: `4px solid ${accent}`,
-            }}>
-              {/* Top row: icon + name + badges */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{
-                  width: '56px', height: '38px', flexShrink: 0,
-                  backgroundColor: theme.bg, borderRadius: '5px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <GunSilhouetteImage gun={gun} color={accent} size={52} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 700, color: theme.textPrimary, lineHeight: 1.2 }}>
-                      {gun.make} {gun.model}
-                    </span>
-                    <span style={{
-                      padding: '1px 6px', backgroundColor: theme.bg,
-                      border: `0.5px solid ${gun.status === 'Active' ? theme.green : theme.border}`,
-                      borderRadius: '3px', fontFamily: 'monospace', fontSize: '9px',
-                      color: gun.status === 'Active' ? theme.green : theme.textMuted,
-                      letterSpacing: '0.5px', flexShrink: 0,
-                    }}>
-                      {gun.status?.toUpperCase()}
-                    </span>
-                    {gun.crFlag && (
-                      <span style={{ padding: '1px 5px', backgroundColor: theme.bg, border: `0.5px solid ${theme.accent}`, borderRadius: '3px', fontFamily: 'monospace', fontSize: '8px', color: theme.accent, letterSpacing: '0.5px', flexShrink: 0 }}>C&R</span>
-                    )}
-                    {(gun.nfaItem || gun.suppressorHost) && (
-                      <span style={{ padding: '1px 5px', border: `0.5px solid ${theme.red}`, borderRadius: '3px', fontFamily: 'monospace', fontSize: '9px', color: theme.red, flexShrink: 0 }}>NFA</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {/* Bottom row: all metadata on one line */}
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.caliberRed, fontWeight: 600 }}>{gun.caliber}</span>
+            {/* ── GUN META ROW ── */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>{gun.type}</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>·</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>{gun.action}</span>
+              {gun.capacity && <>
                 <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>·</span>
-                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{gun.type}</span>
-                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>·</span>
-                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{gun.action}</span>
-                {gun.capacity && <>
-                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>·</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{gun.capacity}+1 cap</span>
-                </>}
-                {gun.serialNumber && <>
-                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>·</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>SN {gun.serialNumber}</span>
-                </>}
-              </div>
-              {/* Mark as sold / sold info */}
-              {gun.status !== 'Sold' && gun.status !== 'Transferred' && (
-                <div style={{ marginTop: '10px' }}>
-                  {!showMarkSold ? (
-                    <button onClick={() => { setSoldDateInput(new Date().toISOString().split('T')[0]); setShowMarkSold(true); }} style={{
-                      padding: '4px 10px', backgroundColor: 'transparent',
-                      border: `0.5px solid ${theme.border}`, borderRadius: '4px',
-                      color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px',
-                      cursor: 'pointer', letterSpacing: '0.5px',
-                    }}>MARK AS SOLD</button>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input type="date" value={soldDateInput} onChange={e => setSoldDateInput(e.target.value)}
-                        style={{ padding: '5px 8px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '10px', outline: 'none' }} />
-                      <input type="number" value={soldPriceInput} onChange={e => setSoldPriceInput(e.target.value)}
-                        placeholder="Sale price ($)" min={0}
-                        style={{ width: '120px', padding: '5px 8px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '10px', outline: 'none' }} />
-                      <button onClick={() => {
-                        persist({ status: 'Sold', soldDate: soldDateInput || undefined, soldPrice: soldPriceInput ? parseFloat(soldPriceInput) : undefined });
-                        setShowMarkSold(false);
-                      }} style={{ padding: '5px 12px', backgroundColor: theme.red, border: 'none', borderRadius: '4px', color: '#fff', fontFamily: 'monospace', fontSize: '9px', fontWeight: 700, cursor: 'pointer' }}>CONFIRM SOLD</button>
-                      <button onClick={() => setShowMarkSold(false)} style={{ padding: '5px 8px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer' }}>×</button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {gun.status === 'Sold' && (gun.soldDate || gun.soldPrice) && (
-                <div style={{ marginTop: '8px', fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
-                  Sold{gun.soldDate ? ` ${formatDate(gun.soldDate)}` : ''}{gun.soldPrice ? ` · $${gun.soldPrice.toLocaleString()}` : ''}
-                </div>
-              )}
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>{gun.capacity}+1</span>
+              </>}
             </div>
+
+            {/* Mark as sold */}
+            {gun.status !== 'Sold' && gun.status !== 'Transferred' && (
+              <div style={{ marginBottom: '10px' }}>
+                {!showMarkSold ? (
+                  <button onClick={() => { setSoldDateInput(new Date().toISOString().split('T')[0]); setShowMarkSold(true); }} style={{
+                    padding: '4px 10px', backgroundColor: 'transparent',
+                    border: `0.5px solid ${theme.border}`, borderRadius: '4px',
+                    color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px',
+                    cursor: 'pointer', letterSpacing: '0.5px',
+                  }}>MARK AS SOLD</button>
+                ) : (
+                  <div style={{ ...card, display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input type="date" value={soldDateInput} onChange={e => setSoldDateInput(e.target.value)}
+                      style={{ padding: '5px 8px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '10px', outline: 'none' }} />
+                    <input type="number" value={soldPriceInput} onChange={e => setSoldPriceInput(e.target.value)}
+                      placeholder="Sale price ($)" min={0}
+                      style={{ width: '120px', padding: '5px 8px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textPrimary, fontFamily: 'monospace', fontSize: '10px', outline: 'none' }} />
+                    <button onClick={() => {
+                      persist({ status: 'Sold', soldDate: soldDateInput || undefined, soldPrice: soldPriceInput ? parseFloat(soldPriceInput) : undefined });
+                      setShowMarkSold(false);
+                    }} style={{ padding: '5px 12px', backgroundColor: theme.red, border: 'none', borderRadius: '4px', color: '#fff', fontFamily: 'monospace', fontSize: '9px', fontWeight: 700, cursor: 'pointer' }}>CONFIRM SOLD</button>
+                    <button onClick={() => setShowMarkSold(false)} style={{ padding: '5px 8px', backgroundColor: 'transparent', border: `0.5px solid ${theme.border}`, borderRadius: '4px', color: theme.textMuted, fontFamily: 'monospace', fontSize: '9px', cursor: 'pointer' }}>×</button>
+                  </div>
+                )}
+              </div>
+            )}
+            {gun.status === 'Sold' && (gun.soldDate || gun.soldPrice) && (
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '10px' }}>
+                {'Sold' + (gun.soldDate ? ' ' + formatDate(gun.soldDate) : '') + (gun.soldPrice ? ' · $' + gun.soldPrice.toLocaleString() : '')}
+              </div>
+            )}
 
             {/* ── OPEN ISSUES ALERT ── */}
             {gun.openIssues && (
@@ -431,33 +471,60 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
               </div>
             )}
 
-            {/* ── AI BLURB ── */}
-            {blurb && (
-              <div style={{
-                ...card,
-                borderLeft: `3px solid ${theme.accent}`,
-                backgroundColor: theme.bg,
-              }}>
-                <div style={{ ...sectionLabel, color: theme.accent }}>GUN HISTORY</div>
-                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: '1.6' }}>
+            {/* ── YOUR HISTORY ── */}
+            <div style={{ ...card, borderLeft: `3px solid ${theme.border}` }}>
+              <div style={sectionLabel}>YOUR HISTORY</div>
+              <div style={{ display: 'flex', gap: '0', marginBottom: blurb ? '12px' : 0 }}>
+                {[
+                  { val: (gun.roundCount || 0).toLocaleString(), lbl: 'ROUNDS' },
+                  { val: sessions.length.toString(), lbl: 'SESSIONS' },
+                  { val: daysSinceLast !== null ? `${daysSinceLast}d` : '—', lbl: 'LAST SHOT' },
+                ].map((item, i) => (
+                  <div key={item.lbl} style={{ flex: 1, textAlign: 'center', borderLeft: i > 0 ? `1px solid ${theme.border}` : 'none', padding: '4px 0' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '22px', fontWeight: 700, color: accent, lineHeight: 1 }}>{item.val}</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginTop: '4px', letterSpacing: '0.8px' }}>{item.lbl}</div>
+                  </div>
+                ))}
+              </div>
+              {sessions.length > 0 && (
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: blurb ? '10px' : 0 }}>
+                  {'First session: ' + (() => {
+                    const oldest = sessions[sessions.length - 1];
+                    return new Date(oldest.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  })()}
+                </div>
+              )}
+              {blurb && (
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: '1.6', borderTop: `1px solid ${theme.border}`, paddingTop: '10px' }}>
                   {blurb}
                 </div>
+              )}
+            </div>
+
+            {/* ── MOUNTED OPTIC ── */}
+            {gun.accessories?.optic && (
+              <div style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={labelStyle}>MOUNTED OPTIC</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary, marginTop: '2px' }}>
+                    {gun.accessories.optic}
+                  </div>
+                  {gun.accessories.opticMagnification && (
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
+                      {gun.accessories.opticMagnification}
+                    </div>
+                  )}
+                </div>
+                {gun.lastZeroDistance && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.orange }}>
+                      {formatZeroDist(gun.lastZeroDistance, gun.lastZeroDistanceUnit)}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginTop: '2px', letterSpacing: '0.5px' }}>ZERO</div>
+                  </div>
+                )}
               </div>
             )}
-
-            {/* ── LIFETIME STATS ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
-              {[
-                { val: (gun.roundCount || 0).toLocaleString(), lbl: 'Total Rounds', color: accent },
-                { val: sessions.length.toString(), lbl: 'Sessions', color: theme.textPrimary },
-                { val: daysSinceLast !== null ? `${daysSinceLast}d` : '—', lbl: 'Since Last', color: hasRecentIssues ? theme.red : theme.textPrimary },
-              ].map(item => (
-                <div key={item.lbl} style={{ ...card, marginBottom: 0, textAlign: 'center', padding: '12px 8px' }}>
-                  <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: item.color, lineHeight: 1 }}>{item.val}</div>
-                  <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '3px', letterSpacing: '0.5px' }}>{item.lbl.toUpperCase()}</div>
-                </div>
-              ))}
-            </div>
 
             {/* ── PERIOD STATS ── */}
             <div style={card}>
@@ -492,56 +559,75 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
               </div>
             </div>
 
-            {/* ── DETAILS ── */}
-            {(gun.condition || gun.barrelLength || gun.acquiredDate || gun.acquiredPrice || gun.acquiredFrom || gun.purpose?.length || gun.estimatedFMV || gun.insuranceValue || gun.soldDate || gun.soldPrice) && (
-              <div style={card}>
-                <div style={sectionLabel}>DETAILS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
-                  {gun.condition && (
-                    <div><div style={labelStyle}>Condition</div><div style={valStyle}>{gun.condition}</div></div>
-                  )}
-                  {gun.barrelLength && (
-                    <div><div style={labelStyle}>Barrel</div><div style={valStyle}>{gun.barrelLength}"</div></div>
-                  )}
-                  {gun.acquiredDate && (
-                    <div><div style={labelStyle}>Acquired</div><div style={valStyle}>{new Date(gun.acquiredDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div></div>
-                  )}
-                  {gun.acquiredPrice && (
-                    <div><div style={labelStyle}>Paid</div><div style={valStyle}>${gun.acquiredPrice.toLocaleString()}</div></div>
-                  )}
-                  {gun.acquiredFrom && (
-                    <div><div style={labelStyle}>From</div><div style={valStyle}>{gun.acquiredFrom}</div></div>
-                  )}
-                  {gun.estimatedFMV && (
-                    <div><div style={labelStyle}>Est. Market Value</div><div style={{ ...valStyle, color: theme.green }}>${gun.estimatedFMV.toLocaleString()}</div></div>
-                  )}
-                  {gun.insuranceValue && (
-                    <div><div style={labelStyle}>Insured Value</div><div style={{ ...valStyle, color: theme.blue }}>${gun.insuranceValue.toLocaleString()}</div></div>
-                  )}
-                  {gun.soldDate && (
-                    <div><div style={labelStyle}>Date Sold</div><div style={{ ...valStyle, color: theme.textMuted }}>{formatDate(gun.soldDate)}</div></div>
-                  )}
-                  {gun.soldPrice && (
-                    <div><div style={labelStyle}>Sold For</div><div style={{ ...valStyle, color: theme.textMuted }}>${gun.soldPrice.toLocaleString()}</div></div>
+            {/* ── SPECS (collapsible) ── */}
+            <div style={card}>
+              <button
+                onClick={() => setSpecsOpen(o => !o)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                }}
+              >
+                <div style={sectionLabel}>SPECS</div>
+                <span style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted }}>
+                  {specsOpen ? '▴' : '▾'}
+                </span>
+              </button>
+              {specsOpen && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
+                    {gun.condition && (
+                      <div><div style={labelStyle}>Condition</div><div style={valStyle}>{gun.condition}</div></div>
+                    )}
+                    {gun.barrelLength && (
+                      <div><div style={labelStyle}>Barrel</div><div style={valStyle}>{gun.barrelLength}"</div></div>
+                    )}
+                    {gun.overallLength && (
+                      <div><div style={labelStyle}>Overall Length</div><div style={valStyle}>{gun.overallLength}"</div></div>
+                    )}
+                    {gun.weight && (
+                      <div><div style={labelStyle}>Weight</div><div style={valStyle}>{gun.weight} oz</div></div>
+                    )}
+                    {gun.capacity && (
+                      <div><div style={labelStyle}>Capacity</div><div style={valStyle}>{gun.capacity}+1</div></div>
+                    )}
+                    {gun.finish && (
+                      <div><div style={labelStyle}>Finish</div><div style={valStyle}>{gun.finish}</div></div>
+                    )}
+                    {gun.acquiredDate && (
+                      <div><div style={labelStyle}>Acquired</div><div style={valStyle}>{new Date(gun.acquiredDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div></div>
+                    )}
+                    {gun.acquiredPrice && (
+                      <div><div style={labelStyle}>Paid</div><div style={valStyle}>{'$' + gun.acquiredPrice.toLocaleString()}</div></div>
+                    )}
+                    {gun.acquiredFrom && (
+                      <div><div style={labelStyle}>From</div><div style={valStyle}>{gun.acquiredFrom}</div></div>
+                    )}
+                    {gun.estimatedFMV && (
+                      <div><div style={labelStyle}>Est. Value</div><div style={{ ...valStyle, color: theme.green }}>{'$' + gun.estimatedFMV.toLocaleString()}</div></div>
+                    )}
+                    {gun.insuranceValue && (
+                      <div><div style={labelStyle}>Insured</div><div style={valStyle}>{'$' + gun.insuranceValue.toLocaleString()}</div></div>
+                    )}
+                  </div>
+                  {gun.purpose && gun.purpose.length > 0 && (
+                    <div style={{ marginTop: '10px' }}>
+                      <div style={labelStyle}>Purpose</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {gun.purpose.map(p => (
+                          <span key={p} style={{
+                            padding: '3px 8px', backgroundColor: theme.bg,
+                            border: `0.5px solid ${accent}`,
+                            borderRadius: '3px', fontFamily: 'monospace',
+                            fontSize: '9px', color: accent, letterSpacing: '0.5px',
+                          }}>{p}</span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {gun.purpose && gun.purpose.length > 0 && (
-                  <div style={{ marginTop: '10px' }}>
-                    <div style={labelStyle}>Purpose</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                      {gun.purpose.map(p => (
-                        <span key={p} style={{
-                          padding: '3px 8px', backgroundColor: theme.bg,
-                          border: `0.5px solid ${accent}`,
-                          borderRadius: '3px', fontFamily: 'monospace',
-                          fontSize: '9px', color: accent, letterSpacing: '0.5px',
-                        }}>{p}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             {/* ── MAINTENANCE LOG ── */}
             <div style={card}>
@@ -950,48 +1036,137 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
         {tab === 'sessions' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {sessions.length === 0 ? (
-              <div style={{
-                padding: '48px 24px', textAlign: 'center',
-                backgroundColor: theme.surface, borderRadius: '8px',
-                border: `0.5px solid ${theme.border}`,
-              }}>
-                <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, marginBottom: '12px' }}>NO SESSIONS LOGGED</div>
-                <button onClick={() => setShowLogSession(true)} style={{
-                  padding: '10px 20px', backgroundColor: theme.accent,
-                  border: 'none', borderRadius: '6px', color: theme.bg,
-                  fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                }}>LOG FIRST SESSION</button>
-              </div>
-            ) : (
-              sessions.map(session => (
-                <div key={session.id}
-                  onClick={() => setSelectedSession(session)}
-                  style={{
-                    backgroundColor: theme.surface,
-                    border: `0.5px solid ${session.issues ? theme.red : theme.border}`,
-                    borderRadius: '8px', padding: '12px 14px',
-                    cursor: 'pointer',
-                  }}>
+              <>
+                {/* Ghost preview card */}
+                <div style={{ ...card, opacity: 0.35, pointerEvents: 'none', border: `0.5px dashed ${theme.border}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>{formatDate(session.date)}</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: accent }}>{session.roundsExpended} rds</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textMuted }}>Apr 26, 2026</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: theme.textMuted }}>100 rds</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {session.location && <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{session.location}</span>}
-                    {session.indoorOutdoor && (
-                      <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, padding: '1px 5px', border: `0.5px solid ${theme.border}`, borderRadius: '3px' }}>
-                        {session.indoorOutdoor.toUpperCase()}
-                      </span>
-                    )}
-                    {session.issues && (
-                      <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red, padding: '1px 5px', border: `0.5px solid ${theme.red}`, borderRadius: '3px' }}>ISSUE</span>
-                    )}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>Home Range</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, padding: '1px 5px', border: `0.5px solid ${theme.border}`, borderRadius: '3px' }}>OUTDOOR</span>
                   </div>
-                  {session.notes && <div style={{ marginTop: '6px', fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, fontStyle: 'italic' }}>{session.notes}</div>}
-                  {session.issues && session.issueDescription && <div style={{ marginTop: '4px', fontFamily: 'monospace', fontSize: '11px', color: theme.red }}>{session.issueDescription}</div>}
                 </div>
-              ))
-            )}
+                <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '12px' }}>
+                    Your range history will appear here
+                  </div>
+                  <button onClick={() => setShowLogSession(true)} style={{
+                    padding: '10px 24px', backgroundColor: theme.accent,
+                    border: 'none', borderRadius: '6px', color: theme.bg,
+                    fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.8px',
+                  }}>LOG FIRST SESSION</button>
+                </div>
+              </>
+            ) : (() => {
+              // Report card stats
+              const totalRounds = sessions.reduce((s, x) => s + x.roundsExpended, 0);
+              const avgRds = sessions.length > 0 ? Math.round(totalRounds / sessions.length) : 0;
+              const issueCount = sessions.filter(s => s.issues).length;
+              const issueRate = sessions.length > 0 ? Math.round((issueCount / sessions.length) * 100) : 0;
+              const lastSessionDate = sessions[0]?.date;
+              const lastDaysAgo = lastSessionDate ? Math.floor((now.getTime() - new Date(lastSessionDate + 'T12:00:00').getTime()) / 86400000) : null;
+              const lastDayColor = lastDaysAgo === null ? theme.textMuted : lastDaysAgo <= 30 ? theme.green : lastDaysAgo <= 90 ? theme.accent : theme.red;
+
+              // Cadence
+              const sorted = sessions.slice().sort((a, b) => a.date.localeCompare(b.date));
+              let avgGap: number | null = null;
+              let streak = 0;
+              if (sorted.length >= 2) {
+                const gaps: number[] = [];
+                for (let i = 1; i < sorted.length; i++) {
+                  const d = Math.floor((new Date(sorted[i].date + 'T12:00:00').getTime() - new Date(sorted[i-1].date + 'T12:00:00').getTime()) / 86400000);
+                  gaps.push(d);
+                }
+                avgGap = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+                // Count current streak (sessions without 14+ day gap from most recent)
+                let broken = false;
+                for (let i = sorted.length - 1; i > 0; i--) {
+                  const d = Math.floor((new Date(sorted[i].date + 'T12:00:00').getTime() - new Date(sorted[i-1].date + 'T12:00:00').getTime()) / 86400000);
+                  if (d >= 14) { broken = true; break; }
+                  streak++;
+                }
+                if (!broken) streak = sorted.length;
+              }
+
+              // Session quality score
+              function sessionQuality(s: Session): number {
+                let score = 0;
+                if (s.roundsExpended >= 100) score += 3;
+                if (s.distanceYards && s.distanceYards >= 100) score += 2;
+                if (!s.issues) score += 2;
+                if (s.notes && s.notes.trim().length > 0) score += 1;
+                return score;
+              }
+
+              return (
+                <>
+                  {/* Report card header */}
+                  <div style={{ ...card, padding: '10px 14px', marginBottom: '4px' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, lineHeight: 1.8 }}>
+                      <span style={{ color: theme.textPrimary, fontWeight: 700 }}>{totalRounds.toLocaleString()}</span> total rounds &nbsp;·&nbsp;
+                      <span style={{ color: theme.textPrimary, fontWeight: 700 }}>{sessions.length}</span> sessions &nbsp;·&nbsp;
+                      <span style={{ color: theme.textPrimary, fontWeight: 700 }}>{avgRds}</span> avg rds/session
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
+                      Issue rate: <span style={{ color: issueRate > 20 ? theme.red : theme.textSecondary }}>{issueRate}%</span>
+                      {lastDaysAgo !== null && (
+                        <span> &nbsp;·&nbsp; Last session: <span style={{ color: lastDayColor }}>{lastDaysAgo === 0 ? 'today' : `${lastDaysAgo}d ago`}</span></span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cadence line */}
+                  {avgGap !== null && (
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, padding: '0 2px 8px', lineHeight: 1.6 }}>
+                      {lastDaysAgo !== null && <span style={{ color: lastDayColor }}>Last shot {lastDaysAgo}d ago</span>}
+                      {lastDaysAgo !== null && avgGap !== null && ' · '}
+                      {avgGap !== null && <span>Avg {avgGap}d between sessions</span>}
+                      {streak >= 2 && <span> · <span style={{ color: theme.accent }}>{streak}-session streak</span></span>}
+                    </div>
+                  )}
+
+                  {/* Session list */}
+                  {sessions.map(session => {
+                    const qScore = sessionQuality(session);
+                    return (
+                      <div key={session.id}
+                        onClick={() => setSelectedSession(session)}
+                        style={{
+                          backgroundColor: theme.surface,
+                          border: `0.5px solid ${session.issues ? theme.red : theme.border}`,
+                          borderRadius: '8px', padding: '12px 14px',
+                          cursor: 'pointer', position: 'relative',
+                        }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: theme.textPrimary }}>{formatDate(session.date)}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {qScore > 0 && (
+                              <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, opacity: 0.6 }}>{qScore}</span>
+                            )}
+                            <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: accent }}>{session.roundsExpended} rds</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {session.location && <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{session.location}</span>}
+                          {session.indoorOutdoor && (
+                            <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, padding: '1px 5px', border: `0.5px solid ${theme.border}`, borderRadius: '3px' }}>
+                              {session.indoorOutdoor.toUpperCase()}
+                            </span>
+                          )}
+                          {session.issues && (
+                            <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red, padding: '1px 5px', border: `0.5px solid ${theme.red}`, borderRadius: '3px' }}>ISSUE</span>
+                          )}
+                        </div>
+                        {session.notes && <div style={{ marginTop: '6px', fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, fontStyle: 'italic' }}>{session.notes}</div>}
+                        {session.issues && session.issueDescription && <div style={{ marginTop: '4px', fontFamily: 'monospace', fontSize: '11px', color: theme.red }}>{session.issueDescription}</div>}
+                      </div>
+                    );
+                  })}
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -1002,30 +1177,76 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             {/* ── CLEANING STATUS ── */}
             <div style={card}>
               <div style={sectionLabel}>CLEANING STATUS</div>
-              <div style={{ marginBottom: '12px' }}>
-                <div style={labelStyle}>Shots Since Last Clean</div>
-                <div style={{
-                  fontFamily: 'monospace', fontSize: '24px', fontWeight: 700,
-                  color: shotsSinceClean == null ? theme.textMuted
-                    : shotsSinceClean < 300 ? theme.green
-                    : shotsSinceClean <= 500 ? theme.orange
-                    : theme.red,
-                }}>
-                  {shotsSinceClean == null ? 'Never recorded' : shotsSinceClean.toLocaleString()}
-                </div>
-              </div>
-              {gun.lastCleanedDate && (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={labelStyle}>Last Cleaned</div>
-                  <div style={valStyle}>{formatDate(gun.lastCleanedDate)}</div>
-                </div>
-              )}
-              {gun.lastCleanedRoundCount != null && (
-                <div style={{ marginBottom: '14px' }}>
-                  <div style={labelStyle}>Last Cleaned At</div>
-                  <div style={valStyle}>{gun.lastCleanedRoundCount.toLocaleString() + ' rounds'}</div>
-                </div>
-              )}
+
+              {/* Visual arc */}
+              {(() => {
+                const THRESHOLD = 500;
+                const shots     = shotsSinceClean ?? 0;
+                const pct       = Math.min(shots / THRESHOLD, 1);
+                const arcColor  = shotsSinceClean == null ? theme.textMuted
+                  : shots < 300 ? theme.green
+                  : shots < THRESHOLD ? theme.orange
+                  : theme.red;
+
+                // SVG arc: cx=60 cy=60 r=50, stroke-dasharray based on pct
+                // Half-circle arc from 180° to 0° (left to right, bottom-up sweep)
+                const R = 50;
+                const CX = 60;
+                const CY = 62;
+                const FULL = Math.PI * R; // half circumference
+                const dash = pct * FULL;
+
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px' }}>
+                    <svg width="120" height="68" viewBox="0 0 120 68" style={{ flexShrink: 0 }}>
+                      {/* Track */}
+                      <path
+                        d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`}
+                        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" strokeLinecap="round"
+                      />
+                      {/* Fill */}
+                      {shotsSinceClean != null && (
+                        <path
+                          d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`}
+                          fill="none" stroke={arcColor} strokeWidth="8" strokeLinecap="round"
+                          strokeDasharray={`${dash} ${FULL}`}
+                        />
+                      )}
+                      {/* Center text */}
+                      <text x={CX} y={CY - 10} textAnchor="middle"
+                        fontFamily="monospace" fontSize="18" fontWeight="700" fill={arcColor}>
+                        {shotsSinceClean == null ? '–' : shots.toLocaleString()}
+                      </text>
+                      <text x={CX} y={CY + 6} textAnchor="middle"
+                        fontFamily="monospace" fontSize="8" fill={theme.textMuted} letterSpacing="1">
+                        {'/ ' + THRESHOLD}
+                      </text>
+                    </svg>
+                    <div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, letterSpacing: '0.5px', marginBottom: '4px' }}>
+                        SHOTS SINCE CLEAN
+                      </div>
+                      {gun.lastCleanedDate ? (
+                        <>
+                          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary }}>
+                            {'Last: ' + formatDate(gun.lastCleanedDate)}
+                          </div>
+                          {gun.lastCleanedRoundCount != null && (
+                            <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+                              {'At ' + gun.lastCleanedRoundCount.toLocaleString() + ' rds'}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>
+                          Never cleaned
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <button onClick={logClean} style={{
                 width: '100%', padding: '13px', backgroundColor: accent,
                 border: 'none', borderRadius: '6px', color: theme.bg,
@@ -1039,20 +1260,28 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             {/* ── ZERO DATA ── */}
             <div style={card}>
               <div style={sectionLabel}>ZERO DATA</div>
-              <div style={{ marginBottom: '10px' }}>
-                <div style={labelStyle}>Last Zero Date</div>
-                <div style={{ ...valStyle, color: gun.lastZeroDate ? theme.textPrimary : theme.textMuted }}>
-                  {gun.lastZeroDate ? formatDate(gun.lastZeroDate) : 'Never zeroed'}
+              {gun.lastZeroDate ? (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, color: theme.textPrimary }}>
+                      {gun.lastZeroDistance ? formatZeroDist(gun.lastZeroDistance, gun.lastZeroDistanceUnit) : '–'}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>ZERO DISTANCE</div>
+                  </div>
+                  <div style={{ borderLeft: `1px solid ${theme.border}`, paddingLeft: '12px' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>
+                      {formatDate(gun.lastZeroDate)}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>LAST ZEROED</div>
+                  </div>
                 </div>
-              </div>
-              {gun.lastZeroDistance && (
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={labelStyle}>Zero Distance</div>
-                  <div style={valStyle}>{formatZeroDist(gun.lastZeroDistance!, gun.lastZeroDistanceUnit)}</div>
+              ) : (
+                <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textMuted, marginBottom: '12px' }}>
+                  Not zeroed
                 </div>
               )}
               {showZeroForm ? (
-                <div style={{ marginTop: '8px' }}>
+                <div>
                   <div style={labelStyle}>Zero Distance (yards)</div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                     <input
@@ -1111,7 +1340,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                     onChange={e => setIssuesDraft(e.target.value)}
                     rows={4}
                     autoFocus
-                    placeholder="Describe any current known issues..."
+                    placeholder={'One issue per line...'}
                     style={{ ...inputStyle, resize: 'vertical', marginBottom: '8px' }}
                   />
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -1127,9 +1356,36 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                     }}>SAVE</button>
                   </div>
                 </>
+              ) : gun.openIssues ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {gun.openIssues.split('\n').filter(l => l.trim()).map((line, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.red, flexShrink: 0, marginTop: '1px' }}>▸</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.5 }}>{line.trim()}</span>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div style={{ fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.6', color: gun.openIssues ? theme.red : theme.textMuted }}>
-                  {gun.openIssues || 'None'}
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>No open issues</div>
+              )}
+            </div>
+
+            {/* ── TRIGGER ── */}
+            <div style={card}>
+              <div style={sectionLabel}>TRIGGER</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: gun.accessories?.stockGrip ? '10px' : 0 }}>
+                <div style={labelStyle}>Action</div>
+                <div style={valStyle}>{gun.action || '–'}</div>
+              </div>
+              {gun.accessories?.stockGrip && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={labelStyle}>Stock / Grip</div>
+                  <div style={{ ...valStyle, textAlign: 'right', maxWidth: '60%' }}>{gun.accessories.stockGrip}</div>
+                </div>
+              )}
+              {!gun.accessories?.stockGrip && (
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '4px' }}>
+                  No custom trigger recorded
                 </div>
               )}
             </div>
@@ -1192,7 +1448,68 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
               </div>
             ) : (
               <>
-                {ammoLots.map(lot => {
+                {/* Summary header */}
+                {(() => {
+                  const totalRounds  = ammoLots.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                  const lowStockLots = ammoLots.filter(l => l.minStockAlert != null && (l.quantity || 0) < l.minStockAlert!);
+                  const catCounts    = ammoLots.reduce<Record<string, number>>((acc, l) => {
+                    if (l.category) acc[l.category] = (acc[l.category] || 0) + 1;
+                    return acc;
+                  }, {});
+                  const allTraining  = ammoLots.every(l => l.category === 'Training');
+                  return (
+                    <div style={{ marginBottom: '12px' }}>
+                      {/* X rounds across Y lots */}
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary, marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 700 }}>{totalRounds.toLocaleString()}</span>
+                        <span style={{ color: theme.textSecondary }}>{' rounds across '}</span>
+                        <span style={{ fontWeight: 700 }}>{ammoLots.length}</span>
+                        <span style={{ color: theme.textSecondary }}>{ammoLots.length === 1 ? ' lot' : ' lots'}</span>
+                      </div>
+
+                      {/* Low-stock warning */}
+                      {lowStockLots.length > 0 && (
+                        <div style={{
+                          backgroundColor: 'rgba(255,107,107,0.08)',
+                          border: `0.5px solid ${theme.red}`,
+                          borderRadius: '4px',
+                          padding: '6px 10px',
+                          marginBottom: '8px',
+                          fontFamily: 'monospace',
+                          fontSize: '10px',
+                          color: theme.red,
+                          letterSpacing: '0.3px',
+                        }}>
+                          {'LOW STOCK: ' + lowStockLots.map(l => l.brand + (l.productLine ? ' ' + l.productLine : '')).join(', ')}
+                        </div>
+                      )}
+
+                      {/* Category tag strip */}
+                      {!allTraining && Object.keys(catCounts).length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {Object.entries(catCounts).map(([cat, count]) => (
+                            <span key={cat} style={{
+                              padding: '2px 8px',
+                              backgroundColor: theme.bg,
+                              border: `0.5px solid ${theme.border}`,
+                              borderRadius: '3px',
+                              fontFamily: 'monospace',
+                              fontSize: '9px',
+                              color: theme.textMuted,
+                              letterSpacing: '0.5px',
+                            }}>
+                              {cat.toUpperCase()}{count > 1 ? ' ×' + count : ''}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {(() => {
+                  const allTraining = ammoLots.every(l => l.category === 'Training');
+                  return ammoLots.map(lot => {
                   const qtyColor = (lot.quantity || 0) < 50 ? theme.red
                     : (lot.quantity || 0) < 200 ? theme.orange
                     : accent;
@@ -1231,7 +1548,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                             {lot.bulletType}
                           </span>
                         )}
-                        {lot.category && (
+                        {lot.category && !allTraining && (
                           <span style={{
                             padding: '2px 7px', backgroundColor: theme.bg,
                             border: `0.5px solid ${theme.border}`, borderRadius: '3px',
@@ -1259,7 +1576,8 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                       )}
                     </div>
                   );
-                })}
+                });
+                })()}
 
                 <div style={{ ...card, backgroundColor: theme.bg }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1288,107 +1606,175 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             }} />
 
             {(() => {
-              const dot: React.CSSProperties = {
+              // ── Styles ──────────────────────────────────────────────────────
+              const itemWrap: React.CSSProperties = { position: 'relative', marginBottom: '18px' };
+              const itemTag = (color: string): React.CSSProperties => ({
+                fontFamily: 'monospace', fontSize: '8px', letterSpacing: '1px',
+                color, textTransform: 'uppercase', marginBottom: '3px',
+              });
+              const itemVal: React.CSSProperties = {
+                fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.5,
+              };
+              const makeDot = (bg: string, ring?: string): React.CSSProperties => ({
                 position: 'absolute', left: '-20px', top: '4px',
                 width: '8px', height: '8px', borderRadius: '50%',
-                backgroundColor: accent, flexShrink: 0,
-              };
-              const itemWrap: React.CSSProperties = {
-                position: 'relative', marginBottom: '20px',
-              };
-              const itemLabel: React.CSSProperties = {
-                fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px',
-                color: accent, textTransform: 'uppercase', marginBottom: '4px',
-              };
-              const itemVal: React.CSSProperties = {
-                fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, lineHeight: 1.6,
-              };
+                backgroundColor: ring ? 'transparent' : bg,
+                border: ring ? `2px solid ${ring}` : 'none',
+                flexShrink: 0,
+              });
 
+              // ── Build event list ─────────────────────────────────────────────
+              type TLEvent = {
+                date: string;
+                sortKey: string; // date + tie-breaker char for stable sort
+                type: 'acquired' | 'nfa' | 'session' | 'milestone' | 'cleaning' | 'zero' | 'sold';
+                data: Record<string, unknown>;
+              };
+              const events: TLEvent[] = [];
+
+              if (gun.acquiredDate)
+                events.push({ date: gun.acquiredDate, sortKey: gun.acquiredDate + 'a', type: 'acquired',
+                  data: { from: gun.acquiredFrom, price: gun.acquiredPrice, condition: gun.condition } });
+
+              if (gun.nfaApprovalDate)
+                events.push({ date: gun.nfaApprovalDate, sortKey: gun.nfaApprovalDate + 'b', type: 'nfa', data: {} });
+
+              // Sessions oldest→newest
+              const sessionsSorted = sessions.slice().sort((a, b) => a.date.localeCompare(b.date));
               const MILESTONES = [100, 500, 1000, 2500, 5000];
-              const milestoneEvents: { milestone: number; date: string }[] = [];
-              if (sessions.length > 0) {
-                const sorted = sessions.slice().reverse();
-                let running = 0;
-                let mIdx = 0;
-                for (const s of sorted) {
-                  const prev = running;
-                  running += s.roundsExpended;
-                  while (mIdx < MILESTONES.length && MILESTONES[mIdx] <= running) {
-                    if (MILESTONES[mIdx] > prev) {
-                      milestoneEvents.push({ milestone: MILESTONES[mIdx], date: s.date });
-                    }
-                    mIdx++;
-                  }
+              let running = 0;
+              let mIdx = 0;
+              for (const s of sessionsSorted) {
+                const prev = running;
+                running += s.roundsExpended;
+                // Insert any milestones crossed during this session before the session itself
+                while (mIdx < MILESTONES.length && MILESTONES[mIdx] <= running) {
+                  if (MILESTONES[mIdx] > prev)
+                    events.push({ date: s.date, sortKey: s.date + 'm' + mIdx, type: 'milestone',
+                      data: { milestone: MILESTONES[mIdx] } });
+                  mIdx++;
                 }
+                events.push({ date: s.date, sortKey: s.date + 's' + s.id, type: 'session',
+                  data: { rounds: s.roundsExpended, location: s.location, distance: s.distanceYards,
+                    issues: s.issues, purpose: s.purpose } });
               }
 
-              const oldestSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
-              const newestSession = sessions.length > 0 ? sessions[0] : null;
+              if (gun.lastCleanedDate)
+                events.push({ date: gun.lastCleanedDate, sortKey: gun.lastCleanedDate + 'c', type: 'cleaning',
+                  data: { roundCount: gun.lastCleanedRoundCount } });
 
-              return (
-                <>
-                  {gun.acquiredDate && (
-                    <div style={itemWrap}>
-                      <div style={dot} />
-                      <div style={itemLabel}>ACQUIRED</div>
-                      <div style={itemVal}>{formatDate(gun.acquiredDate)}</div>
-                      {gun.acquiredFrom && <div style={itemVal}>{'From: ' + gun.acquiredFrom}</div>}
-                      {gun.acquiredPrice && (
-                        <div style={itemVal}>{'Price: $' + gun.acquiredPrice.toLocaleString()}</div>
-                      )}
-                      {gun.condition && <div style={itemVal}>{'Condition: ' + gun.condition}</div>}
-                    </div>
-                  )}
+              if (gun.lastZeroDate)
+                events.push({ date: gun.lastZeroDate, sortKey: gun.lastZeroDate + 'z', type: 'zero',
+                  data: { distance: gun.lastZeroDistance, unit: gun.lastZeroDistanceUnit || 'yd' } });
 
-                  {oldestSession && (
-                    <div style={itemWrap}>
-                      <div style={dot} />
-                      <div style={itemLabel}>FIRST SESSION</div>
-                      <div style={itemVal}>{formatDate(oldestSession.date)}</div>
-                      <div style={itemVal}>{oldestSession.roundsExpended + ' rounds'}</div>
-                    </div>
-                  )}
+              if (gun.soldDate)
+                events.push({ date: gun.soldDate, sortKey: gun.soldDate + 'x', type: 'sold',
+                  data: { price: gun.soldPrice } });
 
-                  {milestoneEvents.map(me => (
-                    <div key={me.milestone} style={itemWrap}>
-                      <div style={{ ...dot, backgroundColor: theme.border, border: '2px solid ' + accent }} />
-                      <div style={itemLabel}>{me.milestone.toLocaleString() + ' ROUNDS'}</div>
-                      <div style={itemVal}>{formatDate(me.date)}</div>
-                    </div>
-                  ))}
+              events.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-                  {newestSession && newestSession !== oldestSession && (
-                    <div style={itemWrap}>
-                      <div style={dot} />
-                      <div style={itemLabel}>LAST SESSION</div>
-                      <div style={itemVal}>{formatDate(newestSession.date)}</div>
-                      {newestSession.location && <div style={itemVal}>{newestSession.location}</div>}
-                    </div>
-                  )}
-
-                  <div style={itemWrap}>
-                    <div style={{ ...dot, backgroundColor: accent }} />
-                    <div style={itemLabel}>CURRENT STATUS</div>
-                    <div style={{ marginBottom: '4px' }}>
-                      <span style={{
-                        padding: '2px 8px', backgroundColor: theme.bg,
-                        border: `0.5px solid ${gun.status === 'Active' ? theme.green : theme.border}`,
-                        borderRadius: '3px', fontFamily: 'monospace', fontSize: '9px',
-                        color: gun.status === 'Active' ? theme.green : theme.textMuted,
-                        letterSpacing: '0.5px',
-                      }}>
-                        {gun.status ? gun.status.toUpperCase() : 'UNKNOWN'}
-                      </span>
-                    </div>
-                    <div style={itemVal}>{(gun.roundCount || 0).toLocaleString() + ' total rounds'}</div>
-                    {gun.soldDate && (
-                      <div style={{ ...itemVal, color: theme.red }}>
-                        {'SOLD on ' + formatDate(gun.soldDate) + (gun.soldPrice ? ' for $' + gun.soldPrice.toLocaleString() : '')}
-                      </div>
-                    )}
+              if (events.length === 0) {
+                return (
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textMuted, padding: '20px 0' }}>
+                    No events to display yet.
                   </div>
-                </>
-              );
+                );
+              }
+
+              return events.map((ev, i) => {
+                switch (ev.type) {
+                  case 'acquired':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(accent)} />
+                        <div style={itemTag(accent)}>ACQUIRED</div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                        {ev.data.from    && <div style={itemVal}>{'From: ' + ev.data.from}</div>}
+                        {ev.data.price   && <div style={itemVal}>{'Paid: $' + (ev.data.price as number).toLocaleString()}</div>}
+                        {ev.data.condition && <div style={itemVal}>{'Condition: ' + ev.data.condition}</div>}
+                      </div>
+                    );
+                  case 'nfa':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(accent)} />
+                        <div style={itemTag(accent)}>NFA APPROVED</div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                      </div>
+                    );
+                  case 'milestone':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot('transparent', accent)} />
+                        <div style={itemTag(theme.textMuted)}>
+                          {(ev.data.milestone as number).toLocaleString() + ' RD MILESTONE'}
+                        </div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                      </div>
+                    );
+                  case 'session':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(theme.textMuted)} />
+                        <div style={itemTag(theme.textSecondary)}>SESSION</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textPrimary }}>
+                            {formatDate(ev.date)}
+                          </span>
+                          <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
+                            {(ev.data.rounds as number) + ' rds'}
+                          </span>
+                          {ev.data.issues && (
+                            <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red }}>
+                              ISSUE
+                            </span>
+                          )}
+                        </div>
+                        {(ev.data.location || ev.data.distance) && (
+                          <div style={itemVal}>
+                            {[ev.data.location, ev.data.distance ? ev.data.distance + 'yd' : null]
+                              .filter(Boolean).join(' · ')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  case 'cleaning':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(theme.green)} />
+                        <div style={itemTag(theme.green)}>CLEANED</div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                        {ev.data.roundCount != null && (
+                          <div style={itemVal}>{'At ' + (ev.data.roundCount as number).toLocaleString() + ' total rounds'}</div>
+                        )}
+                      </div>
+                    );
+                  case 'zero':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(theme.orange)} />
+                        <div style={itemTag(theme.orange)}>ZEROED</div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                        {ev.data.distance != null && (
+                          <div style={itemVal}>{ev.data.distance + ' ' + ev.data.unit}</div>
+                        )}
+                      </div>
+                    );
+                  case 'sold':
+                    return (
+                      <div key={i} style={itemWrap}>
+                        <div style={makeDot(theme.red)} />
+                        <div style={itemTag(theme.red)}>SOLD</div>
+                        <div style={itemVal}>{formatDate(ev.date)}</div>
+                        {ev.data.price != null && (
+                          <div style={itemVal}>{'$' + (ev.data.price as number).toLocaleString()}</div>
+                        )}
+                      </div>
+                    );
+                  default:
+                    return null;
+                }
+              });
             })()}
           </div>
         )}

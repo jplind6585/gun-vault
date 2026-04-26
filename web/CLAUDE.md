@@ -17,7 +17,7 @@
 
 A personal firearms management app for responsible gun owners. Brand: **Lindcott Armory**, sub-brand of Lindcott Farms.
 
-- **Live app**: `app.lindcottarmory.com` (Netlify, auto-deploys from `main`)
+- **Live app**: `app.lindcottarmory.com` (Netlify, auto-deploys from `develop`)
 - **Marketing site**: `lindcottarmory.com` — separate folder, separate project, not in scope here
 - **Android**: Play Store, package `com.lindcottarmory.app`
 - **iOS**: Apple Dev account exists, Fastlane + GitHub Actions CI planned but not built yet
@@ -280,7 +280,7 @@ When James says "push", "push it", or "deploy" — do all of this:
 # 0. Run e2e tests — must pass before building
 cd web && npm run test:e2e
 
-# 1. Bump versionCode in android/app/build.gradle (current: 19)
+# 1. Bump versionCode in android/app/build.gradle (current: 20)
 # 2. Build web assets
 npm run build
 
@@ -290,8 +290,8 @@ npx cap sync android
 # 4. Build AAB + upload to Internal Testing
 cd android && fastlane internal
 
-# 5. Push to git (Netlify auto-deploys web from this)
-cd .. && git push origin main
+# 5. Push to git (Netlify auto-deploys web from develop)
+cd .. && git push origin develop
 ```
 
 **E2e test gate (step 0):**
@@ -300,7 +300,7 @@ cd .. && git push origin main
 - If a test fails because a UI flow was intentionally reworked (not a regression), flag it to James rather than silently patching the test to pass — the test may need to be updated to match the new intended behavior.
 - Tests run against the dev server (`npm run dev`), so they catch logic/UI regressions but not build-time TypeScript errors.
 
-**Exception:** If James says "quick push" or "web only" → `git push` only. Skip the Android build AND skip the e2e tests.
+**Exception:** If James says "quick push" or "web only" → `git push origin develop` only. Skip the Android build AND skip the e2e tests.
 
 ### Fastlane lanes (`android/fastlane/Fastfile`)
 
@@ -314,18 +314,107 @@ Run `fastlane` directly. Do NOT use `bundle exec fastlane`.
 Key file: `android/fastlane/play-store-key.json` (gitignored).
 
 ### Web (Netlify)
-Fires automatically on `git push origin main`. No extra step needed. Live in ~60 seconds at `app.lindcottarmory.com`.
+Fires automatically on `git push origin develop`. No extra step needed. Live in ~60 seconds at `app.lindcottarmory.com`.
+
+`main` is reserved for store-release snapshots. Do not push feature work to `main`.
 
 ### versionCode
-Must increment before every Play Store upload. **Current: 19.** Play Store rejects any build ≤ last uploaded value.
+Must increment before every Play Store upload. **Current: 20** (v20 is live in Google Closed Testing and is the iOS v1 baseline). Play Store rejects any build ≤ last uploaded value.
 
-### Next Android build checklist
+### Branch strategy
+```
+ios-v1-baseline  ← git tag, frozen — build iOS v1 from this
+main             ← frozen at v20, only updated when cutting a store release
+develop          ← active development branch, Netlify deploys from here
+feature/*        ← short-lived branches per phase, PR into develop
+```
+
+**Store release rule:** Never run `fastlane internal`, `fastlane beta`, or `fastlane deploy` unless the Feature Roadmap (below) explicitly says a phase is store-ready AND James confirms. Play Store and App Store builds happen from tagged commits only.
+
+### Next store build checklist (v21)
 Before the next `fastlane internal` run:
-1. Get production RevenueCat Android SDK key (connect Google Play Console app in RevenueCat)
-2. Add key as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars and `.env.local`
-3. Create `pro_monthly` subscription in Google Play Console ($5/mo early access)
-4. Bump versionCode to 20
+1. Phase 1 + Phase 2 features merged and tested on `develop`
+2. Get production RevenueCat Android SDK key (connect Google Play Console → RevenueCat → Apps & Providers)
+3. Add key as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars and `.env.local`
+4. Bump versionCode to 21
 5. Run e2e tests, build, sync, fastlane internal
+
+---
+
+## Feature Roadmap — Phased Build Plan
+
+Five spec documents define the next major build cycle. Full specs in `~/Downloads/`:
+- `free-pro-spec.md` — freemium gate architecture
+- `armory-assistant-spec.md` — 12 AI assistant features in 3 phases
+- `reloading-bench-spec.md` — reloading module V1 (data foundation) + V2 (intelligence)
+- `powder-database-schema.md` — `powders` reference table + `powder_substitutions` join table
+- `environmental-data-spec.md` — weather/altitude capture on sessions
+
+### Dependency order
+```
+Free/Pro Gate Architecture (Phase 1)
+  └─ required for all Pro feature gating
+
+Powder Database (Phase 2)
+  └─ required for: ReloadingBench autocomplete, Armory Assistant substitution
+
+Reloading Data Migration: reloading_data → load_recipes
+  └─ must run before any Reloading Bench V1 module is built
+  └─ write + test as SELECT preview in SQL Editor before running as INSERT
+
+Environmental Data Schema: ADD COLUMN to sessions (Phase 4)
+  └─ required for: Armory Assistant Feature 6, Reloading Bench Module 3
+
+Reloading Bench V1 (Phase 3)
+  └─ required before V2 (real user data must exist first)
+```
+
+### Phase table
+
+| Phase | Work | Status | Store build? |
+|---|---|---|---|
+| **0 — Baseline** | Tag `ios-v1-baseline`, create `develop` branch, flip Netlify to `develop` | ✅ Done | iOS v1 from tag |
+| **DB — Reference Data** | manufacturers v3+v4 (153 rows), gun_models v4 (351 rows) | ✅ Done 2026-04-25 | — |
+| **1 — Gates + AA P1** | Free/Pro gating, remove 10-gun limit, AssistantPreviewScreen, AA Features 3/5/8/11 | Not started | No |
+| **2 — Powder DB** | `powders` + `powder_substitutions` tables, ~350 Phase 1 rows seeded, ReloadingBench autocomplete | Not started | No |
+| **3 — Reloading V1** | Migration (`reloading_data` → `load_recipes`) + Modules 1/2/6/8/9 | Not started | **v21 — `fastlane beta`** |
+| **4 — Environmental** | `sessions` schema additions, weather Edge Function, session logging UI | Not started | No |
+| **5 — Intelligence** | AA Phase 2 (Features 1/2/4/12), Reloading Bench V2 (Modules 3/4/5/7) | Not started | **v22 — `fastlane beta`** |
+| **6 — AA Phase 3** | AA Features 6/7/9 (zero drift, reloading correlation, carry audit) | Not started | **v23 — Production?** |
+
+### Phase rules
+- **Do not start Phase 5 until real V1 reloading data exists** (the intelligence layer needs real user data to be meaningful)
+- **Do not build Module 7** (Reloading Performance Intelligence) until `load_recipes → ammo_lot → target_analyses` linkage is verified as reliably populated
+- **Do not build Armory Assistant Feature 7** until same linkage chain is confirmed
+- **Do not build Module 5** (Beginner Onboarding) until session purpose data and caliber cost signals are audited — if signals are sparse, use a manual entry point instead
+- **Environmental data spec must be finalized before building Reloading Bench Module 3 or AA Feature 6** — retrofitting environmental fields later is expensive
+
+### Reloading data migration safety
+The existing `reloading_data` table has real user data. Before any schema changes:
+1. Write migration SQL as a `SELECT` preview — confirm row counts are correct
+2. Run as `INSERT INTO load_recipes SELECT ... FROM reloading_data`
+3. Verify all rows migrated with no data loss
+4. Keep `reloading_data` table intact until `load_recipes` is confirmed stable
+5. Never delete or modify existing `reloading_data` records in place
+
+---
+
+## Reference Data Status (as of 2026-04-25)
+
+All migrations live in `supabase/migrations/`. Run manually via `supabase db query --linked -f <file>`.
+
+### `manufacturers` table — v4 complete
+- **153 rows** total
+- **Schema** (v3 additions): `entity_type`, `known_for`, `notable_designers`, `price_tier_entry_usd`, `has_military_contract`, `military_notes`, `trivia`
+- **Schema** (v4 additions): `production_countries` (text[]), `collector_prestige_tier` (Low/Medium/High/Legendary), `signature_model`
+- **Coverage**: 153/153 have `collector_prestige_tier`, 138/153 have `production_countries`, 62/153 have `signature_model`
+- **Notable additions**: Bergara, Howa, Miroku, Grand Power, Molot, ROMARM/Cugir, DWM, Rock-Ola, Singer, Union Switch & Signal, Cadex Defence, MasterPiece Arms, Zermatt Arms, Victrix Armaments, Bul Armory
+
+### `gun_models` table — v4 complete
+- **351 rows** total
+- **Schema** (v4 additions): `trigger_type`, `intended_use` (text[]), `trivia`, `country_of_manufacture`, `collector_notes`, `is_collectible`
+- **Key fixes applied**: Rifle/shotgun weights corrected from lbs→oz (multiply ×16); revolver type bug fixed; Staccato stubs deleted; Glock Gen6 flagged as Speculative/Unreleased; AK-47 year corrected to 1947
+- **Notable additions**: M1 Garand, M1903 Springfield, Browning Auto-5, Browning Hi-Power, Winchester Model 12, Weatherby Mark V, S&W Model 19/27/500, Ruger Blackhawk, Sako 85/TRG-22, Bergara B-14 HMR, Thompson M1A1, Walther PPK, CZ 75 SP-01 Shadow, and more
 
 ---
 

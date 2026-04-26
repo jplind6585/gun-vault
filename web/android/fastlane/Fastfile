@@ -2,25 +2,76 @@ default_platform(:android)
 
 platform :android do
 
-  desc "Build signed AAB and upload to Play Store Internal Testing"
-  lane :deploy do
-    ENV["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
+  JAVA_HOME_PATH = "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
+  PACKAGE        = "com.lindcottarmory.app"
+  AAB_PATH       = "app/build/outputs/bundle/release/app-release.aab"
+  JSON_KEY       = ENV["PLAY_STORE_JSON_KEY"] || "./fastlane/play-store-key.json"
+
+  # ── Shared build step ────────────────────────────────────────────────────────
+  def build_aab
+    ENV["JAVA_HOME"] = JAVA_HOME_PATH
     gradle(
-      task: "bundle",
-      build_type: "Release",
-      project_dir: "./",
+      task:         "bundle",
+      build_type:   "Release",
+      project_dir:  "./",
     )
+  end
+
+  # ── Dev build → Internal Testing (instant, no review, up to 100 testers) ───
+  # Use this for every development build. Default when Claude runs an Android push.
+  desc "Build AAB and upload to Play Store Internal Testing"
+  lane :internal do
+    build_aab
     upload_to_play_store(
-      package_name: "com.lindcottarmory.app",
-      track: "internal",
-      aab: "app/build/outputs/bundle/release/app-release.aab",
-      json_key: ENV["PLAY_STORE_JSON_KEY"] || "./fastlane/play-store-key.json",
-      release_status: "completed",
-      skip_upload_apk: true,
-      skip_upload_metadata: true,
-      skip_upload_changelogs: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
+      package_name:             PACKAGE,
+      track:                    "internal",
+      aab:                      AAB_PATH,
+      json_key:                 JSON_KEY,
+      release_status:           "completed",
+      skip_upload_apk:          true,
+      skip_upload_metadata:     true,
+      skip_upload_changelogs:   true,
+      skip_upload_images:       true,
+      skip_upload_screenshots:  true,
+    )
+  end
+
+  # ── Milestone build → Closed Testing / Alpha (opt-in testers, no review) ───
+  # Use for wider feedback before a production release.
+  desc "Build AAB and upload to Play Store Closed Testing (Alpha)"
+  lane :beta do
+    build_aab
+    upload_to_play_store(
+      package_name:             PACKAGE,
+      track:                    "alpha",
+      aab:                      AAB_PATH,
+      json_key:                 JSON_KEY,
+      release_status:           "completed",
+      skip_upload_apk:          true,
+      skip_upload_metadata:     true,
+      skip_upload_changelogs:   true,
+      skip_upload_images:       true,
+      skip_upload_screenshots:  true,
+    )
+  end
+
+  # ── Deliberate release → Production (all users, Google review required) ─────
+  # Only run this when intentionally shipping a release to all users.
+  # Google review typically takes 1–3 days for first submission, hours for updates.
+  desc "Build AAB and upload to Play Store Production"
+  lane :deploy do
+    build_aab
+    upload_to_play_store(
+      package_name:             PACKAGE,
+      track:                    "production",
+      aab:                      AAB_PATH,
+      json_key:                 JSON_KEY,
+      release_status:           "completed",
+      skip_upload_apk:          true,
+      skip_upload_metadata:     true,
+      skip_upload_changelogs:   true,
+      skip_upload_images:       true,
+      skip_upload_screenshots:  true,
     )
   end
 

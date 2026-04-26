@@ -337,6 +337,25 @@ These build on the existing Claude integration (Supabase Edge Function, per-user
 
 ---
 
+## UI / Polish Backlog — Deferred (From April 2026 UI Handoff)
+
+### 6H. Gun Detail — Photo Strip + Full-Screen Viewer *(deferred — infrastructure prerequisite)*
+- Horizontal scroll strip on gun Overview, fixed height ~160px, supports 0–15 photos per gun
+- Photo 0 = cover photo, sets vault card thumbnail
+- Tap → full-screen viewer with swipe navigation, photo count badge, delete option
+- **Why deferred:** Storing photos requires Supabase Storage (not yet set up). localStorage cannot hold 15 photos per gun without blowing the 5–10MB budget. This is a 2–3 day feature including storage infrastructure, upload progress, compression, and offline caching. Build as its own workstream after Supabase Storage is configured.
+- **Prereqs:** Supabase Storage bucket, file size/compression strategy, upload progress UI, Android/iOS permission handling
+
+### 6R. Gun Detail — Export Gun Summary PDF *(deferred — library + template work)*
+- Three-dot menu or bottom of Overview → "Export Gun Summary"
+- Generates a clean one-page PDF: gun name, photo, specs, round count, sessions count, maintenance record, acquisition price + est. value, open issues
+- Downloads or shares via native share sheet
+- Gated behind Pro tier
+- **Why deferred:** PDF generation in Capacitor requires a third-party library (react-native-html-to-pdf or equivalent), HTML template design, and native share sheet integration. Also depends on 6H (photo) being available. The estimated value field (6D) should be finalized first. Build after Supabase Storage and photo strip are in place.
+- **Prereqs:** 6H photo strip, PDF library selected and installed, share sheet tested on Android + iOS
+
+---
+
 ## UI / Polish Backlog
 
 - More navigation icon: replace grid with something more intentional

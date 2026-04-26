@@ -558,6 +558,32 @@ export function getAnalysesForAmmoLot(ammoLotId: string): TargetAnalysisRecord[]
 }
 
 // ============================================================================
+// PINNED GUNS (UI preference — not synced to cloud)
+// ============================================================================
+
+const PINNED_KEY = 'gunvault_pinned_ids';
+
+export function getPinnedGunIds(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(PINNED_KEY) || '[]');
+  } catch { return []; }
+}
+
+export function setPinnedGunIds(ids: string[]): void {
+  localStorage.setItem(PINNED_KEY, JSON.stringify(ids.slice(0, 3)));
+}
+
+export function togglePinnedGun(id: string): void {
+  const current = getPinnedGunIds();
+  const idx = current.indexOf(id);
+  if (idx >= 0) {
+    setPinnedGunIds(current.filter(x => x !== id));
+  } else if (current.length < 3) {
+    setPinnedGunIds([...current, id]);
+  }
+}
+
+// ============================================================================
 // UTILITIES
 // ============================================================================
 

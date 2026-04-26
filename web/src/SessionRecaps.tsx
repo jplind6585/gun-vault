@@ -34,7 +34,7 @@ export function SessionRecaps({ onLogSession, initialFilterGunId }: SessionRecap
   const [activeTab, setActiveTab] = useState<'list' | 'insights'>('list');
 const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [heatmapExpanded, setHeatmapExpanded] = useState(false);
+
   const [gunSearch, setGunSearch] = useState('');
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [filterLocation, setFilterLocation] = useState('all');
@@ -235,24 +235,7 @@ const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
           marginBottom: '16px',
           overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-              Range Activity
-            </div>
-            <button
-              onClick={() => setHeatmapExpanded(e => !e)}
-              style={{
-                background: 'none', border: `0.5px solid ${theme.border}`, borderRadius: '3px',
-                color: theme.textMuted, fontFamily: 'monospace', fontSize: '8px',
-                cursor: 'pointer', padding: '2px 7px', letterSpacing: '0.5px',
-              }}
-            >
-              {heatmapExpanded ? '12 MO' : '12 WK'}
-            </button>
-          </div>
-          <div>
-            <ActivityHeatmap sessions={sessions} mode={heatmapExpanded ? '12M' : '12W'} />
-          </div>
+          <ActivityHeatmap sessions={sessions} />
         </div>
       )}
 
@@ -1304,10 +1287,10 @@ function AnalyticsPanel({
     );
   }
 
-  const gunMap = new Map(guns.map(g => [g.id, g]));
+  const gunMap  = new Map(guns.map(g => [g.id, g]));
   const ammoMap = new Map(ammoLots.map(a => [a.id, a]));
 
-  // ── Monthly rounds (last 13 months) ─────────────────────────────────────
+  // ── Monthly (last 13 months) ─────────────────────────────────────────────
   const now = new Date();
   const months: { key: string; label: string; rounds: number; sessions: number; cost: number }[] = [];
   for (let i = 12; i >= 0; i--) {
@@ -1322,6 +1305,7 @@ function AnalyticsPanel({
     if (m) { m.rounds += s.roundsExpended; m.sessions++; m.cost += s.sessionCost || 0; }
   }
   const maxRounds = Math.max(...months.map(m => m.rounds), 1);
+  const maxCost   = Math.max(...months.map(m => m.cost), 1);
 
   // ── Per-gun breakdown ────────────────────────────────────────────────────
   const gunStats: { id: string; name: string; rounds: number; sessions: number; issues: number }[] = [];
@@ -1329,7 +1313,7 @@ function AnalyticsPanel({
     let entry = gunStats.find(x => x.id === s.gunId);
     if (!entry) {
       const g = gunMap.get(s.gunId);
-      entry = { id: s.gunId, name: g ? g.make + ' ' + g.model : 'Unknown', rounds: 0, sessions: 0, issues: 0 };
+      entry = { id: s.gunId, name: g ? (g.displayName || g.make + ' ' + g.model) : 'Unknown', rounds: 0, sessions: 0, issues: 0 };
       gunStats.push(entry);
     }
     entry.rounds += s.roundsExpended;
@@ -1354,135 +1338,189 @@ function AnalyticsPanel({
   for (const s of sessions) {
     if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1;
   }
-  const locations = Object.entries(locCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const maxLoc = Math.max(...locations.map(l => l[1]), 1);
+  const locations   = Object.entries(locCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxLoc      = Math.max(...locations.map(l => l[1]), 1);
 
-  // ── Caliber/ammo breakdown ───────────────────────────────────────────────
+  // ── Caliber breakdown ────────────────────────────────────────────────────
   const caliberRounds: Record<string, number> = {};
   for (const s of sessions) {
     const lot = s.ammoLotId ? ammoMap.get(s.ammoLotId) : undefined;
     const cal = lot?.caliber || (gunMap.get(s.gunId)?.caliber) || 'Unknown';
     caliberRounds[cal] = (caliberRounds[cal] || 0) + s.roundsExpended;
   }
-  const calibers = Object.entries(caliberRounds).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const calibers       = Object.entries(caliberRounds).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const totalRoundsAll = sessions.reduce((s, x) => s + x.roundsExpended, 0);
 
   // ── Indoor / Outdoor ─────────────────────────────────────────────────────
-  const indoor = sessions.filter(s => s.indoorOutdoor === 'Indoor').length;
+  const indoor  = sessions.filter(s => s.indoorOutdoor === 'Indoor').length;
   const outdoor = sessions.filter(s => s.indoorOutdoor === 'Outdoor').length;
   const ioTotal = indoor + outdoor;
 
-  // ── Issue rate ────────────────────────────────────────────────────────────
-  const issueCount = sessions.filter(s => s.issues).length;
-  const issueRate = sessions.length > 0 ? Math.round((issueCount / sessions.length) * 100) : 0;
+  // ── Issue stats ───────────────────────────────────────────────────────────
+  const issueCount   = sessions.filter(s => s.issues).length;
+  const issueRate    = sessions.length > 0 ? Math.round((issueCount / sessions.length) * 100) : 0;
+  const issueCounts: Record<string, number> = {};
+  for (const s of sessions) {
+    for (const t of s.issueTypes || []) {
+      issueCounts[t] = (issueCounts[t] || 0) + 1;
+    }
+  }
+  const issueTypes = Object.entries(issueCounts).sort((a, b) => b[1] - a[1]);
 
-  const sectionLabel: React.CSSProperties = {
-    fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px',
-    color: theme.textMuted, textTransform: 'uppercase', marginBottom: '12px',
-  };
+  // Clean streak (consecutive most-recent sessions with no issues)
+  const sessionsByDate = sessions.slice().sort((a, b) => b.date.localeCompare(a.date));
+  let cleanStreak = 0;
+  for (const s of sessionsByDate) {
+    if (!s.issues) cleanStreak++;
+    else break;
+  }
+
+  // ── Records ───────────────────────────────────────────────────────────────
+  const bestSession   = sessions.reduce((best, s) => s.roundsExpended > (best?.roundsExpended || 0) ? s : best, sessions[0]);
+  const mostActiveMo  = months.reduce((best, m) => m.rounds > (best?.rounds || 0) ? m : best, months[0]);
+  const firstSession  = sessions[sessions.length - 1];
+  const lastSession   = sessions[0];
+  // Longest clean streak (all-time, not just current)
+  let longestStreak = 0; let curStreak = 0;
+  for (const s of [...sessionsByDate].reverse()) {
+    if (!s.issues) { curStreak++; longestStreak = Math.max(longestStreak, curStreak); }
+    else curStreak = 0;
+  }
+
+  // ── Costs ─────────────────────────────────────────────────────────────────
+  const costSessions  = sessions.filter(s => s.sessionCost && s.sessionCost > 0);
+  const priciest      = costSessions.reduce((best, s) => (s.sessionCost || 0) > (best?.sessionCost || 0) ? s : best, costSessions[0]);
+  const cprAvg        = totalRoundsAll > 0 && totalCost > 0 ? totalCost / totalRoundsAll : null;
+
+  // ── Shared styles ─────────────────────────────────────────────────────────
   const card: React.CSSProperties = {
     backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`,
-    borderRadius: '8px', padding: '14px', marginBottom: '14px',
+    borderRadius: '8px', padding: '14px', marginBottom: '10px',
   };
+  const dividerHeader = (label: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0 12px' }}>
+      <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+      <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1.5px', flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+    </div>
+  );
+  const statRow = (label: string, val: string, color = theme.textPrimary) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+      <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{label}</span>
+      <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 600, color }}>{val}</span>
+    </div>
+  );
+  const bar = (pct: number, color: string) => (
+    <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden', marginTop: '3px' }}>
+      <div style={{ height: '100%', width: `${pct}%`, backgroundColor: color, borderRadius: '2px' }} />
+    </div>
+  );
 
   return (
     <div style={{ paddingBottom: '32px' }}>
 
-      {/* ── Monthly Rounds Chart ─────────────────────────────────── */}
+      {/* ══════════════ RELIABILITY ══════════════ */}
+      {dividerHeader('RELIABILITY')}
+
       <div style={card}>
-        <div style={sectionLabel}>ROUNDS FIRED — MONTHLY</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '64px' }}>
+        {statRow('Total sessions', sessions.length.toString())}
+        {statRow('Sessions with issues', issueCount.toString(), issueCount > 0 ? theme.red : theme.green)}
+        {statRow('Issue rate', issueRate + '%', issueRate > 20 ? theme.red : issueRate > 5 ? theme.orange : theme.green)}
+        {statRow('Current clean streak', cleanStreak + (cleanStreak === 1 ? ' session' : ' sessions'), cleanStreak >= 5 ? theme.green : theme.textPrimary)}
+        {statRow('Longest clean streak', longestStreak + (longestStreak === 1 ? ' session' : ' sessions'))}
+      </div>
+
+      {issueTypes.length > 0 && (
+        <div style={card}>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>ISSUE TYPES</div>
+          {issueTypes.map(([type, count]) => (
+            <div key={type} style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>{type}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{count}×</span>
+              </div>
+              {bar(Math.round((count / issueTypes[0][1]) * 100), theme.red)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ══════════════ PERFORMANCE ══════════════ */}
+      {dividerHeader('PERFORMANCE')}
+
+      {/* Monthly chart */}
+      <div style={card}>
+        <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>ROUNDS FIRED — MONTHLY</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '60px' }}>
           {months.map(m => (
             <div key={m.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-              <div
-                title={`${m.label}: ${m.rounds} rds`}
-                style={{
-                  width: '100%', borderRadius: '2px 2px 0 0',
-                  height: m.rounds === 0 ? '2px' : `${Math.max(4, Math.round((m.rounds / maxRounds) * 56))}px`,
-                  backgroundColor: m.key === months[months.length - 1].key ? theme.accent : theme.border,
-                  transition: 'height 0.3s',
-                }}
-              />
-              <div style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted, lineHeight: 1 }}>
+              <div style={{
+                width: '100%', borderRadius: '2px 2px 0 0',
+                height: m.rounds === 0 ? '2px' : `${Math.max(4, Math.round((m.rounds / maxRounds) * 52))}px`,
+                backgroundColor: m.key === months[months.length - 1].key ? theme.accent : theme.border,
+              }} />
+              <span style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted }}>
                 {m.label.slice(0, 1)}
-              </div>
+              </span>
             </div>
           ))}
         </div>
         <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '8px' }}>
-          {totalRoundsAll.toLocaleString()} total rounds · {sessions.length} sessions
-          {totalCost > 0 && ` · $${totalCost.toFixed(0)} spent`}
+          {totalRoundsAll.toLocaleString()} total · {Math.round(totalRoundsAll / Math.max(sessions.length, 1))} avg/session
         </div>
       </div>
 
-      {/* ── Rounds by Gun ──────────────────────────────────────────── */}
+      {/* Rounds by platform */}
       <div style={card}>
-        <div style={sectionLabel}>ROUNDS BY PLATFORM</div>
+        <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>ROUNDS BY PLATFORM</div>
         {gunStats.slice(0, 8).map(g => (
           <div key={g.id} style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textPrimary, fontWeight: 600 }}>
-                {g.name}
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary }}>
-                {g.rounds.toLocaleString()} rds
-                {g.issues > 0 && <span style={{ color: theme.textMuted, marginLeft: '6px', fontWeight: 700 }}>{g.issues} ISS</span>}
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textPrimary, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>{g.name}</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, flexShrink: 0 }}>{g.rounds.toLocaleString()} rds</span>
             </div>
-            <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: `${Math.round((g.rounds / maxGunRounds) * 100)}%`,
-                backgroundColor: theme.accent,
-                borderRadius: '2px',
-                transition: 'width 0.3s',
-              }} />
-            </div>
+            {bar(Math.round((g.rounds / maxGunRounds) * 100), theme.accent)}
             <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginTop: '2px' }}>
-              {g.sessions} sessions · {g.issues > 0 ? `${Math.round((g.issues / g.sessions) * 100)}% issue rate` : 'clean record'}
+              {g.sessions} sess · {g.issues > 0 ? Math.round((g.issues / g.sessions) * 100) + '% issues' : 'clean'}
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Caliber Breakdown ──────────────────────────────────────── */}
+      {/* Caliber breakdown */}
       {calibers.length > 0 && (
         <div style={card}>
-          <div style={sectionLabel}>ROUNDS BY CALIBER</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>ROUNDS BY CALIBER</div>
           {calibers.map(([cal, rds]) => {
             const pct = Math.round((rds / totalRoundsAll) * 100);
             return (
               <div key={cal} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, width: '90px', flexShrink: 0 }}>
-                  {cal}
-                </div>
+                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, width: '80px', flexShrink: 0 }}>{cal}</span>
                 <div style={{ flex: 1, height: '4px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, backgroundColor: theme.blue, borderRadius: '2px' }} />
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, width: '40px', textAlign: 'right', flexShrink: 0 }}>
-                  {pct}%
-                </div>
+                <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, width: '32px', textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* ── Purpose + Location row ─────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+      {/* ══════════════ TRAINING ══════════════ */}
+      {dividerHeader('TRAINING')}
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         {/* Purpose */}
         {purposes.length > 0 && (
           <div style={{ ...card, flex: 1, marginBottom: 0 }}>
-            <div style={sectionLabel}>PURPOSE</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '8px' }}>PURPOSE</div>
             {purposes.slice(0, 5).map(([p, count]) => (
               <div key={p} style={{ marginBottom: '7px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
                   <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textSecondary }}>{p}</span>
                   <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{count}</span>
                 </div>
-                <div style={{ height: '3px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.round((count / maxPurpose) * 100)}%`, backgroundColor: PURPOSE_COLORS[p] || theme.textMuted, borderRadius: '2px' }} />
-                </div>
+                {bar(Math.round((count / maxPurpose) * 100), PURPOSE_COLORS[p] || theme.textMuted)}
               </div>
             ))}
           </div>
@@ -1491,57 +1529,83 @@ function AnalyticsPanel({
         {/* Location */}
         {locations.length > 0 && (
           <div style={{ ...card, flex: 1, marginBottom: 0 }}>
-            <div style={sectionLabel}>TOP RANGES</div>
-            <div style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted, marginBottom: '8px', letterSpacing: '0.3px' }}>counted by number of sessions</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '8px' }}>TOP RANGES</div>
             {locations.map(([loc, count]) => (
               <div key={loc} style={{ marginBottom: '7px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{loc}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75px' }}>{loc}</span>
                   <span style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, flexShrink: 0 }}>{count}</span>
                 </div>
-                <div style={{ height: '3px', backgroundColor: theme.bg, borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.round((count / maxLoc) * 100)}%`, backgroundColor: theme.green, borderRadius: '2px' }} />
-                </div>
+                {bar(Math.round((count / maxLoc) * 100), theme.green)}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* ── Summary row ────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {ioTotal > 0 && (() => {
-          const primaryIsOutdoor = outdoor >= indoor;
-          const primaryCount = primaryIsOutdoor ? outdoor : indoor;
-          const primaryLabel = primaryIsOutdoor ? 'outdoor' : 'indoor';
-          const primaryPct = Math.round((primaryCount / ioTotal) * 100);
-          return (
-            <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>INDOOR / OUTDOOR</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textPrimary }}>
-                {primaryPct}%
+      {ioTotal > 0 && (
+        <div style={card}>
+          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>INDOOR / OUTDOOR</div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {[
+              { label: 'Indoor', count: indoor, color: theme.blue },
+              { label: 'Outdoor', count: outdoor, color: theme.green },
+            ].map(({ label, count, color }) => (
+              <div key={label}>
+                <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, color, lineHeight: 1 }}>
+                  {Math.round((count / ioTotal) * 100)}%
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '2px' }}>{label}</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{count} sessions</div>
               </div>
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{primaryLabel}</div>
-            </div>
-          );
-        })()}
-        <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>ISSUE RATE</div>
-          <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textSecondary }}>
-            {issueRate}%
+            ))}
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>of sessions</div>
         </div>
-        {totalCost > 0 && (
-          <div style={{ ...card, flex: 1, marginBottom: 0, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginBottom: '6px' }}>CPR AVG</div>
-            <div style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 700, color: theme.textSecondary }}>
-              ${totalRoundsAll > 0 ? (totalCost / totalRoundsAll).toFixed(2) : '—'}
-            </div>
-            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>per round</div>
+      )}
+
+      {/* ══════════════ COSTS ══════════════ */}
+      {totalCost > 0 && (
+        <>
+          {dividerHeader('COSTS')}
+
+          <div style={card}>
+            {statRow('Total spent', '$' + totalCost.toFixed(0))}
+            {cprAvg !== null && statRow('Avg cost per round', '$' + cprAvg.toFixed(3))}
+            {priciest && statRow('Priciest session', '$' + (priciest.sessionCost || 0).toFixed(0) + ' on ' + new Date(priciest.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))}
           </div>
-        )}
+
+          {/* Cost by month bar chart */}
+          {months.some(m => m.cost > 0) && (
+            <div style={card}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, letterSpacing: '1px', marginBottom: '10px' }}>SPEND — MONTHLY</div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '52px' }}>
+                {months.map(m => (
+                  <div key={m.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                    <div style={{
+                      width: '100%', borderRadius: '2px 2px 0 0',
+                      height: m.cost === 0 ? '2px' : `${Math.max(3, Math.round((m.cost / maxCost) * 44))}px`,
+                      backgroundColor: m.key === months[months.length - 1].key ? theme.accent : 'rgba(255,212,59,0.3)',
+                    }} />
+                    <span style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textMuted }}>{m.label.slice(0, 1)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ══════════════ RECORDS ══════════════ */}
+      {dividerHeader('RECORDS')}
+
+      <div style={card}>
+        {bestSession && statRow('Most rounds in a session', bestSession.roundsExpended.toLocaleString() + ' rds on ' + new Date(bestSession.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}
+        {mostActiveMo.rounds > 0 && statRow('Most active month', mostActiveMo.rounds.toLocaleString() + ' rds in ' + mostActiveMo.label)}
+        {statRow('Longest clean streak', longestStreak + (longestStreak === 1 ? ' session' : ' sessions'), longestStreak >= 10 ? theme.green : theme.textPrimary)}
+        {firstSession && statRow('First session', new Date(firstSession.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}
+        {lastSession && statRow('Last session', new Date(lastSession.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}
       </div>
+
     </div>
   );
 }
