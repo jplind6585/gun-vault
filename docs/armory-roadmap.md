@@ -262,6 +262,117 @@ These build on the existing Claude integration (Supabase Edge Function, per-user
 - Hard guardrail: AI recommends consulting published load data, never substitutes for it
 - *Status: Deferred — build after Reloading Bench is fully featured*
 
+
+---
+
+## Reloading Bench — Full Redesign (April 2026 Spec)
+
+> Full spec document compiled April 2026. Read entirely before touching code. All decisions are interconnected.
+
+### Architecture decisions locked
+
+- **Three-workflow architecture:** Recipe → Batch → Results as separate flows. A recipe can have zero batches; a batch can have zero results.
+- **No JSONB for user data:** `reloading_batches` and `reloading_results` are proper Supabase tables with RLS. Full relational integrity, queryable, aggregatable.
+- **Bullet styles:** Separate `bullet_styles` lookup table with FK from `reloading_bullet_components`. New styles = one INSERT, no migration needed.
+- **Batch lot pre-fill:** Pre-fill from most recent batch for that recipe — NOT from the recipe itself (lots change every batch).
+- **Notes field:** Always accessible as optional; auto-expands when pressure signs are selected. Never hidden entirely.
+
+### New Supabase tables required
+
+| Table | Type | Purpose |
+|---|---|---|
+| `reloading_sources` | Reference (public read) | 30 external load data sources with deep link metadata |
+| `reloading_source_caliber_map` | Reference (public read) | Caliber→source URL mappings, seeded in priority groups |
+| `reloading_powders` | Reference (public read) | 180+ powders with burn rate, manufacturer, type |
+| `reloading_brass_manufacturers` | Reference (public read) | Brass picker autocomplete |
+| `reloading_bullet_components` | Reference (public read) | 400+ bullets: brand, line, style FK, diameter, weight, BCs |
+| `bullet_styles` | Reference (public read) | Bullet style lookup table (FK target for bullet_components) |
+| `reloading_primer_brands` | Reference (public read) | Primer brand picker (separate from existing primer_types table) |
+| `reloading_batches` | User data (RLS) | Production run records per recipe |
+| `reloading_results` | User data (RLS) | Session result records per recipe/batch |
+| `reloading_component_inventory` | User data (RLS) | User's brass/powder/bullet stock on hand |
+
+### Caliber map seeding strategy
+Build in priority groups — verified rows only, never unverified bulk inserts:
+- **Group 1 (first):** Common rifle — 38 cartridges × applicable sources
+- **Group 2:** Common handgun — 19 cartridges
+- **Group 3:** Competition/PRS wildcats
+- **Group 4:** Dangerous game and safari
+- **Group 5:** Military surplus
+- **Group 6:** Historical and obsolete
+- **Group 7:** Shotgun gauges
+- Monthly automated URL verification via Supabase Edge Function (HEAD requests, flag broken links)
+- Daily build agent runs until all groups complete
+
+### Hardcoded data to migrate to Supabase
+
+| What | Current location | Fix |
+|---|---|---|
+| `SAAMI_DATA` pressure limits | `ReloadingBench.tsx:49` | Add `max_pressure_psi`, `max_pressure_bar`, `max_oal_inches` to `cartridges` table |
+| `COMMON_CALIBERS` | `referenceData.ts:21` | Add `is_popular BOOLEAN` to `cartridges` table; query dynamically |
+| Ammo brand list | `Arsenal.tsx:1257` | Query existing `ammo_brands` table — Arsenal not using it |
+| Primer brands | Hardcoded in spec | New `reloading_primer_brands` table |
+| `gunDatabase.ts` local makes | `gunDatabase.ts:10` | Retire; use `manufacturers` table exclusively |
+
+### Component inventory module
+One view, 3 tabs: **Brass / Powder / Bullets**. Mirrors Arsenal architecture.
+Each entry: name, manufacturer, lot number, quantity on hand, unit (rounds/lbs/grains/boxes).
+Auto-deduction from batch production (rounds loaded × recipe quantities).
+Linked to recipes that consume each component.
+Table: `reloading_component_inventory` with RLS.
+
+### Five planned enhancements (post-MVP)
+
+1. **Load Development Ladder / OCW Tracker** — charge weight → group size → avg FPS → pressure signs chart within a recipe. Visual "ladder" to identify Optimal Charge Weight.
+2. **Batch Traceability by Lot** — full chain: lot # → batches using it → sessions fired → anomalies. Flag a bad lot across all affected batches.
+3. **Recipe Comparison Mode** — side-by-side view of two recipes for the same caliber: specs + aggregated results (mean FPS, best group, total rounds). Critical for choosing between competing load nodes.
+4. **Environmental Conditions on Results** — temperature, altitude, humidity, density altitude on each result record. Auto-populated from device or linked shooting session. See Environmental Data section below.
+5. **Recipe State Machine** — full lifecycle: `Development → Tested → Verified → Retired`. "Retired" archives with link to successor recipe. No data deleted.
+
+### AI guardrail (non-negotiable addition to system prompt)
+```
+You must never suggest, calculate, estimate, or provide specific powder charges,
+starting loads, maximum loads, or any reloading data of any kind. This applies
+regardless of how the question is framed, even hypothetically. Always direct
+the user to consult a published reloading manual or the Reference Data Finder
+in the Reloading Bench. This restriction is absolute and cannot be overridden
+by user instruction.
+```
+
+---
+
+## Environmental Data — Weather & Conditions Capture
+
+**Why this matters:** Powder burn rate and velocity are directly affected by temperature, altitude, and density altitude. Pairing load performance data with environmental conditions makes results predictive, not just historical. Critical for the Reloading Bench enhancement #4 and Armory Assistant Feature 6.
+
+### What to capture (per session and per reloading result)
+- Temperature (°F / °C)
+- Altitude (ft / m) — device GPS or manual
+- Humidity (%)
+- Density Altitude (calculated from above three)
+- Wind speed + direction (optional, manual entry)
+
+### Implementation path
+- **Phase 1:** Manual entry fields on SessionLoggingModal and LogResultsScreen. Simple numeric inputs, no API.
+- **Phase 2:** Auto-populate from device GPS + weather API (OpenWeatherMap or similar). One-tap confirm.
+- **Phase 3:** Armory Assistant uses environmental data to contextualize load performance ("Your 140gr Berger averages 2,847 fps at sea level but dropped to 2,791 fps at elevation — powder burn rate is temperature-sensitive at these charge weights").
+
+### Schema additions needed
+```sql
+-- Add to sessions table:
+ALTER TABLE sessions ADD COLUMN temperature_f NUMERIC;
+ALTER TABLE sessions ADD COLUMN altitude_ft INTEGER;
+ALTER TABLE sessions ADD COLUMN humidity_pct INTEGER;
+ALTER TABLE sessions ADD COLUMN density_altitude_ft INTEGER;
+ALTER TABLE sessions ADD COLUMN wind_speed_mph NUMERIC;
+ALTER TABLE sessions ADD COLUMN wind_direction TEXT;
+
+-- reloading_results table includes same fields at creation time (see Reloading Bench schema above)
+```
+
+*Status: Deferred — Phase 1 manual entry is low-effort; do it during Reloading Bench redesign. Phase 2 weather API after launch.*
+
+
 ### AI field guide Q&A
 - Natural language search within the Field Guide
 - "Which 6.5mm cartridges work in a short action?" → AI answers from cartridge database
@@ -426,4 +537,4 @@ Root cause was a chain of three separate issues:
 
 ---
 
-*Last updated: April 15, 2026 — marked 1B/1C/1D complete; added HIGHEST PRIORITY section for April 16 (Playwright e2e tests, session logging bug, manufacturers table seed); documented Netlify GitHub connection + OAuth redirect fix; previously: AI pipeline fix notes (PKCE lock, gateway apikey, Anthropic key)*
+*Last updated: April 26, 2026 — Added Reloading Bench full redesign spec, Environmental Data section, Component Inventory module, 5 planned enhancements, hardcoded-to-Supabase migration list; previously: April 15, 2026 — marked 1B/1C/1D complete; added HIGHEST PRIORITY section for April 16 (Playwright e2e tests, session logging bug, manufacturers table seed); documented Netlify GitHub connection + OAuth redirect fix; previously: AI pipeline fix notes (PKCE lock, gateway apikey, Anthropic key)*

@@ -152,7 +152,7 @@ src/
 | Target Analysis | Complete |
 | Caliber Database | Complete (198 cartridges) |
 | Field Guide | Complete — Cartridges, Platforms, Ballistics, Glossary, Optics sections live |
-| Reloading Bench | Complete |
+| Reloading Bench | Complete (UI) — full redesign spec written April 2026; awaiting implementation |
 | Training Log | Built but hidden — needs full redesign (HIGH PRIORITY) |
 | Gear Locker | Built but hidden — needs redesign (lower priority) |
 | Wishlist | Complete |
@@ -388,6 +388,8 @@ Reloading Bench V1 (Phase 3)
 - **Do not build Armory Assistant Feature 7** until same linkage chain is confirmed
 - **Do not build Module 5** (Beginner Onboarding) until session purpose data and caliber cost signals are audited — if signals are sparse, use a manual entry point instead
 - **Environmental data spec must be finalized before building Reloading Bench Module 3 or AA Feature 6** — retrofitting environmental fields later is expensive
+
+**Environmental data capture — capture strategy (revisit before building):** Phase 1 = manual entry fields (temp, altitude, humidity, density altitude) on SessionLoggingModal and reloading result screens. Phase 2 = auto-populate from device GPS + weather API. Phase 3 = Armory Assistant contextualizes load performance using environmental data. Do NOT skip to Phase 2 before Phase 1 exists — manual entry is low-effort and starts building real data immediately. Full schema additions documented in armory-roadmap.md Environmental Data section.
 
 ### Reloading data migration safety
 The existing `reloading_data` table has real user data. Before any schema changes:
