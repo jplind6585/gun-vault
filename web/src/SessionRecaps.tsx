@@ -7,10 +7,13 @@ import {
 } from './claudeApi';
 import { ActivityHeatmap } from './ActivityHeatmap';
 import type { Session, Gun, AmmoLot, SessionPurpose, IssueType } from './types';
+import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
 
 interface SessionRecapsProps {
   onLogSession: (gun?: Gun) => void;
   initialFilterGunId?: string;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 const PURPOSE_COLORS: Record<string, string> = {
@@ -23,7 +26,7 @@ const PURPOSE_COLORS: Record<string, string> = {
   Fun: theme.accent,
 };
 
-export function SessionRecaps({ onLogSession, initialFilterGunId }: SessionRecapsProps) {
+export function SessionRecaps({ onLogSession, initialFilterGunId, isPro, onUpgrade }: SessionRecapsProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [guns, setGuns] = useState<Gun[]>([]);
   const [ammoLots, setAmmoLots] = useState<AmmoLot[]>([]);
@@ -413,6 +416,8 @@ const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
                       onEdit={() => setEditingId(session.id)}
                       onDelete={() => handleDelete(session.id)}
                       onLogSimilar={() => onLogSession(gunMap.get(session.gunId))}
+                      isPro={isPro}
+                      onUpgrade={onUpgrade}
                     />
                   ))}
                 </div>
@@ -618,11 +623,13 @@ interface SessionCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onLogSimilar: () => void;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 function SessionCard({
   session, gun, ammoLot, expanded, onToggle,
-  onEdit, onDelete, onLogSimilar,
+  onEdit, onDelete, onLogSimilar, isPro, onUpgrade,
 }: SessionCardProps) {
   const hasPhotos = (session.targetPhotos?.length || 0) > 0;
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -778,6 +785,16 @@ function SessionCard({
 
           {/* Notes */}
           {session.notes && <Row label="Notes" value={session.notes} />}
+
+          {/* Contextual assistant prompt for free users when session had issues */}
+          {session.issues && (
+            <AssistantContextPrompt
+              isPro={isPro ?? false}
+              reason="assistant_session_issues"
+              label="Ask the Armory Assistant what might cause this pattern"
+              onUpgrade={onUpgrade ?? (() => {})}
+            />
+          )}
 
           {/* Target photos */}
           {hasPhotos && (

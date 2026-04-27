@@ -8,16 +8,33 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
-// Per-user monthly token budget (input + output combined) — Pro backstop
+// Per-user monthly token budget (input + output combined) — backstop for all free features
 const MONTHLY_TOKEN_BUDGET = 100_000;
-// Free-tier monthly feature limits
-const FREE_FEATURE_LIMITS: Record<string, number> = {
+
+// Free-tier monthly feature limits (reset on the 1st of each month)
+const FREE_MONTHLY_LIMITS: Record<string, number> = {
   target_analysis: 5,
-  target_coach: 5,   // counts toward same display limit as target_analysis
+  target_coach: 5,   // counted toward same display bucket as target_analysis
   narrative: 5,
 };
-// Features with a hard block for free users (zero uses allowed)
-const PRO_ONLY_FEATURES = new Set(['assistant']);
+
+// Features hard-blocked for free users (0 uses — show upgrade modal)
+const FREE_BLOCKED_FEATURES = new Set([
+  'assistant',
+  'ammo_scan',
+  'grade_a_gun',
+  'video_analysis',
+]);
+
+// Daily rate limits per feature per tier (reset at midnight UTC)
+// Pro users get the 'pro' limit; Premium users get the 'premium' limit.
+// 0 = blocked for that tier.
+const DAILY_LIMITS: Record<string, { pro: number; premium: number }> = {
+  assistant:       { pro: 25,  premium: 50  },
+  ammo_scan:       { pro: 10,  premium: 25  },
+  grade_a_gun:     { pro: 5,   premium: 15  },
+  video_analysis:  { pro: 0,   premium: 10  },
+};
 
 interface RequestBody {
   messages: Array<{ role: string; content: unknown }>;
@@ -55,7 +72,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Unauthorized', detail: authError?.message ?? 'no user', tokenPrefix: token.slice(0, 20) }, 401);
   }
 
-  // ── Parse request body (needed before feature checks) ────────────────────────
+  // ── Parse request body ───────────────────────────────────────────────────────
   let body: RequestBody;
   try {
     body = await req.json();
@@ -69,25 +86,31 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'messages is required' }, 400);
   }
 
-  // ── Check Pro status ─────────────────────────────────────────────────────────
+  // ── Check tier ───────────────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('is_pro, pro_expires_at')
+    .select('is_pro, pro_expires_at, is_premium, premium_expires_at')
     .eq('user_id', user.id)
     .single();
 
-  const isPro = profile?.is_pro === true &&
-    (!profile.pro_expires_at || new Date(profile.pro_expires_at) > new Date());
+  const now = new Date();
+  const isPremium = profile?.is_premium === true &&
+    (!profile.premium_expires_at || new Date(profile.premium_expires_at) > now);
+  const isPro = isPremium || (
+    profile?.is_pro === true &&
+    (!profile.pro_expires_at || new Date(profile.pro_expires_at) > now)
+  );
 
+  // ── Free-user gates ──────────────────────────────────────────────────────────
   if (!isPro) {
-    // ── Hard block: Pro-only features ─────────────────────────────────────────
-    if (PRO_ONLY_FEATURES.has(feature)) {
+    // Hard block — zero uses for free users
+    if (FREE_BLOCKED_FEATURES.has(feature)) {
       return json({ error: 'feature_limit_exceeded', feature, message: 'This feature requires Pro.' }, 402);
     }
 
-    // ── Monthly feature limits ────────────────────────────────────────────────
-    if (feature in FREE_FEATURE_LIMITS) {
-      const limit = FREE_FEATURE_LIMITS[feature];
+    // Monthly feature limits
+    if (feature in FREE_MONTHLY_LIMITS) {
+      const limit = FREE_MONTHLY_LIMITS[feature];
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -113,7 +136,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── Monthly token budget (backstop for all remaining free features) ────────
+    // Monthly token budget backstop (all remaining free features)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -132,6 +155,43 @@ Deno.serve(async (req: Request) => {
 
     if (tokensUsed >= MONTHLY_TOKEN_BUDGET) {
       return json({ error: 'budget_exceeded', message: 'Monthly AI usage limit reached. Resets on the 1st.' }, 429);
+    }
+  }
+
+  // ── Pro/Premium daily rate limits ────────────────────────────────────────────
+  if (isPro && feature in DAILY_LIMITS) {
+    const limits = DAILY_LIMITS[feature];
+    const dailyLimit = isPremium ? limits.premium : limits.pro;
+
+    // 0 means blocked for this tier
+    if (dailyLimit === 0) {
+      return json({
+        error: 'feature_limit_exceeded',
+        feature,
+        message: isPremium
+          ? 'This feature is not available on your plan.'
+          : 'This feature requires Premium.',
+      }, 402);
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from('ai_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('feature', feature)
+      .gte('created_at', startOfDay.toISOString());
+
+    if ((count ?? 0) >= dailyLimit) {
+      return json({
+        error: 'feature_limit_exceeded',
+        feature,
+        message: `Daily limit reached for this feature. Resets at midnight UTC.`,
+        dailyLimit,
+        tier: isPremium ? 'premium' : 'pro',
+      }, 402);
     }
   }
 

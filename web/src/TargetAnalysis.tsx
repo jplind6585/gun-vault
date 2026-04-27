@@ -5,6 +5,7 @@ import { callTargetCoach, hasClaudeApiKey, getFeatureUsageCounts } from './claud
 import type { TargetAnalysisRecord } from './types';
 import { haptic } from './haptic';
 import { getSettings } from './SettingsPanel';
+import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
 
 type Step = 1 | 2 | 3 | 4;
 type MarkMode = 'calib' | 'poa' | 'shots';
@@ -2066,6 +2067,14 @@ export function TargetAnalysis({ isPro, onUpgrade }: { isPro?: boolean; onUpgrad
                 </div>
               </div>
             )}
+
+            {/* Contextual assistant prompt for free users */}
+            <AssistantContextPrompt
+              isPro={isPro ?? false}
+              reason="assistant_target"
+              label="Ask the Armory Assistant about this group — what it means for your technique and what to work on next"
+              onUpgrade={onUpgrade ?? (() => {})}
+            />
           </div>
         )}
       </div>

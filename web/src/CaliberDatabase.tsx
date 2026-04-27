@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { theme } from './theme';
 import type { Cartridge } from './types';
 import { getAllCartridges } from './storage';
+import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
 
 type FilterType = 'all' | 'rifle' | 'pistol' | 'revolver' | 'shotgun' | 'rimfire';
 type FilterAvailability = 'all' | 'abundant' | 'common' | 'limited' | 'scarce';
@@ -10,7 +11,7 @@ type FilterOwnership = 'all' | 'ownGun' | 'ownAmmo' | 'wishlist';
 type SortField = 'name' | 'year' | 'type' | 'bulletDia' | 'velocity' | 'energy' | 'psi' | 'status' | 'availability';
 type SortDirection = 'asc' | 'desc';
 
-export function CaliberDatabase() {
+export function CaliberDatabase({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: (reason: string) => void } = {}) {
   const [allCartridges, setAllCartridges] = useState<Cartridge[]>(getAllCartridges());
 
   useEffect(() => {
@@ -416,6 +417,8 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
           cartridge={selectedCartridge}
           onClose={() => setSelectedCartridge(null)}
           allCartridges={allCartridges}
+          isPro={isPro}
+          onUpgrade={onUpgrade}
         />
       )}
     </div>
@@ -624,11 +627,15 @@ function TrajectoryComparison({ cartridges }: { cartridges: Cartridge[] }) {
 function CartridgeDetailModal({
   cartridge,
   onClose,
-  allCartridges
+  allCartridges,
+  isPro,
+  onUpgrade,
 }: {
   cartridge: Cartridge;
   onClose: () => void;
   allCartridges: Cartridge[];
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'history' | 'military' | 'family'>('overview');
 
@@ -803,6 +810,16 @@ function CartridgeDetailModal({
           {activeTab === 'family' && (
             <FamilyTreeTab cartridge={cartridge} allCartridges={allCartridges} />
           )}
+
+          {/* Contextual assistant prompt for free users */}
+          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `0.5px solid ${theme.border}` }}>
+            <AssistantContextPrompt
+              isPro={isPro ?? false}
+              reason="assistant_caliber"
+              label={`Ask the Armory Assistant how the ${cartridge.name} compares to what's in your vault`}
+              onUpgrade={onUpgrade ?? (() => {})}
+            />
+          </div>
         </div>
       </div>
     </div>

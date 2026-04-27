@@ -23,6 +23,8 @@ export interface PurchaseResult {
   message?: string;
 }
 
+export type BillingTier = 'pro' | 'premium';
+
 // ── Platform detection ────────────────────────────────────────────────────────
 
 export function isNativePlatform(): boolean {
@@ -54,20 +56,31 @@ export async function initBilling(userId: string): Promise<void> {
   }
 }
 
-// ── Check Pro status via RevenueCat ──────────────────────────────────────────
+// ── Check entitlements via RevenueCat ────────────────────────────────────────
 
 export async function checkProEntitlement(): Promise<boolean> {
   if (!isNativePlatform() || !_initialized) return false;
   try {
     const { Purchases } = await import('@revenuecat/purchases-capacitor');
     const { customerInfo } = await Purchases.getCustomerInfo();
-    return !!customerInfo.entitlements.active['pro'];
+    return !!customerInfo.entitlements.active['pro'] || !!customerInfo.entitlements.active['premium'];
   } catch {
     return false;
   }
 }
 
-// ── Purchase Pro subscription ─────────────────────────────────────────────────
+export async function checkPremiumEntitlement(): Promise<boolean> {
+  if (!isNativePlatform() || !_initialized) return false;
+  try {
+    const { Purchases } = await import('@revenuecat/purchases-capacitor');
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    return !!customerInfo.entitlements.active['premium'];
+  } catch {
+    return false;
+  }
+}
+
+// ── Purchase subscriptions ────────────────────────────────────────────────────
 
 export async function purchasePro(): Promise<PurchaseResult> {
   if (!isNativePlatform()) {
@@ -105,25 +118,80 @@ export async function purchasePro(): Promise<PurchaseResult> {
   }
 }
 
-// ── Check Pro status (web + native fallback) ──────────────────────────────────
+// ── Purchase Premium subscription ────────────────────────────────────────────
+
+export async function purchasePremium(): Promise<PurchaseResult> {
+  if (!isNativePlatform()) {
+    return { success: false, error: 'not_available' };
+  }
+  if (!_initialized) {
+    return { success: false, error: 'not_available', message: 'Billing not ready. Try again.' };
+  }
+
+  try {
+    const { Purchases } = await import('@revenuecat/purchases-capacitor');
+    const { current } = await Purchases.getOfferings();
+    if (!current || current.availablePackages.length === 0) {
+      return { success: false, error: 'not_available', message: 'No subscription available. Try again later.' };
+    }
+
+    // Find the Premium offering; fall back to first available if not found
+    const premiumOffering = current.availablePackages.find(
+      p => p.identifier.toLowerCase().includes('premium')
+    ) ?? current.availablePackages[0];
+
+    const { customerInfo } = await Purchases.purchasePackage({ aPackage: premiumOffering });
+
+    if (customerInfo.entitlements.active['premium']) {
+      return { success: true };
+    }
+    return { success: false, error: 'unknown', message: 'Purchase processed but Premium not activated. Contact support.' };
+
+  } catch (err: unknown) {
+    const rcErr = err as { userCancelled?: boolean; message?: string };
+    if (rcErr?.userCancelled) return { success: false, error: 'cancelled' };
+    console.warn('[billing] premium purchase failed:', err);
+    return { success: false, error: 'unknown', message: 'Purchase failed. Please try again.' };
+  }
+}
+
+// ── Tier status checks (web + native fallback) ───────────────────────────────
 // Primary source of truth: Supabase user_profiles.
-// On native with RC initialized, RevenueCat entitlement is also checked.
+// On native with RC initialized, RevenueCat entitlements are also checked.
+// Premium satisfies the Pro gate — always check both in getProStatus.
 
 export async function getProStatus(userId: string): Promise<boolean> {
-  // Native + RevenueCat initialized: entitlement is the authority
   if (isNativePlatform() && _initialized) {
-    return checkProEntitlement();
+    return checkProEntitlement(); // checkProEntitlement checks both 'pro' and 'premium' RC entitlements
   }
-  // Web or native without RC: check Supabase
   try {
     const { data } = await supabase
       .from('user_profiles')
-      .select('is_pro, pro_expires_at')
+      .select('is_pro, pro_expires_at, is_premium, premium_expires_at')
       .eq('user_id', userId)
       .single();
-    if (!data?.is_pro) return false;
-    // Early-access users have an expiry; paid subscriptions have null (managed by RC)
-    if (data.pro_expires_at && new Date(data.pro_expires_at) < new Date()) return false;
+    if (!data) return false;
+    const now = new Date();
+    const proActive = data.is_pro && (!data.pro_expires_at || new Date(data.pro_expires_at) > now);
+    const premiumActive = data.is_premium && (!data.premium_expires_at || new Date(data.premium_expires_at) > now);
+    return proActive || premiumActive;
+  } catch {
+    return false;
+  }
+}
+
+export async function getPremiumStatus(userId: string): Promise<boolean> {
+  if (isNativePlatform() && _initialized) {
+    return checkPremiumEntitlement();
+  }
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('is_premium, premium_expires_at')
+      .eq('user_id', userId)
+      .single();
+    if (!data?.is_premium) return false;
+    if (data.premium_expires_at && new Date(data.premium_expires_at) < new Date()) return false;
     return true;
   } catch {
     return false;
@@ -132,13 +200,15 @@ export async function getProStatus(userId: string): Promise<boolean> {
 
 // ── Restore purchases ─────────────────────────────────────────────────────────
 
-export async function restorePurchases(): Promise<boolean> {
-  if (!isNativePlatform() || !_initialized) return false;
+export async function restorePurchases(): Promise<{ isPro: boolean; isPremium: boolean }> {
+  if (!isNativePlatform() || !_initialized) return { isPro: false, isPremium: false };
   try {
     const { Purchases } = await import('@revenuecat/purchases-capacitor');
     const { customerInfo } = await Purchases.restorePurchases();
-    return !!customerInfo.entitlements.active['pro'];
+    const isPremium = !!customerInfo.entitlements.active['premium'];
+    const isPro = isPremium || !!customerInfo.entitlements.active['pro'];
+    return { isPro, isPremium };
   } catch {
-    return false;
+    return { isPro: false, isPremium: false };
   }
 }

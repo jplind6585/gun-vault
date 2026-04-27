@@ -5,6 +5,7 @@ import { getSettings } from './SettingsPanel';
 import type { Gun, Session, AmmoLot } from './types';
 import { ShooterProfileCard } from './ShooterProfileCard';
 import { MilestoneNotification } from './MilestoneNotification';
+import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
 
 interface HomePageProps {
   onNavigateToVault: () => void;
@@ -20,6 +21,8 @@ interface HomePageProps {
   devTapCount?: number;
   onSetupProfile?: () => void;
   onEditGoals?: () => void;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 type TimePeriod = 'week' | 'month' | 'year';
@@ -53,6 +56,8 @@ export function HomePage({
   devTapCount = 0,
   onSetupProfile,
   onEditGoals,
+  isPro,
+  onUpgrade,
 }: HomePageProps) {
   const [guns, setGuns]       = useState<Gun[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -534,6 +539,16 @@ export function HomePage({
             )}
           </div>
         ))}
+        {topArmoryAlerts.some(a => !a.gunId) && onUpgrade && (
+          <div style={{ marginTop: '10px' }}>
+            <AssistantContextPrompt
+              isPro={isPro ?? false}
+              reason="assistant_ammo_low"
+              label="Ask the Armory Assistant about your ammo burn rate and restock timing"
+              onUpgrade={onUpgrade}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── RANGE INSIGHTS ── */}

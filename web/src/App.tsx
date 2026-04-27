@@ -45,7 +45,7 @@ const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default:
 const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 import { useShooterProfile } from './useShooterProfile';
-import { initBilling, getProStatus } from './lib/billing';
+import { initBilling, getProStatus, getPremiumStatus } from './lib/billing';
 // SplashScreen imported dynamically to avoid Android bundle export error
 import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
@@ -115,6 +115,7 @@ function AppCore() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   const [upgradeReason, setUpgradeReason] = useState<string | undefined>();
   const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
@@ -147,8 +148,12 @@ function AppCore() {
     const t = setTimeout(loadGuns, 2000);
     // Initialize RevenueCat with the authenticated user ID (no-op on web)
     initBilling(user.id);
-    // Load Pro status from Supabase / RevenueCat
+    // Load tier status from Supabase / RevenueCat
     getProStatus(user.id).then(setIsPro);
+    getPremiumStatus(user.id).then(premium => {
+      setIsPremium(premium);
+      if (premium) setIsPro(true); // Premium satisfies Pro gate
+    });
     return () => clearTimeout(t);
   }, [user]);
 
@@ -342,6 +347,8 @@ function AppCore() {
         devTapCount={devTapCount}
         onSetupProfile={() => setShowOnboarding(true)}
         onEditGoals={() => setShowOnboarding(true)}
+        isPro={isPro}
+        onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }}
       />
     );
     if (currentView === 'vault' || currentView === 'arsenal') {
@@ -403,11 +410,13 @@ function AppCore() {
         onGunUpdated={loadGuns}
         onLogSession={(gun) => openSessionLog(gun)}
         onViewSessions={(gunId) => { setSessionFilterGunId(gunId); navigateTo('sessions'); }}
+        isPro={isPro}
+        onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }}
       />
     );
-    if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} />;
+    if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} />;
-    if (currentView === 'caliber')     return <CaliberDatabase />;
+    if (currentView === 'caliber')     return <CaliberDatabase isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={() => setShowUpgrade(true)} />;
     if (currentView === 'training')    return <TrainingLog />;
@@ -474,7 +483,7 @@ function AppCore() {
         />
       )}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
-      {showUpgrade && <UpgradeModal onClose={() => { setShowUpgrade(false); setUpgradeReason(undefined); }} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} onUpgradeSuccess={() => setIsPro(true)} reason={upgradeReason} />}
+      {showUpgrade && <UpgradeModal onClose={() => { setShowUpgrade(false); setUpgradeReason(undefined); }} onFeedback={() => { setShowUpgrade(false); setShowFeedback(true); }} onUpgradeSuccess={(tier) => { setIsPro(true); if (tier === 'premium') setIsPremium(true); }} reason={upgradeReason} />}
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {showUndoToast && currentAction && <UndoToast action={currentAction.description} onUndo={performUndo} />}
 

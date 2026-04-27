@@ -8,6 +8,7 @@ import { GunSilhouetteImage } from './SimpleSilhouettes';
 import { typeAccent } from './GunVault';
 import { getGunBlurb } from './gunDescriptions';
 import { callGunPrecisionCoach } from './claudeApi';
+import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
 
 interface GunDetailProps {
   gun: Gun;
@@ -15,6 +16,8 @@ interface GunDetailProps {
   onGunUpdated: () => void;
   onLogSession?: (gun: Gun) => void;
   onViewSessions?: (gunId: string) => void;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline';
@@ -28,7 +31,7 @@ function sdOf(vals: number[]): number {
   return Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / (vals.length - 1));
 }
 
-export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession, onViewSessions }: GunDetailProps) {
+export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession, onViewSessions, isPro, onUpgrade }: GunDetailProps) {
   const [gun, setGun]                 = useState(initialGun);
   const [sessions, setSessions]       = useState<Session[]>([]);
   const [tab, setTab]                 = useState<DetailTab>('overview');
@@ -1255,6 +1258,18 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
               }}>
                 MARK CLEANED
               </button>
+
+              {/* Contextual assistant prompt for free users when gun needs cleaning */}
+              {shotsSinceClean != null && shotsSinceClean >= 300 && (
+                <div style={{ marginTop: '12px' }}>
+                  <AssistantContextPrompt
+                    isPro={isPro ?? false}
+                    reason="assistant_cleaning"
+                    label={`Ask the Armory Assistant about cleaning this ${gun.action?.toLowerCase() ?? 'firearm'} after ${shotsSinceClean.toLocaleString()} rounds`}
+                    onUpgrade={onUpgrade ?? (() => {})}
+                  />
+                </div>
+              )}
             </div>
 
             {/* ── ZERO DATA ── */}
