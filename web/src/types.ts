@@ -386,3 +386,83 @@ export interface OpticZero {
   isActive: boolean;            // only one active per assignment
   createdAt: string;
 }
+
+// ── Shooting Drills ───────────────────────────────────────────────────────────
+
+export interface PerformanceTiers {
+  world_class?: number;
+  excellent?: number;
+  good?: number;
+  passing?: number;
+  [key: string]: number | undefined;
+}
+
+export interface HandVariants {
+  sho: boolean;
+  who: boolean;
+  sho_par_multiplier?: number;
+  who_par_multiplier?: number;
+}
+
+export interface ScaledVariation {
+  distance_yards?: number;
+  par_time?: number;
+  round_count?: number;
+  notes?: string;
+}
+
+export interface ScaledVariations {
+  beginner?: ScaledVariation;
+  intermediate?: ScaledVariation;
+  advanced?: ScaledVariation;
+  [key: string]: ScaledVariation | undefined;
+}
+
+export type DrillDiscipline = 'pistol' | 'rifle' | 'shotgun' | 'revolver' | 'rimfire';
+export type DrillStartPosition = 'Holster' | 'Low Ready' | 'High Ready' | 'Bench' | 'Freestyle';
+export type DrillScoringMethod = 'Time Only' | 'Points Only' | 'Time + Points' | 'Hit Factor' | 'Pass-Fail';
+export type DrillSkillFocus =
+  | 'draw' | 'reload' | 'transitions' | 'accuracy' | 'speed'
+  | 'trigger_control' | 'support_hand' | 'strong_hand' | 'movement'
+  | 'target_discrimination' | 'low_light' | 'malfunction_clearance' | 'stress_inoculation';
+
+export interface ShootingDrill {
+  id: string;
+  name: string;
+  origin?: string;
+  drill_series?: string;
+  discipline: DrillDiscipline[];
+  holster_required: boolean;
+  props_required?: string[];
+  movement_required: boolean;
+  movement_description?: string;
+  round_count: number;
+  target_type: string;
+  target_count: number;
+  start_position: DrillStartPosition;
+  distance_yards: number;
+  description: string;
+  range_depth_yards?: number;
+  range_width_feet?: number;
+  par_time_seconds?: number;
+  time_estimate_minutes?: number;
+  setup_time_minutes?: number;
+  scoring_method: DrillScoringMethod;
+  performance_tiers?: PerformanceTiers;
+  classification_benchmark?: string;
+  skill_focus: DrillSkillFocus[];
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  stress_inoculation: boolean;
+  dry_fire_capable: boolean;
+  hand_variants?: HandVariants;
+  scaled_variations?: ScaledVariations;
+  competition_relevance?: string[];
+  recommended_frequency?: string;
+  recommended_frequency_notes?: string;
+  prerequisite_drill_ids?: string[];
+  night_vision_capable: boolean;
+  video_reference_url?: string;
+  source_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}

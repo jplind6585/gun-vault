@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { theme } from './theme';
+import { supabase } from './lib/supabase';
 import { FieldGuideOptics } from './FieldGuideOptics';
 import { FieldGuideCompetition } from './FieldGuideCompetition';
 import { FieldGuideMarksmanship } from './FieldGuideMarksmanship';
@@ -1459,6 +1460,25 @@ export function FieldGuide() {
   const [glossarySearch, setGlossarySearch] = useState('');
   const [camoSearch, setCamoSearch] = useState('');
   const [camoRegion, setCamoRegion] = useState<string>('All');
+  const [maintenanceGuides, setMaintenanceGuides] = useState<MaintenanceGuide[]>(MAINTENANCE_GUIDES);
+
+  useEffect(() => {
+    supabase
+      .from('maintenance_procedures')
+      .select('name, steps, tips')
+      .order('created_at')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setMaintenanceGuides(
+            data.map(r => ({
+              title: r.name,
+              steps: (r.steps as { step: number; text: string }[]).map(s => s.text),
+              tips: r.tips ?? [],
+            }))
+          );
+        }
+      });
+  }, []);
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
   const [platformTab, setPlatformTab] = useState<'timeline' | 'deployed'>('timeline');
   const [platformCategory, setPlatformCategory] = useState<string>('All');
@@ -2428,7 +2448,7 @@ export function FieldGuide() {
         </div>
 
         <div style={{ padding: '12px 16px 32px' }}>
-          {MAINTENANCE_GUIDES.map((guide) => (
+          {maintenanceGuides.map((guide) => (
             <div
               key={guide.title}
               style={{

@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { theme } from './theme';
-
-type Discipline = 'Pistol' | 'Rifle' | 'Shotgun' | 'Multi-Gun' | 'Rimfire' | 'Multi-Discipline' | 'Multi';
+import { supabase } from './lib/supabase';
 
 interface CompFormat {
   id: string;
   name: string;
   founded: string;
   org: string;
-  disciplines: Discipline[];
+  disciplines: string[];
   description: string[];
+  era?: string;
 }
 
 export const HISTORICAL_FORMATS: CompFormat[] = [
@@ -391,10 +391,42 @@ export interface FieldGuideCompetitionProps {
   onBack: () => void;
 }
 
+function normalizeDiscipines(raw: string[]): string[] {
+  return (raw ?? []).map(d =>
+    d.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
+  );
+}
+
 export function FieldGuideCompetition({ onBack }: FieldGuideCompetitionProps) {
   const [tab, setTab] = useState<TabId>('historical');
+  const [allFormats, setAllFormats] = useState<CompFormat[]>([
+    ...HISTORICAL_FORMATS,
+    ...MODERN_FORMATS,
+  ]);
 
-  const formats = tab === 'historical' ? HISTORICAL_FORMATS : MODERN_FORMATS;
+  useEffect(() => {
+    supabase
+      .from('match_formats')
+      .select('id, name, founded, organization, discipline, description, era')
+      .order('founded')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setAllFormats(
+            data.map(r => ({
+              id: r.id,
+              name: r.name,
+              founded: r.founded ?? '',
+              org: r.organization,
+              disciplines: normalizeDiscipines(r.discipline ?? []),
+              description: r.description ?? [],
+              era: r.era,
+            }))
+          );
+        }
+      });
+  }, []);
+
+  const formats = allFormats.filter(f => (f.era ?? 'modern') === tab);
 
   return (
     <div
