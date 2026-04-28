@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
+import { BoxScanner } from './BoxScanner';
 import type { Optic, OpticAssignment } from './types';
 import {
   getAllOptics, getAllAssignments, getActiveAssignmentForOptic,
@@ -245,6 +246,8 @@ export function OpticsList({ onSelectOptic }: OpticsListProps) {
   const [guns, setGuns]           = useState<ReturnType<typeof getAllGuns>>([]);
   const [filter, setFilter]       = useState<'all' | 'assigned' | 'unassigned'>('all');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBoxScanner, setShowBoxScanner] = useState(false);
+  const [scanInitial, setScanInitial] = useState<Parameters<typeof AddOpticForm>[0]['initial']>(undefined);
 
   function reload() {
     setOptics(getAllOptics());
@@ -439,7 +442,30 @@ export function OpticsList({ onSelectOptic }: OpticsListProps) {
 
       {/* FAB */}
       <button
-        onClick={() => setShowAddForm(true)}
+        onClick={() => setShowBoxScanner(true)}
+        title="Scan box to add"
+        style={{
+          position: 'fixed',
+          bottom: 'calc(132px + env(safe-area-inset-bottom))',
+          right: '20px',
+          zIndex: 1000,
+          width: '44px', height: '44px',
+          borderRadius: '50%',
+          backgroundColor: theme.surface,
+          border: `1.5px solid ${theme.border}`,
+          color: theme.accent, fontSize: '11px',
+          fontFamily: 'monospace', fontWeight: 700,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          outline: 'none', WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        SCAN
+      </button>
+
+      {/* FAB */}
+      <button
+        onClick={() => { setScanInitial(undefined); setShowAddForm(true); }}
         style={{
           position: 'fixed',
           bottom: 'calc(72px + env(safe-area-inset-bottom))',
@@ -460,12 +486,28 @@ export function OpticsList({ onSelectOptic }: OpticsListProps) {
 
       {showAddForm && (
         <AddOpticForm
+          initial={scanInitial}
           onSave={(data) => {
             addOptic({ ...data, status: data.status || 'Active' } as Omit<Optic, 'id' | 'createdAt' | 'updatedAt'>);
             reload();
+            setScanInitial(undefined);
             setShowAddForm(false);
           }}
-          onCancel={() => setShowAddForm(false)}
+          onCancel={() => { setScanInitial(undefined); setShowAddForm(false); }}
+        />
+      )}
+
+      {showBoxScanner && (
+        <BoxScanner
+          onResult={(result) => {
+            setShowBoxScanner(false);
+            if (result.itemType === 'optic' && Object.keys(result.fields).length > 0) {
+              const f = result.fields;
+              setScanInitial({ brand: f.brand ?? f.manufacturer, model: f.model, reticleName: f.reticle, magnificationMin: f.magnificationMin, magnificationMax: f.magnificationMax, objectiveMM: f.objectiveMM, opticType: (f.opticType as Optic['opticType']) });
+              setShowAddForm(true);
+            }
+          }}
+          onCancel={() => setShowBoxScanner(false)}
         />
       )}
     </div>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { theme } from './theme';
 import { useResponsive } from './useResponsive';
+import { BoxScanner } from './BoxScanner';
+import type { BoxScanResult } from './claudeApi';
 
 type GearCategory = 'optic' | 'holster' | 'magazine' | 'suppressor' | 'cleaning' | 'accessory' | 'nfa';
 
@@ -37,6 +39,8 @@ interface MaintenanceSchedule {
 export function GearLocker() {
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [showGearForm, setShowGearForm] = useState(false);
+  const [showBoxScanner, setShowBoxScanner] = useState(false);
+  const [gearScanInitial, setGearScanInitial] = useState<{ name?: string; manufacturer?: string; category?: GearCategory } | undefined>(undefined);
   const [selectedItem, setSelectedItem] = useState<GearItem | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterCompatibility, setFilterCompatibility] = useState<string>('all');
@@ -211,23 +215,44 @@ export function GearLocker() {
           gap: '12px',
           marginBottom: '16px'
         }}>
-          <button
-            onClick={() => setShowGearForm(true)}
-            style={{
-              padding: '14px',
-              backgroundColor: theme.accent,
-              color: theme.bg,
-              border: 'none',
-              borderRadius: '6px',
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              letterSpacing: '1px',
-              fontWeight: 700,
-              cursor: 'pointer'
-            }}
-          >
-            + ADD GEAR
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => { setGearScanInitial(undefined); setShowGearForm(true); }}
+              style={{
+                flex: 1,
+                padding: '14px',
+                backgroundColor: theme.accent,
+                color: theme.bg,
+                border: 'none',
+                borderRadius: '6px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                letterSpacing: '1px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              + ADD GEAR
+            </button>
+            <button
+              onClick={() => setShowBoxScanner(true)}
+              style={{
+                padding: '14px 16px',
+                backgroundColor: 'transparent',
+                border: `1px solid ${theme.accent}`,
+                color: theme.accent,
+                borderRadius: '6px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                letterSpacing: '1px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              SCAN
+            </button>
+          </div>
           <button
             onClick={() => {
               const report = generateCompatibilityReport(gearItems);
@@ -446,11 +471,25 @@ export function GearLocker() {
         </div>
       )}
 
+      {/* Box Scanner */}
+      {showBoxScanner && (
+        <BoxScanner
+          onResult={(result: BoxScanResult) => {
+            setShowBoxScanner(false);
+            const f = result.fields;
+            setGearScanInitial({ name: f.name ?? f.model, manufacturer: f.brand ?? f.manufacturer, category: 'accessory' });
+            setShowGearForm(true);
+          }}
+          onCancel={() => setShowBoxScanner(false)}
+        />
+      )}
+
       {/* Gear Form Modal */}
       {showGearForm && (
         <GearForm
-          onSave={saveGear}
-          onCancel={() => setShowGearForm(false)}
+          initial={gearScanInitial}
+          onSave={(item) => { saveGear(item); setGearScanInitial(undefined); }}
+          onCancel={() => { setShowGearForm(false); setGearScanInitial(undefined); }}
         />
       )}
 
@@ -499,16 +538,18 @@ function generateCompatibilityReport(items: GearItem[]): string {
 
 // Gear Form Component
 function GearForm({
+  initial,
   onSave,
   onCancel
 }: {
+  initial?: { name?: string; manufacturer?: string; category?: GearCategory };
   onSave: (item: Omit<GearItem, 'id'>) => void;
   onCancel: () => void;
 }) {
   const [formData, setFormData] = useState({
-    category: 'optic' as GearCategory,
-    name: '',
-    manufacturer: '',
+    category: (initial?.category ?? 'optic') as GearCategory,
+    name: initial?.name ?? '',
+    manufacturer: initial?.manufacturer ?? '',
     model: '',
     serialNumber: '',
     purchaseDate: '',

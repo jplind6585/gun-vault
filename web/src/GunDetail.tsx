@@ -13,7 +13,7 @@ import { useAuth } from './auth/AuthProvider';
 import { supabase } from './lib/supabase';
 import { PhotoCapture } from './photos/PhotoCapture';
 import { GradeAGun } from './photos/GradeAGun';
-import { getPhotoAssetsForGun, deletePhotoAsset, getLatestGradeAssessment } from './photos/photoService';
+import { getPhotoAssetsForGun, deletePhotoAsset, getLatestGradeAssessment, uploadPhoto, savePhotoAsset } from './photos/photoService';
 import { inferGunTypeProfile, getShotsForSet, getSetCompletionStatus, type PhotoAsset, type GunTypeProfile, type SetType, type GradeAssessment } from './photos/photoTypes';
 
 interface GunDetailProps {
@@ -76,6 +76,8 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [showCapture, setShowCapture]   = useState(false);
   const [showGrade, setShowGrade]       = useState(false);
   const [activeSetType, setActiveSetType] = useState<SetType>('insurance');
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -96,6 +98,24 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
     ]);
     setPhotoAssets(assets);
     setLatestGrade(grade);
+  }
+
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    const galleryAssets = photoAssets.filter(a => !a.setType && !a.shotType);
+    if (galleryAssets.length >= 5) return;
+    setGalleryUploading(true);
+    try {
+      const uploaded = await uploadPhoto(userId, gun.id, 'gallery', file);
+      if (uploaded) {
+        await savePhotoAsset({ userId, gunId: gun.id, setId: null, setType: null, shotType: null, storagePath: uploaded.path, storageUrl: uploaded.url });
+        await refreshPhotos();
+      }
+    } finally {
+      setGalleryUploading(false);
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+    }
   }
 
   // ── Precision metrics (computed from target analyses) ─────────────────────
@@ -1969,8 +1989,61 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             );
           };
 
+          const galleryAssets = photoAssets.filter(a => !a.setType && !a.shotType);
+
           return (
             <div style={{ paddingBottom: '24px' }}>
+              {/* ── Gallery (free-form, up to 5) ── */}
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={handleGalleryUpload}
+              />
+              <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.5px' }}>
+                    Gallery
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+                    {galleryAssets.length}/5
+                  </div>
+                </div>
+                {galleryAssets.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                    {galleryAssets.map(asset => (
+                      <div key={asset.id} style={{ position: 'relative', width: '72px', height: '72px' }}>
+                        {asset.storageUrl ? (
+                          <img src={asset.storageUrl} alt="gallery" style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '6px', border: `0.5px solid ${theme.border}` }} />
+                        ) : (
+                          <div style={{ width: '72px', height: '72px', borderRadius: '6px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}` }} />
+                        )}
+                        {userId && (
+                          <button
+                            onClick={async () => { await deletePhotoAsset(asset.id, asset.storagePath); refreshPhotos(); }}
+                            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: theme.red, border: 'none', color: '#fff', fontSize: '10px', lineHeight: '18px', textAlign: 'center', cursor: 'pointer', padding: 0 }}
+                          >x</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {galleryAssets.length === 0 && (
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '10px', lineHeight: 1.6 }}>
+                    Up to 5 photos for your own reference — thumbnail, display, or anything you want.
+                  </div>
+                )}
+                <button
+                  onClick={() => { if (galleryInputRef.current) { galleryInputRef.current.removeAttribute('capture'); galleryInputRef.current.click(); } }}
+                  disabled={!userId || galleryUploading || galleryAssets.length >= 5}
+                  style={{ width: '100%', padding: '10px', backgroundColor: 'transparent', border: `1px solid ${galleryAssets.length >= 5 ? theme.border : theme.accent}`, borderRadius: '8px', color: galleryAssets.length >= 5 ? theme.textMuted : theme.accent, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', cursor: galleryAssets.length >= 5 ? 'default' : 'pointer' }}
+                >
+                  {galleryUploading ? 'UPLOADING...' : galleryAssets.length >= 5 ? 'GALLERY FULL (5/5)' : 'ADD PHOTO'}
+                </button>
+              </div>
+
               <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.5px', color: theme.textMuted, marginBottom: '14px' }}>
                 PHOTO DOCUMENTATION
               </div>

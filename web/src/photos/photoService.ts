@@ -54,14 +54,15 @@ export async function getOrCreatePhotoSet(
   gunTypeProfile: GunTypeProfile,
 ): Promise<PhotoSet | null> {
   // Try to get existing
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from('photo_sets')
     .select('*')
     .eq('user_id', userId)
     .eq('gun_id', gunId)
     .eq('set_type', setType)
-    .single();
+    .maybeSingle();
 
+  if (selectError) console.error('[photoService] select set error:', selectError);
   if (existing) return rowToPhotoSet(existing);
 
   // Create new

@@ -40,6 +40,7 @@ function saveLruCaliber(caliber: string): void {
 interface AddGunFormProps {
   onSave: (gunData: Partial<Gun>) => void;
   onCancel: () => void;
+  initial?: { make?: string; model?: string; caliber?: string; action?: string; type?: string; serialNumber?: string; };
 }
 
 const TYPES: Gun['type'][] = ['Pistol', 'Rifle', 'Shotgun'];
@@ -49,14 +50,14 @@ const ACTIONS: Gun['action'][] = ['Semi-Auto', 'Bolt', 'Lever', 'Pump', 'Revolve
 const CONDITIONS: NonNullable<Gun['condition']>[] = ['New', 'Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 const STATUSES: Gun['status'][] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold'];
 
-export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
+export function AddGunForm({ onSave, onCancel, initial }: AddGunFormProps) {
   // Required
   const [displayName, setDisplayName] = useState('');
-  const [make, setMake]       = useState('');
-  const [model, setModel]     = useState('');
-  const [caliber, setCaliber] = useState('');
-  const [type, setType]       = useState<Gun['type'] | null>(null);
-  const [action, setAction]   = useState<Gun['action'] | null>(null);
+  const [make, setMake]       = useState(initial?.make ?? '');
+  const [model, setModel]     = useState(initial?.model ?? '');
+  const [caliber, setCaliber] = useState(initial?.caliber ?? '');
+  const [type, setType]       = useState<Gun['type'] | null>((initial?.type as Gun['type']) ?? null);
+  const [action, setAction]   = useState<Gun['action'] | null>((initial?.action as Gun['action']) ?? null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [lruCalibers, setLruCalibers] = useState<string[]>(() => getLruCalibers());
   const [freeEntry, setFreeEntry] = useState(false);
@@ -109,7 +110,7 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
   const [acquiredFrom, setAcquiredFrom]   = useState('');
 
   // Details
-  const [serialNumber, setSerialNumber] = useState('');
+  const [serialNumber, setSerialNumber] = useState(initial?.serialNumber ?? '');
   const [barrelLength, setBarrelLength] = useState('');
   const [notes, setNotes]               = useState('');
 
@@ -325,6 +326,13 @@ export function AddGunForm({ onSave, onCancel }: AddGunFormProps) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={styles.body}>
+
+            {/* Scan pre-fill banner */}
+            {initial && (initial.make || initial.model || initial.caliber) && (
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: '#51cf66', letterSpacing: '0.5px', padding: '6px 10px', backgroundColor: 'rgba(81,207,102,0.08)', borderRadius: '4px', border: '0.5px solid rgba(81,207,102,0.2)', marginBottom: '8px' }}>
+                Scanned from box — review and confirm all fields before saving
+              </div>
+            )}
 
             {/* ── BASIC FIELDS (always shown) ── */}
             <SectionHeader title="Basic Info" note="* required" />

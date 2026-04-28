@@ -280,6 +280,79 @@ Use null for any field you cannot read clearly. Return only the JSON object.`;
   }
 }
 
+// ── Universal Box / Barcode Scan ──────────────────────────────────────────────
+
+export type BoxScanItemType = 'gun' | 'optic' | 'ammo' | 'accessory' | 'unknown';
+
+export interface BoxScanResult {
+  itemType: BoxScanItemType;
+  barcode?: string;
+  confidence: 'high' | 'medium' | 'low';
+  fields: {
+    make?: string; model?: string; caliber?: string; action?: string; type?: string; serialNumber?: string;
+    brand?: string; magnificationMin?: number; magnificationMax?: number; objectiveMM?: number; reticle?: string; opticType?: string;
+    grainWeight?: number; bulletType?: string; quantity?: number; productLine?: string;
+    name?: string; manufacturer?: string; category?: string;
+  };
+  fieldConfidence: Record<string, 'high' | 'low'>;
+}
+
+export async function scanBox(imageBase64: string): Promise<BoxScanResult> {
+  const systemPrompt = `You are an expert at reading product labels, boxes, and packaging for firearms, ammunition, optics, and accessories. Identify item type and extract all available fields. Return only valid JSON.`;
+
+  const userPrompt = `Examine this image. It may be a product box, label, barcode, or photograph of an item.
+
+Determine item type: "gun", "optic", "ammo", "accessory", or "unknown". Then extract all readable fields.
+
+Return this exact JSON:
+{
+  "itemType": "gun|optic|ammo|accessory|unknown",
+  "barcode": "UPC/EAN number if visible and readable, else null",
+  "confidence": "high|medium|low",
+  "fields": {
+    "make": null, "model": null, "caliber": null, "action": null, "type": null, "serialNumber": null,
+    "brand": null, "magnificationMin": null, "magnificationMax": null, "objectiveMM": null, "reticle": null, "opticType": null,
+    "grainWeight": null, "bulletType": null, "quantity": null, "productLine": null,
+    "name": null, "manufacturer": null, "category": null
+  },
+  "fieldConfidence": {}
+}
+
+Rules:
+- caliber format: "9mm Luger", ".308 Winchester", "5.56x45mm NATO"
+- action: "Semi-Auto", "Bolt", "Lever", "Pump", "Revolver", "Break"
+- gun type: "Pistol", "Rifle", "Shotgun"
+- opticType: "Red Dot", "Holographic", "LPVO", "Scope", "Prism", "Magnifier", "Rangefinder"
+- fieldConfidence: "high" = clearly printed on box, "low" = inferred
+- null for any field you cannot determine
+- Return only the JSON`;
+
+  const raw = await callClaude(
+    [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg', data: imageBase64.replace(/^data:image\/\w+;base64,/, '') } },
+        { type: 'text', text: userPrompt },
+      ],
+    }],
+    systemPrompt,
+    'ammo_scan',
+    600,
+  );
+
+  try {
+    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = match ? match[1].trim() : raw.trim();
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.fields) {
+      Object.keys(parsed.fields).forEach(k => { if (parsed.fields[k] === null) delete parsed.fields[k]; });
+    }
+    return parsed as BoxScanResult;
+  } catch {
+    return { itemType: 'unknown', confidence: 'low', fields: {}, fieldConfidence: {} };
+  }
+}
+
 // ── Maintenance alerts ───────────────────────────────────────────────────────
 
 export function getMaintenanceAlerts(

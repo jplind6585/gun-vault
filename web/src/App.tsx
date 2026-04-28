@@ -16,6 +16,7 @@ import { AppHeader } from './AppHeader';
 import { Toast, useToast } from './Toast';
 import { useUndo } from './useUndo';
 import { AddGunForm } from './AddGunForm';
+import { BoxScanner } from './BoxScanner';
 import { SessionRecaps } from './SessionRecaps';
 import { SessionEntry } from './SessionEntry';
 import { DevToolbar } from './DevToolbar';
@@ -95,6 +96,8 @@ function AppCore() {
   const [allGuns, setAllGuns] = useState<Gun[]>([]);
   const [skipWelcome, setSkipWelcome] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBoxScanner, setShowBoxScanner] = useState(false);
+  const [addGunInitial, setAddGunInitial] = useState<{ make?: string; model?: string; caliber?: string; action?: string; type?: string; serialNumber?: string } | undefined>(undefined);
   const [showSmartSearch, setShowSmartSearch] = useState(false);
   const [showFab, setShowFab] = useState(false);
   const { toasts, dismissToast, success, error } = useToast();
@@ -263,7 +266,25 @@ function AppCore() {
   }
 
   function handleRequestAddGun() {
+    setAddGunInitial(undefined);
     setShowAddForm(true);
+  }
+
+  function handleBoxScanResult(result: import('./claudeApi').BoxScanResult) {
+    setShowBoxScanner(false);
+    if (result.itemType === 'gun' && Object.keys(result.fields).length > 0) {
+      const f = result.fields;
+      setAddGunInitial({ make: f.make, model: f.model, caliber: f.caliber, action: f.action, type: f.type, serialNumber: f.serialNumber });
+      setShowAddForm(true);
+    } else if (result.itemType === 'optic') {
+      navigateTo('vault');
+      setVaultSection('optics');
+    } else if (result.itemType === 'ammo') {
+      navigateTo('vault');
+      setVaultSection('ammo');
+    } else {
+      navigateTo('vault');
+    }
   }
 
   function handleSaveGun(gunData: Partial<Gun>) {
@@ -393,6 +414,7 @@ function AppCore() {
             ? <GunVault
                 onGunSelect={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
                 onAddGun={handleRequestAddGun}
+                onScanToAdd={() => setShowBoxScanner(true)}
                 onImportRequest={() => setShowCSVImport(true)}
                 refreshKey={gunRefreshKey}
               />
@@ -451,7 +473,8 @@ function AppCore() {
       {renderHeader()}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {renderView()}
-        {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => setShowAddForm(false)} />}
+        {showAddForm && <AddGunForm onSave={handleSaveGun} onCancel={() => { setShowAddForm(false); setAddGunInitial(undefined); }} initial={addGunInitial} />}
+        {showBoxScanner && <BoxScanner onResult={handleBoxScanResult} onCancel={() => setShowBoxScanner(false)} />}
       </div>
       <MobileNav
         currentView={activeNavView}

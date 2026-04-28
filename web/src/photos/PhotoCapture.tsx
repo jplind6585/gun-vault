@@ -319,7 +319,10 @@ export function PhotoCapture({
     // Background AI review
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setRecords(prev => prev.map((r, i) => i === recordIndex ? { ...r, aiDone: true } : r));
+        return;
+      }
 
       const small = await resizeForReview(blob);
       const base64 = await new Promise<string>((resolve) => {

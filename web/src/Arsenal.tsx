@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { theme } from './theme';
+import { BoxScanner } from './BoxScanner';
 import { getAllAmmo, getAmmoSummaryByCaliber, updateAmmo, addAmmo, getAllGuns, getAllSessions, getAllCartridges, getAnalysesForAmmoLot } from './storage';
 import type { AmmoLot } from './types';
 import { BulletTypeDisplay, AmmoAcronym } from './AmmoAcronym';
@@ -146,6 +147,8 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
   const [selectedCaliber, setSelectedCaliber] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBoxScanner, setShowBoxScanner] = useState(false);
+  const [ammoScanInitial, setAmmoScanInitial] = useState<{ caliber?: string; brand?: string; productLine?: string; grainWeight?: number; bulletType?: string; quantity?: number } | undefined>(undefined);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedLot, setSelectedLot] = useState<AmmoLot | null>(null);
   const [showLowStockModal, setShowLowStockModal] = useState(false);
@@ -563,6 +566,24 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
               }}
             />
             <button
+              onClick={() => setShowBoxScanner(true)}
+              style={{
+                backgroundColor: 'transparent',
+                border: `1px solid ${theme.accent}`,
+                color: theme.accent,
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                flexShrink: 0,
+                letterSpacing: '0.5px',
+                fontWeight: 700,
+              }}
+            >
+              SCAN
+            </button>
+            <button
               onClick={() => setShowSortSheet(true)}
               style={{
                 backgroundColor: theme.surface,
@@ -881,10 +902,26 @@ export function Arsenal({ openAddAmmoOnMount, onAddAmmoMountHandled }: { openAdd
       {/* Add Ammo Modal */}
       {showAddForm && (
         <AddAmmoModal
-          onClose={() => { setShowAddForm(false); setShowAdvanced(false); }}
-          onSave={() => { loadAmmo(); setShowAddForm(false); setShowAdvanced(false); }}
+          initial={ammoScanInitial}
+          onClose={() => { setShowAddForm(false); setShowAdvanced(false); setAmmoScanInitial(undefined); }}
+          onSave={() => { loadAmmo(); setShowAddForm(false); setShowAdvanced(false); setAmmoScanInitial(undefined); }}
           showAdvanced={showAdvanced}
           setShowAdvanced={setShowAdvanced}
+        />
+      )}
+
+      {/* Box Scanner */}
+      {showBoxScanner && (
+        <BoxScanner
+          onResult={(result) => {
+            setShowBoxScanner(false);
+            if (result.itemType === 'ammo' && Object.keys(result.fields).length > 0) {
+              const f = result.fields;
+              setAmmoScanInitial({ caliber: f.caliber, brand: f.brand ?? f.manufacturer, productLine: f.productLine, grainWeight: f.grainWeight, bulletType: f.bulletType, quantity: f.quantity });
+              setShowAddForm(true);
+            }
+          }}
+          onCancel={() => setShowBoxScanner(false)}
         />
       )}
 
@@ -1350,14 +1387,15 @@ interface AddAmmoModalProps {
   onSave: () => void;
   showAdvanced: boolean;
   setShowAdvanced: (show: boolean) => void;
+  initial?: { caliber?: string; brand?: string; productLine?: string; grainWeight?: number; bulletType?: string; quantity?: number; };
 }
 
-function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced }: AddAmmoModalProps) {
-  const [caliber, setCaliber] = useState('');
-  const [brand, setBrand] = useState('');
-  const [productLine, setProductLine] = useState('');
-  const [grainWeight, setGrainWeight] = useState('');
-  const [quantity, setQuantity] = useState('');
+function AddAmmoModal({ onClose, onSave, showAdvanced, setShowAdvanced, initial }: AddAmmoModalProps) {
+  const [caliber, setCaliber] = useState(initial?.caliber ?? '');
+  const [brand, setBrand] = useState(initial?.brand ?? '');
+  const [productLine, setProductLine] = useState(initial?.productLine ?? '');
+  const [grainWeight, setGrainWeight] = useState(initial?.grainWeight ? String(initial.grainWeight) : '');
+  const [quantity, setQuantity] = useState(initial?.quantity ? String(initial.quantity) : '');
   const [formError, setFormError] = useState('');
   const [category, setCategory] = useState<AmmoLot['category']>('Training');
   const [bulletType, setBulletType] = useState('');
