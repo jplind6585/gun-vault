@@ -418,7 +418,7 @@ function AppCore() {
     if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} />;
     if (currentView === 'caliber')     return <CaliberDatabase isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
-    if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={() => setShowUpgrade(true)} />;
+    if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'training')    return <TrainingLog />;
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;

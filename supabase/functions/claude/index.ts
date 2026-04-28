@@ -8,6 +8,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
+// TEMP: grant Pro to all users until RevenueCat is configured for production.
+// Flip to false and remove before gating launch.
+const GRANT_ALL_PRO = true;
+
 // Per-user monthly token budget (input + output combined) — backstop for all free features
 const MONTHLY_TOKEN_BUDGET = 100_000;
 
@@ -96,7 +100,7 @@ Deno.serve(async (req: Request) => {
   const now = new Date();
   const isPremium = profile?.is_premium === true &&
     (!profile.premium_expires_at || new Date(profile.premium_expires_at) > now);
-  const isPro = isPremium || (
+  const isPro = GRANT_ALL_PRO || isPremium || (
     profile?.is_pro === true &&
     (!profile.pro_expires_at || new Date(profile.pro_expires_at) > now)
   );

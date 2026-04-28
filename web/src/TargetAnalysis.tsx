@@ -423,7 +423,7 @@ function CropStep({ imageUrl, onCrop, onSkip }: {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function TargetAnalysis({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: () => void }) {
+export function TargetAnalysis({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: (reason?: string) => void }) {
   const [step, setStep] = useState<Step>(1);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [distanceYds, setDistanceYds] = useState(100);

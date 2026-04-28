@@ -1,7 +1,7 @@
 // Supabase Edge Function — Activate Pro
 // POST /functions/v1/claim-pro
 // Auth: requires valid Supabase JWT
-// Body (optional): { source: 'google_play' | 'early_access' }
+// Body (optional): { source: 'google_play' | 'early_access', tier?: 'pro' | 'premium' }
 //
 // - google_play: paid subscription confirmed by RevenueCat on device.
 //   Sets is_pro=true with no expiry (subscription managed by Play).
@@ -29,11 +29,13 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ error: 'Unauthorized' }, 401);
 
-  // Parse source from body
+  // Parse source and tier from body
   let source: string = 'early_access';
+  let tier: string = 'pro';
   try {
     const body = await req.json().catch(() => ({}));
     if (body?.source) source = body.source;
+    if (body?.tier === 'premium') tier = 'premium';
   } catch { /* no body */ }
 
   const { data: profile } = await supabase
@@ -44,19 +46,25 @@ Deno.serve(async (req: Request) => {
 
   // ── Google Play paid subscription ────────────────────────────────────────
   if (source === 'google_play') {
-    // Pro is managed by Play Store — no expiry set here (RevenueCat webhook handles renewal/cancellation)
+    // Managed by Play Store — no expiry set here (RevenueCat webhook handles renewal/cancellation)
+    const upsertPayload: Record<string, unknown> = {
+      user_id: user.id,
+      is_pro: true,
+      pro_expires_at: null,
+      subscription_source: 'google_play',
+    };
+    if (tier === 'premium') {
+      upsertPayload.is_premium = true;
+      upsertPayload.premium_expires_at = null;
+    }
+
     const { error: upsertError } = await supabase
       .from('user_profiles')
-      .upsert({
-        user_id: user.id,
-        is_pro: true,
-        pro_expires_at: null,
-        subscription_source: 'google_play',
-      }, { onConflict: 'user_id' });
+      .upsert(upsertPayload, { onConflict: 'user_id' });
 
     if (upsertError) {
       console.error('upsert error:', upsertError);
-      return json({ error: 'Failed to activate Pro. Please try again.' }, 500);
+      return json({ error: 'Failed to activate. Please try again.' }, 500);
     }
     return json({ success: true });
   }

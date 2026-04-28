@@ -35,6 +35,10 @@ export function isNativePlatform(): boolean {
 
 let _initialized = false;
 
+// TEMP: grant Pro to all users until RevenueCat is configured for production.
+// Flip to false and remove before gating launch.
+const GRANT_ALL_PRO = true;
+
 export async function initBilling(userId: string): Promise<void> {
   if (!isNativePlatform()) return;
   if (_initialized) return;
@@ -161,6 +165,7 @@ export async function purchasePremium(): Promise<PurchaseResult> {
 // Premium satisfies the Pro gate — always check both in getProStatus.
 
 export async function getProStatus(userId: string): Promise<boolean> {
+  if (GRANT_ALL_PRO) return true;
   if (isNativePlatform() && _initialized) {
     return checkProEntitlement(); // checkProEntitlement checks both 'pro' and 'premium' RC entitlements
   }
