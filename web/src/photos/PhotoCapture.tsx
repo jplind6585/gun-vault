@@ -55,7 +55,17 @@ export function PhotoCapture({
   // ── Camera / file input ───────────────────────────────────────────────────
 
   function openCamera() {
-    fileInputRef.current?.click();
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.setAttribute('capture', 'environment');
+    input.click();
+  }
+
+  function openGallery() {
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.removeAttribute('capture');
+    input.click();
   }
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -249,7 +259,6 @@ Keep warnings short and actionable (under 12 words each). If approved with no is
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         style={{ display: 'none' }}
         onChange={handleFileSelected}
       />
@@ -306,6 +315,9 @@ Keep warnings short and actionable (under 12 words each). If approved with no is
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button onClick={openCamera} style={accentBtn}>
               TAKE PHOTO
+            </button>
+            <button onClick={openGallery} style={outlineBtn}>
+              UPLOAD PHOTO
             </button>
             {!currentShot.required && (
               <button onClick={() => {
