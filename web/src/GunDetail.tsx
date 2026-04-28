@@ -9,6 +9,7 @@ import { typeAccent } from './GunVault';
 import { getGunBlurb } from './gunDescriptions';
 import { callGunPrecisionCoach } from './claudeApi';
 import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
+import { useAuth } from './auth/AuthProvider';
 import { supabase } from './lib/supabase';
 import { PhotoCapture } from './photos/PhotoCapture';
 import { GradeAGun } from './photos/GradeAGun';
@@ -67,7 +68,8 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
 
   // ── Photo system ──────────────────────────────────────────────────────────
   const gunTypeProfile: GunTypeProfile = inferGunTypeProfile(gun.type, gun.action);
-  const [userId, setUserId]             = useState<string | null>(null);
+  const { user }                        = useAuth();
+  const userId                          = user?.id ?? null;
   const [photoAssets, setPhotoAssets]   = useState<PhotoAsset[]>([]);
   const [latestGrade, setLatestGrade]   = useState<GradeAssessment | null>(null);
   const [showCapture, setShowCapture]   = useState(false);
@@ -75,19 +77,15 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [activeSetType, setActiveSetType] = useState<SetType>('insurance');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user?.id) return;
-      const uid = session.user.id;
-      setUserId(uid);
-      Promise.all([
-        getPhotoAssetsForGun(uid, gun.id),
-        getLatestGradeAssessment(uid, gun.id),
-      ]).then(([assets, grade]) => {
-        setPhotoAssets(assets);
-        setLatestGrade(grade);
-      });
+    if (!userId) return;
+    Promise.all([
+      getPhotoAssetsForGun(userId, gun.id),
+      getLatestGradeAssessment(userId, gun.id),
+    ]).then(([assets, grade]) => {
+      setPhotoAssets(assets);
+      setLatestGrade(grade);
     });
-  }, [gun.id]);
+  }, [userId, gun.id]);
 
   async function refreshPhotos() {
     if (!userId) return;
