@@ -695,15 +695,14 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
           </div>
         </Section>
 
-        {/* ── AI CONNECTION STATUS ── */}
-        <AiStatusSection />
-
         {/* ── TEST TOOLS (dev account only) ── */}
         {user?.email === 'james@lindcottarmory.com' && (
           <Section id="testtools" label="⚙ Test Tools" open={openSections.has('testtools')} onToggle={toggleSection}>
             <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.8px', color: theme.textMuted, marginBottom: '10px' }}>
               ONLY VISIBLE TO james@lindcottarmory.com
             </div>
+            <AiStatusSection />
+            <div style={{ height: '0.5px', backgroundColor: theme.border, margin: '4px 0 12px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 onClick={() => {
