@@ -33,6 +33,7 @@ export function GunVault({ onGunSelect, onAddGun, onScanToAdd, onImportRequest, 
   const [lastShotMap, setLastShotMap]         = useState<Record<string, string>>({});
   const [sessionCountMap, setSessionCountMap] = useState<Record<string, number>>({});
   const [pinnedGunIds, setPinnedGunIds]       = useState<string[]>(() => getPinnedGunIds());
+  const pinnedLongPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [contextMenuGun, setContextMenuGun]   = useState<Gun | null>(null);
   const [search, setSearch]     = useState('');
@@ -542,6 +543,15 @@ export function GunVault({ onGunSelect, onAddGun, onScanToAdd, onImportRequest, 
                   <button
                     key={gun.id}
                     onClick={() => onGunSelect(gun)}
+                    onPointerDown={() => {
+                      pinnedLongPressTimer.current = setTimeout(() => {
+                        togglePinnedGun(gun.id);
+                        setPinnedGunIds(getPinnedGunIds());
+                        pinnedLongPressTimer.current = null;
+                      }, 600);
+                    }}
+                    onPointerUp={() => { if (pinnedLongPressTimer.current) { clearTimeout(pinnedLongPressTimer.current); pinnedLongPressTimer.current = null; } }}
+                    onPointerLeave={() => { if (pinnedLongPressTimer.current) { clearTimeout(pinnedLongPressTimer.current); pinnedLongPressTimer.current = null; } }}
                     style={{
                       flexShrink: 0, width: '110px',
                       backgroundColor: theme.surface,
