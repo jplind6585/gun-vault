@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { theme } from './theme';
 import { callArmoryAssistant, buildFullContext } from './claudeApi';
 import { getAllGuns, getAllSessions, getAllAmmo } from './storage';
+import { markObAction } from './onboardingProgress';
 import { useShooterProfile } from './useShooterProfile';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -186,6 +187,7 @@ export function ArmoryAssistant({ isPro, onUpgrade }: { isPro?: boolean; onUpgra
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+    markObAction('ai');
 
     const userMsg: ChatMessage = { role: 'user', content: trimmed };
     const nextMessages = [...messages, userMsg];

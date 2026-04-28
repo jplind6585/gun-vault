@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { theme, isOutdoorMode, toggleOutdoorMode } from './theme';
 import { exportVaultBackup, importVaultBackup, resetAllData, getAllGuns } from './storage';
 import { deleteAccountData } from './lib/sync';
@@ -859,21 +860,43 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
 
         {/* ── Footer ── */}
         <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={onFeedbackOpen}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: 'transparent',
-              border: '0.5px solid ' + theme.border,
-              borderRadius: '6px',
-              color: theme.textSecondary,
-              fontFamily: 'monospace', fontSize: '11px',
-              fontWeight: 600, letterSpacing: '0.5px',
-              cursor: 'pointer',
-            }}
-          >
-            SUPPORT
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={onFeedbackOpen}
+              style={{
+                padding: '10px 24px',
+                backgroundColor: 'transparent',
+                border: '0.5px solid ' + theme.border,
+                borderRadius: '6px',
+                color: theme.textSecondary,
+                fontFamily: 'monospace', fontSize: '11px',
+                fontWeight: 600, letterSpacing: '0.5px',
+                cursor: 'pointer',
+              }}
+            >
+              SUPPORT
+            </button>
+            <button
+              onClick={() => {
+                const url = Capacitor.isNativePlatform()
+                  ? 'market://details?id=com.lindcottarmory.app'
+                  : 'https://play.google.com/store/apps/details?id=com.lindcottarmory.app';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '10px 24px',
+                backgroundColor: 'transparent',
+                border: '0.5px solid ' + theme.border,
+                borderRadius: '6px',
+                color: theme.textSecondary,
+                fontFamily: 'monospace', fontSize: '11px',
+                fontWeight: 600, letterSpacing: '0.5px',
+                cursor: 'pointer',
+              }}
+            >
+              RATE US
+            </button>
+          </div>
           <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>LINDCOTT ARMORY v1.0</div>
         </div>
 

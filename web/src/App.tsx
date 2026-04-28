@@ -361,6 +361,8 @@ function AppCore() {
         onNavigateToGun={(gun) => { setSelectedGun(gun); navigateTo('gun-detail'); }}
         onLogSession={(gun) => openSessionLog(gun)}
         onAddGun={handleRequestAddGun}
+        onAddAmmo={() => { navigateTo('vault'); setVaultSection('ammo'); setOpenAddAmmo(true); }}
+        onNavigate={(view) => navigateTo(view as AppView)}
         onSearchOpen={() => setShowSmartSearch(true)}
         onSettingsOpen={() => setShowSettings(true)}
         onDevTools={devUnlocked ? () => setDevOpen(o => !o) : undefined}

@@ -6,6 +6,8 @@ import type { Gun, Session, AmmoLot } from './types';
 import { ShooterProfileCard } from './ShooterProfileCard';
 import { MilestoneNotification } from './MilestoneNotification';
 import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
+import { OnboardingChecklist } from './OnboardingChecklist';
+import { isChecklistVisible } from './onboardingProgress';
 
 interface HomePageProps {
   onNavigateToVault: () => void;
@@ -14,6 +16,8 @@ interface HomePageProps {
   onNavigateToGun: (gun: Gun) => void;
   onLogSession: (gun?: Gun) => void;
   onAddGun: () => void;
+  onAddAmmo: () => void;
+  onNavigate: (view: string) => void;
   onSearchOpen: () => void;
   onSettingsOpen?: () => void;
   onDevTools?: () => void;
@@ -49,6 +53,8 @@ export function HomePage({
   onNavigateToArsenal,
   onLogSession,
   onAddGun,
+  onAddAmmo,
+  onNavigate,
   onSearchOpen,
   onSettingsOpen,
   onDevTools,
@@ -63,6 +69,7 @@ export function HomePage({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [ammo, setAmmo]       = useState<AmmoLot[]>([]);
   const [period, setPeriod]   = useState<TimePeriod>('month');
+  const [showChecklist, setShowChecklist] = useState(() => isChecklistVisible());
 
   useEffect(() => {
     setGuns(getAllGuns());
@@ -330,6 +337,16 @@ export function HomePage({
           </svg>
         </button>
       </div>
+
+      {/* ── ONBOARDING CHECKLIST ── */}
+      {showChecklist && (
+        <OnboardingChecklist
+          isPro={!!isPro}
+          onNavigate={onNavigate}
+          onAddGun={onAddGun}
+          onAddAmmo={onAddAmmo}
+        />
+      )}
 
       {/* ── GUNS + AMMO CARD ── */}
       <div style={{ display: 'flex', marginBottom: '10px', borderRadius: '8px', overflow: 'hidden', border: `0.5px solid ${theme.border}` }}>

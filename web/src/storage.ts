@@ -1,5 +1,6 @@
 // LocalStorage-based data persistence + Supabase background sync
 import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero } from './types';
+import { markObAction } from './onboardingProgress';
 import {
   syncGun, deleteGunFromSupabase,
   syncSession, deleteSessionFromSupabase,
@@ -254,6 +255,7 @@ export function addGun(gun: Omit<Gun, 'id' | 'createdAt' | 'updatedAt'>): string
   guns.push(newGun);
   localStorage.setItem(GUNS_KEY, JSON.stringify(guns));
   syncGun(newGun);
+  markObAction('gun');
 
   return id;
 }
@@ -306,6 +308,7 @@ export function logSession(session: Omit<Session, 'id' | 'createdAt'>): string {
   sessions.push(newSession);
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
   syncSession(newSession);
+  markObAction('session');
 
   return id;
 }
@@ -390,6 +393,7 @@ export function addAmmo(ammo: Omit<AmmoLot, 'id' | 'createdAt' | 'updatedAt'>): 
   allAmmo.push(newAmmo);
   localStorage.setItem(AMMO_KEY, JSON.stringify(allAmmo));
   syncAmmo(newAmmo);
+  markObAction('ammo');
 
   return id;
 }
