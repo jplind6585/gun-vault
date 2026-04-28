@@ -115,6 +115,51 @@ async function callClaude(
   return data.text ?? '';
 }
 
+// ── AI connectivity test ──────────────────────────────────────────────────────
+
+export interface AiConnectionStatus {
+  authOk: boolean;
+  edgeFunctionOk: boolean;
+  claudeOk: boolean;
+  latencyMs: number;
+  httpStatus?: number;
+  error?: string;
+}
+
+export async function testAiConnection(): Promise<AiConnectionStatus> {
+  const start = Date.now();
+
+  // Step 1 — auth token
+  const token = await getAccessToken();
+  if (!token) {
+    return { authOk: false, edgeFunctionOk: false, claudeOk: false, latencyMs: Date.now() - start, error: 'No auth token — not signed in' };
+  }
+
+  // Step 2 — edge function + Claude (minimal ping, 10 tokens)
+  try {
+    const res = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'Reply with exactly one word: PONG' }],
+        feature: 'ping',
+        maxTokens: 10,
+      }),
+    });
+    const latencyMs = Date.now() - start;
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      return { authOk: true, edgeFunctionOk: res.status < 500, claudeOk: false, latencyMs, httpStatus: res.status, error: err.error ?? `HTTP ${res.status}` };
+    }
+
+    const data = await res.json();
+    return { authOk: true, edgeFunctionOk: true, claudeOk: !!data.text, latencyMs, httpStatus: res.status };
+  } catch (err) {
+    return { authOk: true, edgeFunctionOk: false, claudeOk: false, latencyMs: Date.now() - start, error: err instanceof Error ? err.message : 'Network error' };
+  }
+}
+
 // ── Session narrative ─────────────────────────────────────────────────────────
 
 export async function generateSessionNarrative(

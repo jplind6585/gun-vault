@@ -4,6 +4,7 @@ import { exportVaultBackup, importVaultBackup, resetAllData, getAllGuns } from '
 import { deleteAccountData } from './lib/sync';
 import { useAuth } from './auth/AuthProvider';
 import { supabase } from './lib/supabase';
+import { testAiConnection, type AiConnectionStatus } from './claudeApi';
 
 const SETTINGS_KEY = 'lindcott_settings';
 const DISMISSED_SUGGESTIONS_KEY = 'lindcott_dismissed_suggestions';
@@ -97,6 +98,81 @@ interface SettingsPanelProps {
   onExport: () => void;
   onNavigateToLegal: () => void;
   onFeedbackOpen: () => void;
+}
+
+// ── AI Connection Status ──────────────────────────────────────────────────────
+
+function AiStatusSection() {
+  const [status, setStatus] = useState<AiConnectionStatus | null>(null);
+  const [running, setRunning] = useState(false);
+
+  async function run() {
+    setRunning(true);
+    setStatus(null);
+    try {
+      const result = await testAiConnection();
+      setStatus(result);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const dot = (ok: boolean | null) => (
+    <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: ok === null ? theme.textMuted : ok ? theme.green : theme.red, marginRight: '6px', flexShrink: 0 }} />
+  );
+
+  const row = (label: string, ok: boolean | null) => (
+    <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'monospace', fontSize: '11px', color: theme.textSecondary, marginBottom: '6px' }}>
+      {dot(ok)}
+      {label}
+      {ok && <span style={{ marginLeft: 'auto', color: theme.textMuted, fontSize: '10px' }}>{ok ? 'OK' : 'FAIL'}</span>}
+    </div>
+  );
+
+  return (
+    <div style={{ borderBottom: '0.5px solid ' + theme.border }}>
+      <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px', color: theme.textMuted, textTransform: 'uppercase' }}>AI Connection</span>
+        {status && !running && (
+          <span style={{ fontFamily: 'monospace', fontSize: '9px', color: status.claudeOk ? theme.green : theme.red, letterSpacing: '0.5px' }}>
+            {status.claudeOk ? `OK — ${status.latencyMs}ms` : 'FAIL'}
+          </span>
+        )}
+      </div>
+      <div style={{ padding: '0 20px 16px' }}>
+        {status && (
+          <div style={{ marginBottom: '12px' }}>
+            {row('Auth token', status.authOk)}
+            {row('Edge function', status.edgeFunctionOk)}
+            {row('Claude response', status.claudeOk)}
+            {status.error && (
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.orange, marginTop: '6px', lineHeight: 1.5, wordBreak: 'break-all' }}>
+                {status.error}
+              </div>
+            )}
+            {status.httpStatus && !status.claudeOk && (
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '4px' }}>
+                HTTP {status.httpStatus}
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          onClick={run}
+          disabled={running}
+          style={{
+            width: '100%', padding: '10px', backgroundColor: 'transparent',
+            border: `0.5px solid ${theme.border}`, borderRadius: '6px',
+            color: running ? theme.textMuted : theme.accent,
+            fontFamily: 'monospace', fontSize: '11px', fontWeight: 700,
+            letterSpacing: '1px', cursor: running ? 'default' : 'pointer',
+          }}
+        >
+          {running ? 'TESTING...' : status ? 'RUN AGAIN' : 'TEST CONNECTION'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ── Accordion section wrapper ─────────────────────────────────────────────────
@@ -618,6 +694,9 @@ export function SettingsPanel({ onClose, onImport, onExport, onNavigateToLegal, 
             <div style={hint}>CSV import adds firearms from a spreadsheet. Insurance export is a formatted report for your insurer.</div>
           </div>
         </Section>
+
+        {/* ── AI CONNECTION STATUS ── */}
+        <AiStatusSection />
 
         {/* ── TEST TOOLS (dev account only) ── */}
         {user?.email === 'james@lindcottarmory.com' && (
