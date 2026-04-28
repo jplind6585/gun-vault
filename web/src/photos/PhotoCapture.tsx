@@ -79,29 +79,45 @@ export function PhotoCapture({
     setResult({ blob, previewUrl, aiResult: null });
     setStep('reviewing');
 
-    // AI review (non-blocking — shows result after)
-    runAiReview(blob, currentShot).then(aiResult => {
+    // AI review (non-blocking — 20s timeout, then auto-proceed)
+    const proceed = (aiResult: AiReviewResult) => {
       setResult(prev => prev ? { ...prev, aiResult } : null);
       setStep('result');
-    }).catch(() => {
-      // AI review failed — let user proceed anyway
-      setResult(prev => prev ? { ...prev, aiResult: { approved: true, warnings: [] } } : null);
-      setStep('result');
-    });
+    };
+    const fallback = { approved: true, warnings: [] };
+    const timeout = new Promise<AiReviewResult>(resolve => setTimeout(() => resolve(fallback), 20_000));
+    Promise.race([runAiReview(blob, currentShot), timeout])
+      .then(proceed)
+      .catch(() => proceed(fallback));
+  }
+
+  // Resize blob to max 1024px wide before AI review — full-res phone images
+  // exceed Supabase edge function body limits (~6MB) and cause silent hangs.
+  async function resizeForReview(blob: Blob): Promise<Blob> {
+    const MAX = 1024;
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.src = url;
+    await new Promise(resolve => { img.onload = resolve; });
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, MAX / img.width, MAX / img.height);
+    const canvas = document.createElement('canvas');
+    canvas.width  = Math.round(img.width  * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.82));
   }
 
   async function runAiReview(blob: Blob, shot: ShotSpec): Promise<AiReviewResult> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { approved: true, warnings: [] };
 
-    // Convert blob to base64 (loop-based — spread crashes on large phone photos)
+    // Resize to keep payload under edge function limits, then base64-encode
+    const small = await resizeForReview(blob);
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        resolve(dataUrl.split(',')[1]);
-      };
-      reader.readAsDataURL(blob);
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+      reader.readAsDataURL(small);
     });
     const mediaType = 'image/jpeg';
 

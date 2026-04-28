@@ -1655,21 +1655,26 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                           </span>
                         )}
                       </div>
-                      {/* Preferred purpose chips */}
-                      <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
-                        {(['match', 'defensive', 'training'] as PreferredPurpose[]).map(p => {
-                          const active = lot.preferredFor?.includes(p) ?? false;
-                          return (
-                            <button key={p} onClick={() => togglePreferred(lot.id, p)} style={{
-                              padding: '3px 8px', border: `0.5px solid ${active ? theme.accent : theme.border}`,
-                              borderRadius: '3px', backgroundColor: active ? 'rgba(255,212,59,0.1)' : 'transparent',
-                              fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px',
-                              color: active ? theme.accent : theme.textMuted, cursor: 'pointer',
-                            }}>
-                              {p.toUpperCase()}
-                            </button>
-                          );
-                        })}
+                      {/* Preferred for this gun */}
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontFamily: 'monospace', fontSize: '8px', letterSpacing: '1px', color: theme.textMuted, marginBottom: '5px' }}>
+                          PREFERRED FOR {gun.make.toUpperCase()} {gun.model.toUpperCase()}
+                        </div>
+                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                          {(['match', 'defensive', 'training'] as PreferredPurpose[]).map(p => {
+                            const active = lot.preferredFor?.includes(p) ?? false;
+                            return (
+                              <button key={p} onClick={() => togglePreferred(lot.id, p)} style={{
+                                padding: '4px 10px', border: `0.5px solid ${active ? theme.accent : theme.border}`,
+                                borderRadius: '3px', backgroundColor: active ? 'rgba(255,212,59,0.1)' : 'transparent',
+                                fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px',
+                                color: active ? theme.accent : theme.textMuted, cursor: 'pointer',
+                              }}>
+                                {p.toUpperCase()}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {(lot.sd != null || lot.actualFPS) && (
@@ -1919,24 +1924,16 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                   </div>
                 </div>
                 {/* Progress bar */}
-                <div style={{ height: '2px', backgroundColor: theme.bg, borderRadius: '1px', marginBottom: '12px' }}>
+                <div style={{ height: '2px', backgroundColor: theme.bg, borderRadius: '1px', marginBottom: '10px' }}>
                   <div style={{ height: '2px', width: `${pct}%`, backgroundColor: complete ? theme.green : theme.accent, borderRadius: '1px', transition: 'width 0.3s' }} />
                 </div>
-                {/* Shot checklist */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                  {shotsForSet.map(shot => {
-                    const done = capturedKeys.has(shot.key);
-                    return (
-                      <div key={shot.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, backgroundColor: done ? theme.green : theme.border }} />
-                        <span style={{ fontFamily: 'monospace', fontSize: '10px', color: done ? theme.textSecondary : theme.textMuted }}>
-                          {shot.label}
-                          {!shot.required && <span style={{ marginLeft: '6px', fontSize: '8px', opacity: 0.6 }}>optional</span>}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* Missing shots — compact inline */}
+                {status.missingShots.length > 0 && (
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginBottom: '10px', lineHeight: 1.7 }}>
+                    <span style={{ color: theme.orange, marginRight: '6px' }}>Missing:</span>
+                    {status.missingShots.join(' · ')}
+                  </div>
+                )}
                 {/* Photo thumbnails */}
                 {photoAssets.filter(a => shotsForSet.some(s => s.key === a.shotType)).length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
