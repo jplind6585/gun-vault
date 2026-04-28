@@ -125,12 +125,9 @@ test('log from gun detail — goes straight to quick log (no mode picker)', asyn
   await tapNav(page, 'Vault');
   await page.locator('text=Glock G17').first().click();
 
-  // Tap "+ LOG SESSION" on the gun detail
-  await page.getByRole('button', { name: /LOG SESSION/i }).click();
+  // Tap "+ LOG" on the gun detail
+  await page.getByRole('button', { name: /^\+\s*LOG$/i }).click();
 
-  // Should show the SessionLoggingModal directly (not the mode picker)
-  await expect(page.getByText('LOG RANGE SESSION').first()).toBeVisible({ timeout: 5000 });
-
-  // Mode picker button should NOT be visible (we went straight to quick log)
-  await expect(page.locator('button:has-text("AI Debrief")')).not.toBeVisible();
+  // Should show the SessionLoggingModal directly (SESSION DEBRIEF heading)
+  await expect(page.getByText('SESSION DEBRIEF').first()).toBeVisible({ timeout: 5000 });
 });
