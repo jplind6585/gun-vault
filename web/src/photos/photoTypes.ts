@@ -48,6 +48,13 @@ export const SHOT_SPECS: ShotSpec[] = [
     applicableSets: ['sale_listing', 'insurance'],
   },
   {
+    key: 'action_open',
+    label: 'Action Open — Empty Chamber',
+    required: true,
+    coachingText: 'Action open, chamber clearly empty and visible. This is required for documentation purposes. Shoot from the right side, action facing camera.',
+    applicableSets: ['sale_listing', 'insurance'],
+  },
+  {
     key: 'muzzle_end',
     label: 'Muzzle End',
     required: true,
@@ -60,13 +67,6 @@ export const SHOT_SPECS: ShotSpec[] = [
     required: true,
     coachingText: 'Close-up of the breech face and chamber area. Show headspace, feed ramp, and any wear. Good lighting — use a flashlight if needed.',
     applicableSets: ['sale_listing'],
-  },
-  {
-    key: 'action_open',
-    label: 'Action Open — Empty Chamber',
-    required: true,
-    coachingText: 'Action open, chamber clearly empty and visible. This is required for documentation purposes. Shoot from the right side, action facing camera.',
-    applicableSets: ['sale_listing', 'insurance'],
   },
   {
     key: 'sights_optic',

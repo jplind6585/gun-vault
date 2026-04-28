@@ -39,6 +39,8 @@ export function PhotoCapture({
   userId, gunId, gunName, setType, gunTypeProfile, onComplete, onCancel,
 }: Props) {
   const shots = getShotsForSet(setType, gunTypeProfile);
+  const requiredShots = shots.filter(s => s.required);
+  const optionalShots = shots.filter(s => !s.required);
   const [shotIndex, setShotIndex] = useState(0);
   const [step, setStep] = useState<CaptureStep>('brief');
   const [result, setResult] = useState<CaptureResult | null>(null);
@@ -92,9 +94,15 @@ export function PhotoCapture({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { approved: true, warnings: [] };
 
-    // Convert blob to base64
-    const arrayBuffer = await blob.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Convert blob to base64 (loop-based — spread crashes on large phone photos)
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        resolve(dataUrl.split(',')[1]);
+      };
+      reader.readAsDataURL(blob);
+    });
     const mediaType = 'image/jpeg';
 
     const isSerialShot = shot.key === 'serial_number';
@@ -248,9 +256,11 @@ Keep warnings short and actionable (under 12 words each). If approved with no is
         <div style={{ padding: '12px 16px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
-              {shotIndex + 1} of {shots.length}
+              {currentShot.required
+                ? `${requiredShots.indexOf(currentShot) + 1} of ${requiredShots.length} required`
+                : `Optional ${optionalShots.indexOf(currentShot) + 1} of ${optionalShots.length}`}
             </span>
-            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.accent }}>
+            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: currentShot.required ? theme.accent : theme.textMuted }}>
               {currentShot.required ? 'REQUIRED' : 'OPTIONAL'}
             </span>
           </div>
