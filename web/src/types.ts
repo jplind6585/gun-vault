@@ -197,6 +197,7 @@ export interface AmmoLot {
   reloadBatchId?: string;
   assignedGunIds?: string[]; // Guns this ammo is assigned to
   isFavorite?: boolean;
+  preferredFor?: ('match' | 'defensive' | 'training')[]; // per-gun preferred purpose tags
   minStockAlert?: number;
   reserved?: number;
 

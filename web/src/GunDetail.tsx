@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './theme';
 import type { Gun, Session, GunAccessories, TargetAnalysisRecord } from './types';
-import { getSessionsForGun, getAllAmmo, updateGun, getAnalysesForGun } from './storage';
+import { getSessionsForGun, getAllAmmo, updateAmmo, updateGun, getAnalysesForGun } from './storage';
 import { getSettings } from './SettingsPanel';
 import { SessionLoggingModal } from './SessionLoggingModal';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
@@ -14,7 +14,7 @@ import { supabase } from './lib/supabase';
 import { PhotoCapture } from './photos/PhotoCapture';
 import { GradeAGun } from './photos/GradeAGun';
 import { getPhotoAssetsForGun, deletePhotoAsset, getLatestGradeAssessment } from './photos/photoService';
-import { inferGunTypeProfile, getSetCompletionStatus, type PhotoAsset, type GunTypeProfile, type SetType, type GradeAssessment } from './photos/photoTypes';
+import { inferGunTypeProfile, getShotsForSet, getSetCompletionStatus, type PhotoAsset, type GunTypeProfile, type SetType, type GradeAssessment } from './photos/photoTypes';
 
 interface GunDetailProps {
   gun: Gun;
@@ -65,6 +65,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [specsOpen, setSpecsOpen] = useState(false);
   const [heroCollapsed, setHeroCollapsed] = useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [, forceAmmoRefresh] = useState(0);
 
   // ── Photo system ──────────────────────────────────────────────────────────
   const gunTypeProfile: GunTypeProfile = inferGunTypeProfile(gun.type, gun.action);
@@ -199,6 +200,29 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const topAmmo = Object.values(ammoScores)
     .sort((a, b) => (a.issues / (a.sessions || 1)) - (b.issues / (b.sessions || 1)) || b.rounds - a.rounds)
     .slice(0, 3);
+
+  // ── Ammo preferred toggle ──────────────────────────────────────────────────
+  type PreferredPurpose = 'match' | 'defensive' | 'training';
+  function togglePreferred(lotId: string, purpose: PreferredPurpose) {
+    const allCaliber = getAllAmmo().filter(l => {
+      const lc = l.caliber.toLowerCase(); const gc = (gun.caliber || '').toLowerCase();
+      return lc.includes(gc) || gc.includes(lc);
+    });
+    // Clear this purpose from any other lot for this gun's caliber
+    for (const l of allCaliber) {
+      if (l.id === lotId) continue;
+      if (l.preferredFor?.includes(purpose)) {
+        updateAmmo(l.id, { preferredFor: l.preferredFor.filter(p => p !== purpose) });
+      }
+    }
+    // Toggle on the target lot
+    const lot = allCaliber.find(l => l.id === lotId);
+    if (!lot) return;
+    const current = lot.preferredFor ?? [];
+    const next = current.includes(purpose) ? current.filter(p => p !== purpose) : [...current, purpose];
+    updateAmmo(lotId, { preferredFor: next });
+    forceAmmoRefresh(k => k + 1);
+  }
 
   // ── Save helpers ───────────────────────────────────────────────────────────
   function saveField(updates: Partial<Gun>) {
@@ -1537,6 +1561,26 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                         </div>
                       )}
 
+                      {/* Preferred ammo banner */}
+                      {(() => {
+                        const purposes: PreferredPurpose[] = ['match', 'defensive', 'training'];
+                        const lines = purposes.flatMap(p => {
+                          const lot = ammoLots.find(l => l.preferredFor?.includes(p));
+                          if (!lot) return [];
+                          const name = [lot.brand, lot.productLine, lot.grainWeight ? lot.grainWeight + 'gr' : ''].filter(Boolean).join(' ');
+                          return [`${p.charAt(0).toUpperCase() + p.slice(1)}: ${name}`];
+                        });
+                        if (lines.length === 0) return null;
+                        return (
+                          <div style={{ backgroundColor: 'rgba(255,212,59,0.06)', border: `0.5px solid rgba(255,212,59,0.2)`, borderRadius: '6px', padding: '8px 10px', marginBottom: '10px' }}>
+                            <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.accent, marginBottom: '4px' }}>PREFERRED LOADS</div>
+                            {lines.map(l => (
+                              <div key={l} style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, lineHeight: 1.8 }}>{l}</div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       {/* Category tag strip */}
                       {!allTraining && Object.keys(catCounts).length > 0 && (
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -1611,6 +1655,23 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                           </span>
                         )}
                       </div>
+                      {/* Preferred purpose chips */}
+                      <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
+                        {(['match', 'defensive', 'training'] as PreferredPurpose[]).map(p => {
+                          const active = lot.preferredFor?.includes(p) ?? false;
+                          return (
+                            <button key={p} onClick={() => togglePreferred(lot.id, p)} style={{
+                              padding: '3px 8px', border: `0.5px solid ${active ? theme.accent : theme.border}`,
+                              borderRadius: '3px', backgroundColor: active ? 'rgba(255,212,59,0.1)' : 'transparent',
+                              fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.8px',
+                              color: active ? theme.accent : theme.textMuted, cursor: 'pointer',
+                            }}>
+                              {p.toUpperCase()}
+                            </button>
+                          );
+                        })}
+                      </div>
+
                       {(lot.sd != null || lot.actualFPS) && (
                         <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
                           {lot.sd != null && (
@@ -1834,62 +1895,65 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
 
         {/* ══ PHOTOS TAB ══ */}
         {tab === 'photos' && (() => {
-          const saleAssets     = photoAssets.filter(a => a.setType === 'sale_listing');
-          const insureAssets   = photoAssets.filter(a => a.setType === 'insurance');
-          const saleStatus     = getSetCompletionStatus('sale_listing', gunTypeProfile, photoAssets);
-          const insureStatus   = getSetCompletionStatus('insurance', gunTypeProfile, photoAssets);
+          const saleStatus   = getSetCompletionStatus('sale_listing', gunTypeProfile, photoAssets);
+          const insureStatus = getSetCompletionStatus('insurance', gunTypeProfile, photoAssets);
 
-          const SetCard = ({ title, status, assets, setType }: {
+          const capturedKeys = new Set(photoAssets.map(a => a.shotType));
+
+          const SetCard = ({ title, status, setType }: {
             title: string;
             status: ReturnType<typeof getSetCompletionStatus>;
-            assets: PhotoAsset[];
             setType: SetType;
           }) => {
-            const pct = status.totalRequired > 0 ? (status.completed / status.totalRequired) * 100 : 0;
-            const complete = status.completed >= status.totalRequired;
+            const shotsForSet = getShotsForSet(setType, gunTypeProfile);
+            const pct = shotsForSet.length > 0 ? (status.completed / shotsForSet.length) * 100 : 0;
+            const complete = status.missingShots.length === 0;
             return (
               <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.5px' }}>
                     {title}
                   </div>
-                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: complete ? theme.green : theme.orange, letterSpacing: '0.5px' }}>
-                    {status.completed}/{status.totalRequired} REQUIRED
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: complete ? theme.green : theme.textMuted, letterSpacing: '0.5px' }}>
+                    {status.completed}/{shotsForSet.length}
                   </div>
                 </div>
                 {/* Progress bar */}
-                <div style={{ height: '2px', backgroundColor: theme.bg, borderRadius: '1px', marginBottom: '10px' }}>
+                <div style={{ height: '2px', backgroundColor: theme.bg, borderRadius: '1px', marginBottom: '12px' }}>
                   <div style={{ height: '2px', width: `${pct}%`, backgroundColor: complete ? theme.green : theme.accent, borderRadius: '1px', transition: 'width 0.3s' }} />
                 </div>
-                {/* Photo grid */}
-                {assets.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-                    {assets.map(asset => (
-                      <div key={asset.id} style={{ position: 'relative', width: '72px', height: '72px' }}>
+                {/* Shot checklist */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  {shotsForSet.map(shot => {
+                    const done = capturedKeys.has(shot.key);
+                    return (
+                      <div key={shot.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, backgroundColor: done ? theme.green : theme.border }} />
+                        <span style={{ fontFamily: 'monospace', fontSize: '10px', color: done ? theme.textSecondary : theme.textMuted }}>
+                          {shot.label}
+                          {!shot.required && <span style={{ marginLeft: '6px', fontSize: '8px', opacity: 0.6 }}>optional</span>}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Photo thumbnails */}
+                {photoAssets.filter(a => shotsForSet.some(s => s.key === a.shotType)).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                    {photoAssets.filter(a => shotsForSet.some(s => s.key === a.shotType)).map(asset => (
+                      <div key={asset.id} style={{ position: 'relative', width: '64px', height: '64px' }}>
                         {asset.storageUrl ? (
-                          <img
-                            src={asset.storageUrl}
-                            alt={asset.shotType ?? 'photo'}
-                            style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '6px', border: `0.5px solid ${theme.border}` }}
-                          />
+                          <img src={asset.storageUrl} alt={asset.shotType ?? 'photo'} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: `0.5px solid ${theme.border}` }} />
                         ) : (
-                          <div style={{ width: '72px', height: '72px', borderRadius: '6px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>NO URL</span>
-                          </div>
+                          <div style={{ width: '64px', height: '64px', borderRadius: '6px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}` }} />
                         )}
-                        <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: '0 0 6px 6px', padding: '2px 4px' }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: '0 0 6px 6px', padding: '2px 4px' }}>
                           <div style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textSecondary, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {(asset.shotType ?? '').replace(/_/g, ' ').toUpperCase()}
                           </div>
                         </div>
                         {userId && (
-                          <button
-                            onClick={async () => {
-                              await deletePhotoAsset(asset.id, asset.storagePath);
-                              refreshPhotos();
-                            }}
-                            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: theme.red, border: 'none', color: '#fff', fontSize: '10px', lineHeight: '18px', textAlign: 'center', cursor: 'pointer', padding: 0 }}
-                          >
+                          <button onClick={async () => { await deletePhotoAsset(asset.id, asset.storagePath); refreshPhotos(); }} style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: theme.red, border: 'none', color: '#fff', fontSize: '10px', lineHeight: '18px', textAlign: 'center', cursor: 'pointer', padding: 0 }}>
                             x
                           </button>
                         )}
@@ -1897,28 +1961,12 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                     ))}
                   </div>
                 )}
-                {/* Missing shots */}
-                {status.missingShots.length > 0 && (
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, marginBottom: '4px' }}>MISSING</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, lineHeight: 1.8 }}>
-                      {status.missingShots.join(', ')}
-                    </div>
-                  </div>
-                )}
                 <button
                   onClick={() => { setActiveSetType(setType); setShowCapture(true); }}
                   disabled={!userId}
-                  style={{
-                    width: '100%', padding: '10px',
-                    backgroundColor: complete ? 'transparent' : theme.accent,
-                    border: complete ? `1px solid ${theme.border}` : 'none',
-                    borderRadius: '8px',
-                    color: complete ? theme.textSecondary : theme.bg,
-                    fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
-                  }}
+                  style={{ width: '100%', padding: '10px', backgroundColor: 'transparent', border: `1px solid ${complete ? theme.border : theme.accent}`, borderRadius: '8px', color: complete ? theme.textMuted : theme.accent, fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', cursor: 'pointer' }}
                 >
-                  {assets.length === 0 ? 'START SET' : complete ? 'RETAKE / ADD PHOTOS' : 'CONTINUE SET'}
+                  {complete ? 'RETAKE / ADD PHOTOS' : 'ADD PHOTOS'}
                 </button>
               </div>
             );
@@ -1930,8 +1978,8 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                 PHOTO DOCUMENTATION
               </div>
 
-              <SetCard title="Sale Listing Set" status={saleStatus} assets={saleAssets} setType="sale_listing" />
-              <SetCard title="Insurance Set" status={insureStatus} assets={insureAssets} setType="insurance" />
+              <SetCard title="Sale Listing" status={saleStatus} setType="sale_listing" />
+              <SetCard title="Insurance" status={insureStatus} setType="insurance" />
 
               {/* Grade-a-Gun */}
               <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>

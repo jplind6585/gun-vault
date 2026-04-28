@@ -261,7 +261,7 @@ export function getSetCompletionStatus(
 ): SetCompletionStatus {
   const shots = getShotsForSet(setType, profile);
   const required = shots.filter(s => s.required);
-  const capturedKeys = new Set(assets.filter(a => a.setType === setType).map(a => a.shotType));
+  const capturedKeys = new Set(assets.map(a => a.shotType));
   const missing = required.filter(s => !capturedKeys.has(s.key));
   return {
     setType,
