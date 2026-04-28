@@ -9,6 +9,11 @@ import { typeAccent } from './GunVault';
 import { getGunBlurb } from './gunDescriptions';
 import { callGunPrecisionCoach } from './claudeApi';
 import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
+import { supabase } from './lib/supabase';
+import { PhotoCapture } from './photos/PhotoCapture';
+import { GradeAGun } from './photos/GradeAGun';
+import { getPhotoAssetsForGun, deletePhotoAsset, getLatestGradeAssessment } from './photos/photoService';
+import { inferGunTypeProfile, getSetCompletionStatus, type PhotoAsset, type GunTypeProfile, type SetType, type GradeAssessment } from './photos/photoTypes';
 
 interface GunDetailProps {
   gun: Gun;
@@ -20,7 +25,7 @@ interface GunDetailProps {
   onUpgrade?: (reason: string) => void;
 }
 
-type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline';
+type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline' | 'photos';
 type Period = 'week' | 'month' | 'year';
 
 const PURPOSE_LABELS = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'] as const;
@@ -59,6 +64,40 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [specsOpen, setSpecsOpen] = useState(false);
   const [heroCollapsed, setHeroCollapsed] = useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // ── Photo system ──────────────────────────────────────────────────────────
+  const gunTypeProfile: GunTypeProfile = inferGunTypeProfile(gun.type, gun.action);
+  const [userId, setUserId]             = useState<string | null>(null);
+  const [photoAssets, setPhotoAssets]   = useState<PhotoAsset[]>([]);
+  const [latestGrade, setLatestGrade]   = useState<GradeAssessment | null>(null);
+  const [showCapture, setShowCapture]   = useState(false);
+  const [showGrade, setShowGrade]       = useState(false);
+  const [activeSetType, setActiveSetType] = useState<SetType>('insurance');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user?.id) return;
+      const uid = session.user.id;
+      setUserId(uid);
+      Promise.all([
+        getPhotoAssetsForGun(uid, gun.id),
+        getLatestGradeAssessment(uid, gun.id),
+      ]).then(([assets, grade]) => {
+        setPhotoAssets(assets);
+        setLatestGrade(grade);
+      });
+    });
+  }, [gun.id]);
+
+  async function refreshPhotos() {
+    if (!userId) return;
+    const [assets, grade] = await Promise.all([
+      getPhotoAssetsForGun(userId, gun.id),
+      getLatestGradeAssessment(userId, gun.id),
+    ]);
+    setPhotoAssets(assets);
+    setLatestGrade(grade);
+  }
 
   // ── Precision metrics (computed from target analyses) ─────────────────────
   const [analyses, setAnalyses] = useState<TargetAnalysisRecord[]>([]);
@@ -392,6 +431,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             ['maintenance', 'MAINT'],
             ['ammo', 'AMMO'],
             ['timeline', 'TIMELINE'],
+            ['photos', 'PHOTOS'],
           ] as [DetailTab, string][]).map(([t, label]) => (
             <button key={t} onClick={() => handleTabChange(t)} style={{
               flex: 1, padding: '10px 2px',
@@ -1794,7 +1834,183 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
           </div>
         )}
 
+        {/* ══ PHOTOS TAB ══ */}
+        {tab === 'photos' && (() => {
+          const saleAssets     = photoAssets.filter(a => a.setType === 'sale_listing');
+          const insureAssets   = photoAssets.filter(a => a.setType === 'insurance');
+          const saleStatus     = getSetCompletionStatus('sale_listing', gunTypeProfile, photoAssets);
+          const insureStatus   = getSetCompletionStatus('insurance', gunTypeProfile, photoAssets);
+
+          const SetCard = ({ title, status, assets, setType }: {
+            title: string;
+            status: ReturnType<typeof getSetCompletionStatus>;
+            assets: PhotoAsset[];
+            setType: SetType;
+          }) => {
+            const pct = status.totalRequired > 0 ? (status.completed / status.totalRequired) * 100 : 0;
+            const complete = status.completed >= status.totalRequired;
+            return (
+              <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.5px' }}>
+                    {title}
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: complete ? theme.green : theme.orange, letterSpacing: '0.5px' }}>
+                    {status.completed}/{status.totalRequired} REQUIRED
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div style={{ height: '2px', backgroundColor: theme.bg, borderRadius: '1px', marginBottom: '10px' }}>
+                  <div style={{ height: '2px', width: `${pct}%`, backgroundColor: complete ? theme.green : theme.accent, borderRadius: '1px', transition: 'width 0.3s' }} />
+                </div>
+                {/* Photo grid */}
+                {assets.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                    {assets.map(asset => (
+                      <div key={asset.id} style={{ position: 'relative', width: '72px', height: '72px' }}>
+                        {asset.storageUrl ? (
+                          <img
+                            src={asset.storageUrl}
+                            alt={asset.shotType ?? 'photo'}
+                            style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '6px', border: `0.5px solid ${theme.border}` }}
+                          />
+                        ) : (
+                          <div style={{ width: '72px', height: '72px', borderRadius: '6px', backgroundColor: theme.bg, border: `0.5px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '8px', color: theme.textMuted }}>NO URL</span>
+                          </div>
+                        )}
+                        <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: '0 0 6px 6px', padding: '2px 4px' }}>
+                          <div style={{ fontFamily: 'monospace', fontSize: '7px', color: theme.textSecondary, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {(asset.shotType ?? '').replace(/_/g, ' ').toUpperCase()}
+                          </div>
+                        </div>
+                        {userId && (
+                          <button
+                            onClick={async () => {
+                              await deletePhotoAsset(asset.id, asset.storagePath);
+                              refreshPhotos();
+                            }}
+                            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: theme.red, border: 'none', color: '#fff', fontSize: '10px', lineHeight: '18px', textAlign: 'center', cursor: 'pointer', padding: 0 }}
+                          >
+                            x
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Missing shots */}
+                {status.missingShots.length > 0 && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', color: theme.textMuted, marginBottom: '4px' }}>MISSING</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textSecondary, lineHeight: 1.8 }}>
+                      {status.missingShots.join(', ')}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => { setActiveSetType(setType); setShowCapture(true); }}
+                  disabled={!userId}
+                  style={{
+                    width: '100%', padding: '10px',
+                    backgroundColor: complete ? 'transparent' : theme.accent,
+                    border: complete ? `1px solid ${theme.border}` : 'none',
+                    borderRadius: '8px',
+                    color: complete ? theme.textSecondary : theme.bg,
+                    fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
+                  }}
+                >
+                  {assets.length === 0 ? 'START SET' : complete ? 'RETAKE / ADD PHOTOS' : 'CONTINUE SET'}
+                </button>
+              </div>
+            );
+          };
+
+          return (
+            <div style={{ paddingBottom: '24px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '1.5px', color: theme.textMuted, marginBottom: '14px' }}>
+                PHOTO DOCUMENTATION
+              </div>
+
+              <SetCard title="Sale Listing Set" status={saleStatus} assets={saleAssets} setType="sale_listing" />
+              <SetCard title="Insurance Set" status={insureStatus} assets={insureAssets} setType="insurance" />
+
+              {/* Grade-a-Gun */}
+              <div style={{ backgroundColor: theme.surface, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, color: theme.textPrimary, letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  Grade-a-Gun — Cosmetic Assessment
+                </div>
+                {latestGrade && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: theme.accent }}>
+                      {latestGrade.overallGrade}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+                      NRA Condition · {new Date(latestGrade.assessedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                )}
+                {!latestGrade && (
+                  <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, marginBottom: '10px', lineHeight: 1.6 }}>
+                    AI-powered cosmetic condition assessment using NRA grading scale.
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    if (!isPro && onUpgrade) { onUpgrade('grade_a_gun'); return; }
+                    setShowGrade(true);
+                  }}
+                  disabled={!userId}
+                  style={{
+                    width: '100%', padding: '10px',
+                    backgroundColor: 'transparent', border: `1px solid ${theme.accent}`,
+                    borderRadius: '8px', color: theme.accent,
+                    fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
+                  }}
+                >
+                  {latestGrade ? 'RE-ASSESS CONDITION' : 'GRADE THIS GUN'}
+                  {!isPro && <span style={{ marginLeft: '8px', fontSize: '9px', opacity: 0.7 }}>PRO</span>}
+                </button>
+              </div>
+
+              {!userId && (
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, textAlign: 'center', marginTop: '8px' }}>
+                  Sign in to use photo documentation
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
       </div>
+
+      {/* Photo Capture overlay */}
+      {showCapture && userId && (
+        <PhotoCapture
+          userId={userId}
+          gunId={gun.id}
+          gunName={`${gun.make} ${gun.model}`}
+          gunType={gun.type}
+          gunAction={gun.action}
+          setType={activeSetType}
+          gunTypeProfile={gunTypeProfile}
+          onComplete={() => { setShowCapture(false); refreshPhotos(); }}
+          onCancel={() => { setShowCapture(false); refreshPhotos(); }}
+        />
+      )}
+
+      {/* Grade-a-Gun overlay */}
+      {showGrade && userId && (
+        <GradeAGun
+          userId={userId}
+          gunId={gun.id}
+          gunName={`${gun.make} ${gun.model}`}
+          gunTypeProfile={gunTypeProfile}
+          assets={photoAssets}
+          onComplete={() => { setShowGrade(false); refreshPhotos(); }}
+          onCancel={() => setShowGrade(false)}
+        />
+      )}
 
       {/* Session Detail Sheet */}
       {selectedSession && (
