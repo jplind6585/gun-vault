@@ -5,6 +5,8 @@ import { lookupGunSpec, suggestMakes, suggestModels } from './gunDatabase';
 import { getSettings } from './SettingsPanel';
 import { searchManufacturers, searchCalibers, checkGunModel, searchGunModels, normalizeCaliber, COMMON_CALIBERS } from './lib/referenceData';
 import { RetailerInput } from './lib/RetailerInput';
+import { BoxScanner } from './BoxScanner';
+import type { BoxScanResult } from './claudeApi';
 
 const LRU_KEY = 'lru_calibers';
 const DEFAULT_LRU = ['9mm', '5.56 NATO', '.308 Win', '.22 LR'];
@@ -58,6 +60,8 @@ export function AddGunForm({ onSave, onCancel, initial }: AddGunFormProps) {
   const [caliber, setCaliber] = useState(initial?.caliber ?? '');
   const [type, setType]       = useState<Gun['type'] | null>((initial?.type as Gun['type']) ?? null);
   const [action, setAction]   = useState<Gun['action'] | null>((initial?.action as Gun['action']) ?? null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanApplied, setScanApplied] = useState(!!(initial?.make || initial?.model || initial?.caliber));
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [lruCalibers, setLruCalibers] = useState<string[]>(() => getLruCalibers());
   const [freeEntry, setFreeEntry] = useState(false);
@@ -245,6 +249,18 @@ export function AddGunForm({ onSave, onCancel, initial }: AddGunFormProps) {
     };
   }
 
+  function handleScanResult(result: BoxScanResult) {
+    setShowScanner(false);
+    if (result.itemType !== 'gun') return;
+    const f = result.fields;
+    if (f.make)         setMake(f.make);
+    if (f.model)        setModel(f.model);
+    if (f.caliber)      setCaliber(f.caliber);
+    if (f.type)         setType(f.type as Gun['type']);
+    if (f.action)       setAction(f.action as Gun['action']);
+    setScanApplied(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid) return;
@@ -316,20 +332,44 @@ export function AddGunForm({ onSave, onCancel, initial }: AddGunFormProps) {
   }
 
   return (
+    <>
     <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div style={styles.modal}>
         {/* Header */}
         <div style={styles.header}>
           <span style={styles.headerTitle}>ADD FIREARM</span>
-          <button style={styles.closeBtn} onClick={onCancel} aria-label="Close">✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: 'transparent',
+                border: `0.5px solid ${theme.accent}`,
+                borderRadius: '4px',
+                color: theme.accent,
+                fontFamily: 'monospace', fontSize: '10px',
+                fontWeight: 700, letterSpacing: '0.5px',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '5px',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                <rect x="7" y="7" width="10" height="10" rx="1"/>
+              </svg>
+              SCAN
+            </button>
+            <button style={styles.closeBtn} onClick={onCancel} aria-label="Close">✕</button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={styles.body}>
 
             {/* Scan pre-fill banner */}
-            {initial && (initial.make || initial.model || initial.caliber) && (
-              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: '#51cf66', letterSpacing: '0.5px', padding: '6px 10px', backgroundColor: 'rgba(81,207,102,0.08)', borderRadius: '4px', border: '0.5px solid rgba(81,207,102,0.2)', marginBottom: '8px' }}>
+            {scanApplied && (
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.green, letterSpacing: '0.5px', padding: '6px 10px', backgroundColor: 'rgba(81,207,102,0.08)', borderRadius: '4px', border: '0.5px solid rgba(81,207,102,0.2)', marginBottom: '8px' }}>
                 Scanned from box — review and confirm all fields before saving
               </div>
             )}
@@ -835,6 +875,15 @@ export function AddGunForm({ onSave, onCancel, initial }: AddGunFormProps) {
         )}
       </div>
     </div>
+
+    {/* Box scanner overlay — shown on top of the form */}
+    {showScanner && (
+      <BoxScanner
+        onResult={handleScanResult}
+        onCancel={() => setShowScanner(false)}
+      />
+    )}
+    </>
   );
 }
 

@@ -12,7 +12,6 @@ type SortOption = 'make' | 'acquiredPriceDesc' | 'acquiredPriceAsc' | 'lastShot'
 interface GunVaultProps {
   onGunSelect: (gun: Gun) => void;
   onAddGun: () => void;
-  onScanToAdd?: () => void;
   onImportRequest?: () => void;
   refreshKey?: number;
 }
@@ -28,7 +27,7 @@ export const typeAccent: Record<string, string> = {
 const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold', 'Transferred'];
 const ALL_PURPOSES: GunPurpose[] = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'];
 
-export function GunVault({ onGunSelect, onAddGun, onScanToAdd, onImportRequest, refreshKey }: GunVaultProps) {
+export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }: GunVaultProps) {
   const [guns, setGuns]               = useState<Gun[]>([]);
   const [lastShotMap, setLastShotMap]         = useState<Record<string, string>>({});
   const [sessionCountMap, setSessionCountMap] = useState<Record<string, number>>({});
@@ -298,20 +297,6 @@ export function GunVault({ onGunSelect, onAddGun, onScanToAdd, onImportRequest, 
             boxSizing: 'border-box',
           }}
         />
-        {onScanToAdd && (
-          <button
-            onClick={onScanToAdd}
-            title="Scan box to add"
-            style={{
-              padding: '10px 12px', backgroundColor: theme.surface,
-              border: `0.5px solid ${theme.border}`, borderRadius: '6px',
-              color: theme.accent, fontFamily: 'monospace', fontSize: '11px',
-              fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
-            SCAN
-          </button>
-        )}
       </div>
 
       {/* ── TYPE METADATA STRIP + SORT & FILTER ── */}
