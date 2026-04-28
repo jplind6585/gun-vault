@@ -399,15 +399,6 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
         padding: '12px 16px',
         transition: 'border-color 0.15s',
       }}>
-        <button onClick={onBack} style={{
-          padding: '6px 12px', backgroundColor: 'transparent',
-          border: `0.5px solid ${theme.border}`, borderRadius: '6px',
-          color: theme.textSecondary, fontFamily: 'monospace',
-          fontSize: '11px', cursor: 'pointer', letterSpacing: '0.5px', flexShrink: 0,
-        }}>
-          ← VAULT
-        </button>
-
         {/* Center — only visible when hero collapsed */}
         {heroCollapsed && (
           <div style={{ flex: 1, textAlign: 'center', padding: '0 10px', minWidth: 0 }}>
