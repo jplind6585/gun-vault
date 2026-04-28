@@ -107,11 +107,31 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
     if (galleryAssets.length >= 5) return;
     setGalleryUploading(true);
     try {
-      const uploaded = await uploadPhoto(userId, gun.id, 'gallery', file);
+      // Resize to max 1600px JPEG before uploading — raw iOS HEIC can be 15MB+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const MAX = 1600;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('resize failed')), 'image/jpeg', 0.88);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load failed')); };
+        img.src = url;
+      });
+
+      const uploaded = await uploadPhoto(userId, gun.id, 'gallery', blob);
       if (uploaded) {
         await savePhotoAsset({ userId, gunId: gun.id, setId: null, setType: null, shotType: null, storagePath: uploaded.path, storageUrl: uploaded.url });
         await refreshPhotos();
       }
+    } catch (err) {
+      console.error('[gallery] upload error:', err);
     } finally {
       setGalleryUploading(false);
       if (galleryInputRef.current) galleryInputRef.current.value = '';
