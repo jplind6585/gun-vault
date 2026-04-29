@@ -2,7 +2,8 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { theme } from './theme';
-import { getAllGuns, addGun, ensureInitialized } from './storage';
+import { getAllGuns, addGun, updateGun, ensureInitialized } from './storage';
+import { getGunValuation } from './lib/valuationService';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { LoginScreen } from './auth/LoginScreen';
 import { LandingPage } from './auth/LandingPage';
@@ -158,6 +159,37 @@ function AppCore() {
     return () => clearTimeout(t);
   }, [user]);
 
+  // Monthly background FMV refresh — runs once per session after sign-in
+  useEffect(() => {
+    if (!user || !navigator.onLine) return;
+    const sessionKey = 'fmv_auto_refresh_ran';
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, '1');
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const stale = getAllGuns().filter(g =>
+      g.status !== 'Sold' && g.status !== 'Transferred' &&
+      (!g.fmvUpdated || g.fmvUpdated < thirtyDaysAgo)
+    ).slice(0, 20); // cap at 20 per session
+
+    if (!stale.length) return;
+
+    (async () => {
+      for (const g of stale) {
+        try {
+          const result = await getGunValuation({
+            make: g.make, model: g.model,
+            caliber: g.caliber, condition: g.condition ?? 'Very Good',
+          });
+          updateGun(g.id, { estimatedFMV: result.median, fmvUpdated: result.timestamp });
+          await new Promise(r => setTimeout(r, 500));
+        } catch { /* silent */ }
+      }
+      loadGuns();
+      setGunRefreshKey(k => k + 1);
+    })();
+  }, [user]);
+
   // Show onboarding when profile is loaded and conditions are met
   useEffect(() => {
     if (ready && profile) {
@@ -287,10 +319,25 @@ function handleSaveGun(gunData: Partial<Gun>) {
       suppressorHost: gunData.suppressorHost,
     };
 
-    addGun(newGun);
+    const newGunId = addGun(newGun);
     loadGuns();
     setGunRefreshKey(k => k + 1);
     setShowAddForm(false);
+
+    // Background valuation — fire and forget, non-blocking
+    if (navigator.onLine) {
+      (async () => {
+        try {
+          const result = await getGunValuation({
+            make: newGun.make, model: newGun.model,
+            caliber: newGun.caliber, condition: newGun.condition ?? 'Very Good',
+          });
+          updateGun(newGunId, { estimatedFMV: result.median, fmvUpdated: result.timestamp });
+          loadGuns();
+          setGunRefreshKey(k => k + 1);
+        } catch { /* silent — FMV is best-effort */ }
+      })();
+    }
 
     addUndoAction(`${newGun.make} ${newGun.model} added`, () => {
       loadGuns();
@@ -399,6 +446,8 @@ function handleSaveGun(gunData: Partial<Gun>) {
                 onAddGun={handleRequestAddGun}
                 onImportRequest={() => setShowCSVImport(true)}
                 refreshKey={gunRefreshKey}
+                isPro={isPro}
+                onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }}
               />
             : section === 'ammo'
             ? <Arsenal openAddAmmoOnMount={openAddAmmo} onAddAmmoMountHandled={() => setOpenAddAmmo(false)} />
@@ -419,14 +468,14 @@ function handleSaveGun(gunData: Partial<Gun>) {
       />
     );
     if (currentView === 'sessions') return <SessionRecaps onLogSession={(gun) => openSessionLog(gun)} initialFilterGunId={sessionFilterGunId ?? undefined} isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
-    if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} />;
+    if (currentView === 'session-log') return <SessionEntry preselectedGun={sessionLogGun} onSaved={() => { setSessionLogGun(null); navigateTo('sessions'); }} onCancel={() => { setSessionLogGun(null); navigateBack(); }} isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'caliber')     return <CaliberDatabase isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'training')    return <TrainingLog />;
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
-    if (currentView === 'wishlist')    return <Wishlist />;
+    if (currentView === 'wishlist')    return <Wishlist isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={navigateBack} onDeleted={() => { setSelectedOpticId(null); navigateTo('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => navigateTo(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} isPro={isPro} />;

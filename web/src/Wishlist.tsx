@@ -3,6 +3,7 @@ import { theme } from './theme';
 import { useResponsive } from './useResponsive';
 import { getAllGuns } from './storage';
 import type { Gun } from './types';
+import { getWishlistValuation } from './lib/valuationService';
 
 interface WishlistItem {
   id: string;
@@ -26,7 +27,7 @@ interface WishlistItem {
   link?: string;
 }
 
-export function Wishlist() {
+export function Wishlist({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: (reason: string) => void }) {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [ownedGuns, setOwnedGuns] = useState<Gun[]>([]);
   const [showItemForm, setShowItemForm] = useState(false);
@@ -34,6 +35,7 @@ export function Wishlist() {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'priority' | 'price' | 'date'>('priority');
+  const [valuingId, setValuingId] = useState<string | null>(null);
   const [showGapAnalysis, setShowGapAnalysis] = useState(false);
   const { isMobile } = useResponsive();
 
@@ -79,6 +81,27 @@ export function Wishlist() {
     localStorage.setItem('gunvault_wishlist', JSON.stringify(items));
     setSelectedItem(updated);
   };
+
+  async function refreshItemPrice(e: React.MouseEvent, item: WishlistItem) {
+    e.stopPropagation();
+    if (!isPro) { onUpgrade?.('wishlist_price'); return; }
+    setValuingId(item.id);
+    try {
+      const result = await getWishlistValuation({ make: item.make, model: item.model, caliber: item.caliber });
+      const updated: WishlistItem = {
+        ...item,
+        currentPrice: result.median,
+        lowestPrice: item.lowestPrice ? Math.min(item.lowestPrice, result.low) : result.low,
+      };
+      const items = wishlistItems.map(w => w.id === item.id ? updated : w);
+      setWishlistItems(items);
+      localStorage.setItem('gunvault_wishlist', JSON.stringify(items));
+    } catch {
+      // silent fail on card — user can try again
+    } finally {
+      setValuingId(null);
+    }
+  }
 
   // Filter and sort
   const filteredItems = wishlistItems
@@ -430,6 +453,21 @@ export function Wishlist() {
                       ${item.estimatedPrice.toLocaleString()}
                     </div>
                   </div>
+                  <button
+                    onClick={(e) => refreshItemPrice(e, item)}
+                    disabled={valuingId === item.id}
+                    style={{
+                      fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.5px',
+                      padding: '3px 8px', borderRadius: '3px', border: `0.5px solid ${theme.accent}`,
+                      color: theme.accent, background: 'none',
+                      cursor: valuingId === item.id ? 'default' : 'pointer',
+                      opacity: valuingId === item.id ? 0.5 : 1,
+                      alignSelf: 'center',
+                    }}
+                  >
+                    {valuingId === item.id ? '...' : 'GET PRICE'}
+                    {!isPro && valuingId !== item.id && <span style={{ marginLeft: '6px', fontSize: '8px', opacity: 0.7 }}>PRO</span>}
+                  </button>
                   {item.currentPrice && (
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '9px', color: theme.textMuted }}>CURRENT</div>

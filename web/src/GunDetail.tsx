@@ -14,6 +14,7 @@ import { supabase } from './lib/supabase';
 import { PhotoCapture } from './photos/PhotoCapture';
 import { GradeAGun } from './photos/GradeAGun';
 import { getPhotoAssetsForGun, deletePhotoAsset, getLatestGradeAssessment, uploadPhoto, savePhotoAsset } from './photos/photoService';
+import { getGunValuation, type ValuationResult } from './lib/valuationService';
 import { inferGunTypeProfile, getShotsForSet, getSetCompletionStatus, type PhotoAsset, type GunTypeProfile, type SetType, type GradeAssessment } from './photos/photoTypes';
 
 interface GunDetailProps {
@@ -50,6 +51,8 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
   const [editOpenIssues, setEditOpenIssues] = useState(gun.openIssues || '');
   const [showZeroForm, setShowZeroForm]     = useState(false);
   const [showMarkSold, setShowMarkSold]     = useState(false);
+  const [valuing, setValuing]               = useState(false);
+  const [valuationError, setValuationError] = useState<string | null>(null);
   const [soldDateInput, setSoldDateInput]   = useState('');
   const [soldPriceInput, setSoldPriceInput] = useState('');
   const [zeroDistInput, setZeroDistInput]   = useState('');
@@ -278,6 +281,34 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
     updateGun(gun.id, updated);
     setGun(updated);
     onGunUpdated();
+  }
+
+  async function refreshFMV() {
+    if (!isPro) { if (onUpgrade) onUpgrade('fmv_refresh'); return; }
+    if (gun.fmvUpdated) {
+      const hoursAgo = (Date.now() - new Date(gun.fmvUpdated).getTime()) / (1000 * 60 * 60);
+      if (hoursAgo < 24) {
+        setValuationError(`Value is current — refreshed ${Math.floor(hoursAgo)}h ago`);
+        return;
+      }
+    }
+    setValuing(true);
+    setValuationError(null);
+    try {
+      const result = await getGunValuation({
+        make:      gun.make,
+        model:     gun.model,
+        caliber:   gun.caliber,
+        condition: gun.condition ?? 'Very Good',
+      });
+      const updates: Record<string, unknown> = { estimatedFMV: result.median, fmvUpdated: result.timestamp };
+      if (!gun.insuranceValue) updates.insuranceValue = result.median;
+      persist(updates);
+    } catch (err: any) {
+      setValuationError(err.message ?? 'Valuation failed');
+    } finally {
+      setValuing(false);
+    }
   }
 
   function logClean() {
@@ -699,9 +730,51 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                     {gun.acquiredFrom && (
                       <div><div style={labelStyle}>From</div><div style={valStyle}>{gun.acquiredFrom}</div></div>
                     )}
-                    {gun.estimatedFMV && (
-                      <div><div style={labelStyle}>Est. Value</div><div style={{ ...valStyle, color: theme.green }}>{'$' + gun.estimatedFMV.toLocaleString()}</div></div>
-                    )}
+                    <div>
+                      <div style={labelStyle}>Est. Value</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {gun.estimatedFMV ? (
+                          <div style={{ ...valStyle, color: theme.green }}>${gun.estimatedFMV.toLocaleString()}</div>
+                        ) : (
+                          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>—</div>
+                        )}
+                        {(() => {
+                          const hoursAgo = gun.fmvUpdated
+                            ? (Date.now() - new Date(gun.fmvUpdated).getTime()) / (1000 * 60 * 60)
+                            : Infinity;
+                          const isFresh = hoursAgo < 24;
+                          const isDisabled = valuing || isFresh;
+                          return (
+                            <button
+                              onClick={refreshFMV}
+                              disabled={isDisabled && !!isPro}
+                              style={{
+                                fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.5px',
+                                padding: '2px 7px', borderRadius: '3px',
+                                border: `0.5px solid ${(isDisabled && isPro) ? theme.textMuted : theme.accent}`,
+                                color: (isDisabled && isPro) ? theme.textMuted : theme.accent,
+                                background: 'none',
+                                cursor: (isDisabled && isPro) ? 'default' : 'pointer',
+                                opacity: valuing ? 0.5 : 1,
+                              }}
+                            >
+                              {valuing ? 'CHECKING...' : isFresh && isPro
+                                ? `UPDATED ${Math.floor(hoursAgo)}H AGO`
+                                : 'REFRESH'}
+                              {!isPro && <span style={{ marginLeft: '6px', fontSize: '8px', opacity: 0.7 }}>PRO</span>}
+                            </button>
+                          );
+                        })()}
+                      </div>
+                      {gun.fmvUpdated && (
+                        <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '2px' }}>
+                          Updated {new Date(gun.fmvUpdated).toLocaleDateString()} · Market data: Claude AI
+                        </div>
+                      )}
+                      {valuationError && (
+                        <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.red, marginTop: '2px' }}>{valuationError}</div>
+                      )}
+                    </div>
                     {gun.insuranceValue && (
                       <div><div style={labelStyle}>Insured</div><div style={valStyle}>{'$' + gun.insuranceValue.toLocaleString()}</div></div>
                     )}

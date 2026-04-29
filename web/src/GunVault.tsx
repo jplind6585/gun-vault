@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { theme } from './theme';
-import { getAllGuns, getAllSessions, getPinnedGunIds, togglePinnedGun } from './storage';
+import { getAllGuns, getAllSessions, getPinnedGunIds, togglePinnedGun, updateGun } from './storage';
+import { getGunValuation } from './lib/valuationService';
 import type { Gun, GunStatus, GunPurpose } from './types';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
 import { SessionLoggingModal } from './SessionLoggingModal';
@@ -14,6 +15,8 @@ interface GunVaultProps {
   onAddGun: () => void;
   onImportRequest?: () => void;
   refreshKey?: number;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 export const typeAccent: Record<string, string> = {
@@ -27,7 +30,7 @@ export const typeAccent: Record<string, string> = {
 const ALL_STATUSES: GunStatus[] = ['Active', 'Stored', 'Loaned Out', 'Awaiting Repair', 'Sold', 'Transferred'];
 const ALL_PURPOSES: GunPurpose[] = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'];
 
-export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }: GunVaultProps) {
+export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey, isPro, onUpgrade }: GunVaultProps) {
   const [guns, setGuns]               = useState<Gun[]>([]);
   const [lastShotMap, setLastShotMap]         = useState<Record<string, string>>({});
   const [sessionCountMap, setSessionCountMap] = useState<Record<string, number>>({});
@@ -46,6 +49,8 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
   const [quickLogGun, setQuickLogGun] = useState<Gun | null>(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [showIssuesSheet, setShowIssuesSheet] = useState(false);
+  const [valuingAll, setValuingAll] = useState(false);
+  const [valuingProgress, setValuingProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     const allGuns = getAllGuns();
@@ -62,6 +67,32 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
     setLastShotMap(map);
     setSessionCountMap(countMap);
   }, [refreshKey]);
+
+  async function refreshAllFMV() {
+    const activeGuns = guns.filter(g => g.status !== 'Sold' && g.status !== 'Transferred');
+    if (!activeGuns.length) return;
+    setValuingAll(true);
+    setValuingProgress({ done: 0, total: activeGuns.length });
+    let done = 0;
+    for (const g of activeGuns) {
+      try {
+        const result = await getGunValuation({
+          make: g.make, model: g.model,
+          caliber: g.caliber, condition: g.condition ?? 'Very Good',
+        });
+        updateGun(g.id, { estimatedFMV: result.median, fmvUpdated: result.timestamp });
+        done++;
+        setValuingProgress({ done, total: activeGuns.length });
+        await new Promise(r => setTimeout(r, 500));
+      } catch {
+        done++;
+        setValuingProgress({ done, total: activeGuns.length });
+      }
+    }
+    setGuns(getAllGuns());
+    setValuingAll(false);
+    setValuingProgress(null);
+  }
 
   // ── Step 1: type-filtered set (used to derive cascading options) ───────────
   const typeFiltered = useMemo(() =>
@@ -232,12 +263,33 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey }:
               : `${filtered.length} of ${guns.length} FIREARMS`}
           </div>
           {guns.length > 0 && (() => {
-            const totalFMV = filtered.reduce((sum, g) => sum + (g.estimatedFMV || 0), 0);
-            return totalFMV > 0 ? (
-              <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, marginTop: '3px' }}>
-                Est. Market Value ${totalFMV.toLocaleString()}
+            const totalFMV = guns
+              .filter(g => g.status !== 'Sold' && g.status !== 'Transferred')
+              .reduce((sum, g) => sum + (g.estimatedFMV || 0), 0);
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', flexWrap: 'wrap' }}>
+                {totalFMV > 0 && (
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
+                    Est. Market Value ${totalFMV.toLocaleString()}
+                  </div>
+                )}
+                <button
+                  onClick={() => { if (!isPro) { onUpgrade?.('fmv_refresh_all'); return; } refreshAllFMV(); }}
+                  disabled={valuingAll}
+                  style={{
+                    fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.5px',
+                    padding: '2px 7px', borderRadius: '3px', border: `0.5px solid ${theme.accent}`,
+                    color: theme.accent, background: 'none', cursor: valuingAll ? 'default' : 'pointer',
+                    opacity: valuingAll ? 0.7 : 1,
+                  }}
+                >
+                  {valuingAll && valuingProgress
+                    ? `${valuingProgress.done}/${valuingProgress.total}`
+                    : 'REFRESH VALUES'}
+                  {!isPro && <span style={{ marginLeft: '6px', fontSize: '8px', opacity: 0.7 }}>PRO</span>}
+                </button>
               </div>
-            ) : null;
+            );
           })()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
