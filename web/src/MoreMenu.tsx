@@ -199,6 +199,14 @@ export function MoreMenu({ onNavigate, onFeedbackOpen, isPro }: MoreMenuProps) {
       onPress: () => onNavigate('wishlist'),
     },
     {
+      id: 'training',
+      Icon: IconTraining,
+      label: 'Training Log',
+      sub: 'Drills, progression tracking, and skill development',
+      available: true,
+      onPress: () => onNavigate('training'),
+    },
+    {
       id: 'field-guide',
       Icon: IconFieldGuide,
       label: 'Field Guide',

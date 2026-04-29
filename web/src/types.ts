@@ -467,3 +467,33 @@ export interface ShootingDrill {
   created_at?: string;
   updated_at?: string;
 }
+
+// ── Training Sessions ─────────────────────────────────────────────────────────
+
+export interface DrillSession {
+  id: string;
+  drillId: string;
+  drillName: string;           // denormalized for offline display
+  date: string;                // ISO date string
+  timestamp: number;           // epoch ms for sorting
+  gunId?: string;
+  gunName?: string;            // denormalized: "Make Model"
+  isDryFire: boolean;
+  scoringMethod: DrillScoringMethod;
+  // Results — populate whichever fields the drill's scoring method uses
+  totalTimeSeconds?: number;
+  accuracy?: number;           // 0–100
+  points?: number;
+  // Mental state (lightweight pre-session check-in)
+  sleepRating?: 1 | 2 | 3 | 4 | 5;
+  stressRating?: 1 | 2 | 3 | 4 | 5;
+  focusRating?: 1 | 2 | 3 | 4 | 5;
+  // Free-form notes
+  notes?: string;
+}
+
+export interface TrainingGoals {
+  primaryDiscipline?: DrillDiscipline;
+  sessionMinutesAvailable?: 15 | 30 | 60;
+  primaryGunId?: string;
+}

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { ShootingDrill, DrillDiscipline } from '../types';
+import type { ShootingDrill, DrillDiscipline } from '../types';
 
 export interface DrillFilters {
   discipline?: DrillDiscipline;

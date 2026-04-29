@@ -1,5 +1,5 @@
 // LocalStorage-based data persistence + Supabase background sync
-import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero } from './types';
+import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero, DrillSession, TrainingGoals } from './types';
 import { markObAction } from './onboardingProgress';
 import {
   syncGun, deleteGunFromSupabase,
@@ -852,6 +852,46 @@ export function importVaultBackup(file: File): Promise<{ success: boolean; messa
     reader.onerror = () => resolve({ success: false, message: 'Failed to read file.' });
     reader.readAsText(file);
   });
+}
+
+// ============================================================================
+// DRILL SESSIONS
+// ============================================================================
+
+const DRILL_SESSIONS_KEY = 'gunvault_drill_sessions';
+const TRAINING_GOALS_KEY = 'gunvault_training_goals';
+
+export function getDrillSessions(): DrillSession[] {
+  const data = localStorage.getItem(DRILL_SESSIONS_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+export function saveDrillSession(session: DrillSession): void {
+  const sessions = getDrillSessions();
+  sessions.unshift(session); // newest first
+  localStorage.setItem(DRILL_SESSIONS_KEY, JSON.stringify(sessions));
+}
+
+export function deleteDrillSession(id: string): void {
+  const sessions = getDrillSessions().filter(s => s.id !== id);
+  localStorage.setItem(DRILL_SESSIONS_KEY, JSON.stringify(sessions));
+}
+
+export function getDrillSessionsForDrill(drillId: string): DrillSession[] {
+  return getDrillSessions().filter(s => s.drillId === drillId);
+}
+
+export function getDrillSessionsForGun(gunId: string): DrillSession[] {
+  return getDrillSessions().filter(s => s.gunId === gunId);
+}
+
+export function getTrainingGoals(): TrainingGoals | null {
+  const data = localStorage.getItem(TRAINING_GOALS_KEY);
+  return data ? JSON.parse(data) : null;
+}
+
+export function saveTrainingGoals(goals: TrainingGoals): void {
+  localStorage.setItem(TRAINING_GOALS_KEY, JSON.stringify(goals));
 }
 
 // ============================================================================
