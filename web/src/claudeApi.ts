@@ -945,6 +945,65 @@ Goals should be specific, actionable, first-person statements. 2–4 goals max.`
   return { goals: [], notes: '' };
 }
 
+// ── Wishlist Analysis ─────────────────────────────────────────────────────────
+
+export async function callWishlistAnalysis(itemContext: string): Promise<string> {
+  return callClaude(
+    [
+      {
+        role: 'user',
+        content: `Analyze this potential firearm purchase and give a buy/wait/skip verdict.\n\n${itemContext}\n\nRespond ONLY with valid JSON — no markdown, no explanation outside the JSON:\n{\n  "verdict": "buy" | "wait" | "skip",\n  "confidence": "high" | "medium" | "low",\n  "reasoning": "2-3 sentence practical assessment",\n  "topBenefit": "single biggest reason to move forward",\n  "topConcern": "single biggest reason to pause"\n}`,
+      },
+    ],
+    'You are a practical firearm purchasing advisor for a serious gun owner. Assess purchases based on: value for money, fit to stated use case, market timing, and whether the buyer already owns something that covers the same role. Be direct and opinionated. Never recommend illegal modifications or transfers.',
+    'wishlist_analysis',
+    400,
+  );
+}
+
+// ── Wishlist Recommendations ───────────────────────────────────────────────────
+
+export interface WishlistRecommendation {
+  make: string;
+  model: string;
+  reason: string;
+  estimatedPrice?: number;
+}
+
+export async function callWishlistRecommendations(
+  ownedGun: { make: string; model: string; type: string; caliber: string },
+  wishlistContext: string,
+  refinement: string,
+): Promise<WishlistRecommendation[]> {
+  const raw = await callClaude(
+    [
+      {
+        role: 'user',
+        content: `The user already owns a ${ownedGun.make} ${ownedGun.model} (${ownedGun.type}, ${ownedGun.caliber}).
+
+They are shopping for: ${wishlistContext}
+
+Their specific requirement: "${refinement}"
+
+Recommend 3-4 specific real firearms that meet their stated refinement criteria and are meaningfully different from what they already own. Be direct — pick real models at real prices. Return ONLY a valid JSON array, no markdown:
+[
+  { "make": "...", "model": "...", "reason": "one sentence why this fits their criteria", "estimatedPrice": 000 }
+]`,
+      },
+    ],
+    'You are a knowledgeable firearm purchasing advisor. Give specific, real model recommendations with accurate current street prices. Only recommend lawfully available firearms. Be opinionated and direct.',
+    'wishlist_recommendations',
+    600,
+  );
+  try {
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) return [];
+    return JSON.parse(match[0]) as WishlistRecommendation[];
+  } catch {
+    return [];
+  }
+}
+
 // ── Session AI Parser ─────────────────────────────────────────────────────────
 
 export interface ParsedSessionString {

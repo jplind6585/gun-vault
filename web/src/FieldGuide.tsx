@@ -4,9 +4,10 @@ import { supabase } from './lib/supabase';
 import { FieldGuideOptics } from './FieldGuideOptics';
 import { FieldGuideCompetition } from './FieldGuideCompetition';
 import { FieldGuideMarksmanship } from './FieldGuideMarksmanship';
+import { FieldGuideBuyingChecklist } from './FieldGuideBuyingChecklist';
 import { CaliberDatabase } from './CaliberDatabase';
 
-type GuideSection = 'home' | 'glossary' | 'camos' | 'platforms' | 'ballistics' | 'maintenance' | 'optics' | 'competition' | 'marksmanship' | 'cartridges';
+type GuideSection = 'home' | 'glossary' | 'camos' | 'platforms' | 'ballistics' | 'maintenance' | 'optics' | 'competition' | 'marksmanship' | 'cartridges' | 'buying-checklist';
 
 // ─── GLOSSARY DATA ────────────────────────────────────────────────────────────
 
@@ -1621,10 +1622,11 @@ export function FieldGuide() {
     );
 
     const homeCards = [
-      { title: 'Cartridges',  subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
-      { title: 'Gun History', subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
+      { title: 'Cartridges',       subtitle: 'Specs, history & ballistics', action: () => setSection('cartridges') },
+      { title: 'Gun History',      subtitle: 'Famous firearm families',     action: () => setSection('platforms') },
+      { title: 'Buying Checklist', subtitle: 'LGS, online, private & NFA',  action: () => setSection('buying-checklist') },
       // { title: 'Ballistics',      subtitle: 'External & terminal concepts', action: () => setSection('ballistics') },
-      { title: 'Glossary',    subtitle: 'Acronyms & terms decoded',    action: () => setSection('glossary') },
+      { title: 'Glossary',         subtitle: 'Acronyms & terms decoded',    action: () => setSection('glossary') },
       // { title: 'Optics Overview', subtitle: 'Scopes, red dots & beyond',    action: () => setSection('optics') },
     ];
 
@@ -2564,6 +2566,10 @@ export function FieldGuide() {
 
   if (section === 'marksmanship') {
     return <FieldGuideMarksmanship onBack={() => setSection('home')} />;
+  }
+
+  if (section === 'buying-checklist') {
+    return <FieldGuideBuyingChecklist onBack={() => setSection('home')} />;
   }
 
   return null;

@@ -113,6 +113,7 @@ function AppCore() {
   const [openAddAmmo, setOpenAddAmmo] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [gunRefreshKey, setGunRefreshKey] = useState(0);
+  const [wishlistAlertCount, setWishlistAlertCount] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -475,7 +476,7 @@ function handleSaveGun(gunData: Partial<Gun>) {
     if (currentView === 'training')    return <TrainingLog />;
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
-    if (currentView === 'wishlist')    return <Wishlist isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
+    if (currentView === 'wishlist')    return <Wishlist isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} onBuyIt={({ make, model, caliber, type }) => { setAddGunInitial({ make, model, caliber, type }); setShowAddForm(true); }} onAlertCountChange={setWishlistAlertCount} />;
     if (currentView === 'optic-detail' && selectedOpticId) return <OpticDetail opticId={selectedOpticId} onBack={navigateBack} onDeleted={() => { setSelectedOpticId(null); navigateTo('vault'); setVaultSection('optics'); }} />;
     if (currentView === 'style-demo')  return <StyleDemo />;
     if (currentView === 'more')        return <MoreMenu onNavigate={(v) => navigateTo(v as AppView)} onFeedbackOpen={() => setShowFeedback(true)} isPro={isPro} />;
@@ -513,6 +514,7 @@ function handleSaveGun(gunData: Partial<Gun>) {
         onNavigateToSessions={() => { setSessionFilterGunId(null); navigateTo('sessions'); }}
         onNavigateToTargetAnalysis={() => navigateTo('target-analysis')}
         onNavigateToMore={() => navigateTo('more')}
+        wishlistAlertCount={wishlistAlertCount}
       />
       {showSmartSearch && (
         <SmartSearch

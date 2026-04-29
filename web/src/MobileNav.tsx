@@ -10,6 +10,7 @@ interface MobileNavProps {
   onNavigateToSessions: () => void;
   onNavigateToTargetAnalysis: () => void;
   onNavigateToMore: () => void;
+  wishlistAlertCount?: number;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -112,6 +113,7 @@ export function MobileNav({
   onNavigateToSessions,
   onNavigateToTargetAnalysis,
   onNavigateToMore,
+  wishlistAlertCount = 0,
 }: MobileNavProps) {
   const handlers: Record<NavView, () => void> = {
     home:              onNavigateToHome,
@@ -174,7 +176,21 @@ export function MobileNav({
                 borderRadius: '0 0 2px 2px',
               }} />
             )}
-            <Icon active={isActive} />
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <Icon active={isActive} />
+              {id === 'more' && wishlistAlertCount > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-4px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#ffd43b',
+                  border: '1.5px solid #0e0e2a',
+                }} />
+              )}
+            </div>
             <span style={{
               fontSize: '9px',
               fontFamily: 'monospace',
