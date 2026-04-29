@@ -536,9 +536,9 @@ Return this exact JSON (null for any field you cannot determine):
 }
 
 Rules:
-- caliber format: "9mm Luger", ".308 Winchester", "5.56x45mm NATO"
-- gun type: "Pistol", "Rifle", "Shotgun"
-- action: "Semi-Auto", "Bolt", "Lever", "Pump", "Revolver"
+- caliber: always include the FULL designation — ".375 H&H Magnum" not "Magnum", ".300 Win Mag" not "Win Mag", ".338 Lapua Magnum" not "Lapua". Format examples: "9mm Luger", ".45 ACP", ".308 Winchester", "5.56x45mm NATO", ".375 H&H Magnum", ".300 Winchester Magnum", ".338 Lapua Magnum", "6.5 Creedmoor", ".44 Remington Magnum"
+- gun type: "Pistol", "Rifle", "Shotgun", "Revolver", "Shotgun"
+- action: "Semi-Auto", "Bolt", "Lever", "Pump", "Revolver", "Single-Shot"
 - If you don't recognize this UPC, set itemType to "unknown" and confidence to "low"
 - Return only the JSON`;
 
