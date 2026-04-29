@@ -1,6 +1,6 @@
 // Claude API — routed through Supabase Edge Function (production-safe)
 // Your Anthropic key lives in Supabase secrets, never in the browser.
-import type { Session, Gun, AmmoLot, TargetPhotoAnalysis, SessionPurpose, IssueType } from './types';
+import type { Session, Gun, AmmoLot, TargetPhotoAnalysis, SessionPurpose, IssueType, DrillSession, ShootingDrill, TrainingGoals, CompetitionEvent, CompetitionResult } from './types';
 import type { ShooterProfile } from './shooterProfile';
 import type { CheckInTrigger } from './profileInference';
 import { supabase, SUPABASE_URL } from './lib/supabase';
@@ -1119,4 +1119,146 @@ export function getTrainingGapDays(sessions: Session[]): number {
   const lastDate = new Date(sorted[0].date + 'T12:00:00');
   const today = new Date();
   return Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// ── Training AI ──────────────────────────────────────────────────────────────
+
+const TRAINING_INSIGHTS_CACHE_KEY = 'gunvault_training_insights_cache';
+
+/** AI coaching insights on recent drill performance. Cached 24h. */
+export async function callTrainingInsights(
+  sessions: DrillSession[],
+  drills: ShootingDrill[],
+  goals: TrainingGoals | null,
+): Promise<string> {
+  // Check 24h cache
+  try {
+    const cached = JSON.parse(localStorage.getItem(TRAINING_INSIGHTS_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.ts < 24 * 60 * 60 * 1000) return cached.text;
+  } catch { /* ignore */ }
+
+  const recent = sessions.slice(0, 30);
+  const drillMap = new Map(drills.map(d => [d.id, d]));
+
+  const sessionLines = recent.map(s => {
+    const d = drillMap.get(s.drillId);
+    const result = s.totalTimeSeconds != null ? `${s.totalTimeSeconds}s`
+      : s.points != null ? `${s.points} pts`
+      : s.accuracy != null ? `${s.accuracy}%`
+      : 'no result';
+    const mental = (s.sleepRating || s.stressRating || s.focusRating)
+      ? ` [sleep:${s.sleepRating ?? '?'} stress:${s.stressRating ?? '?'} focus:${s.focusRating ?? '?'}]`
+      : '';
+    const gun = s.gunName ? ` (${s.gunName})` : '';
+    return `${s.date} — ${s.drillName}${gun}: ${result}${s.isDryFire ? ' (dry)' : ''}${mental}${s.notes ? ` — "${s.notes}"` : ''}`;
+  }).join('\n');
+
+  const goalStr = goals?.primaryDiscipline
+    ? `Goals: ${goals.primaryDiscipline} shooter, ${goals.sessionMinutesAvailable ?? 'open'} min/session.`
+    : 'No explicit goals set.';
+
+  const prompt = `You are a firearms training coach reviewing a shooter's recent drill log. Give 2-3 specific, actionable insights — identify patterns, plateaus, strengths, and what to prioritize next. Be direct and concise. No generic advice.
+
+${goalStr}
+
+Recent sessions (newest first):
+${sessionLines || 'No sessions logged yet.'}
+
+Format: plain text, 2-3 short paragraphs. No headers. No bullet lists.`;
+
+  const text = await callClaude([{ role: 'user', content: prompt }], undefined, 'training_insights', 400);
+  try {
+    localStorage.setItem(TRAINING_INSIGHTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), text }));
+  } catch { /* ignore */ }
+  return text;
+}
+
+/** Clear the cached training insights (call after saving a new session). */
+export function clearTrainingInsightsCache(): void {
+  localStorage.removeItem(TRAINING_INSIGHTS_CACHE_KEY);
+}
+
+// ── Competition AI ───────────────────────────────────────────────────────────
+
+/** Generate a training plan for an upcoming competition event. */
+export async function generateEventTrainingPlan(
+  event: CompetitionEvent,
+  recentSessions: DrillSession[],
+  drills: ShootingDrill[],
+  goals: TrainingGoals | null,
+): Promise<string> {
+  const today = new Date().toISOString().split('T')[0];
+  const daysOut = Math.max(0, Math.floor((new Date(event.date + 'T12:00:00').getTime() - new Date(today + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)));
+
+  const drillNames = drills
+    .filter(d => d.discipline.some(disc => {
+      const map: Record<string, string[]> = {
+        USPSA: ['pistol'], IDPA: ['pistol'], IPSC: ['pistol'], 'Steel Challenge': ['pistol'],
+        'PRS': ['rifle'], 'NRL': ['rifle'], 'Long Range': ['rifle'],
+        'ATA Trap': ['shotgun'], 'NSCA Sporting Clays': ['shotgun'], 'NSSA Skeet': ['shotgun'],
+      };
+      return (map[event.discipline] ?? ['pistol']).includes(disc);
+    }))
+    .slice(0, 12)
+    .map(d => `${d.name} (${d.difficulty}/5 difficulty, ${d.round_count} rds, focuses: ${d.skill_focus.slice(0, 3).join(', ')})`)
+    .join('\n');
+
+  const sessionSummary = recentSessions.slice(0, 15)
+    .map(s => `${s.date}: ${s.drillName} — ${s.totalTimeSeconds != null ? s.totalTimeSeconds + 's' : s.points != null ? s.points + ' pts' : 'logged'}`)
+    .join('\n') || 'No recent drill sessions.';
+
+  const prompt = `You are a competitive shooting coach building a pre-match training plan.
+
+Match: ${event.name}
+Discipline: ${event.discipline} | Division: ${event.division}
+Date: ${event.date} (${daysOut} days away)
+Priority: ${event.priority}-match${event.stageCount ? ` | ${event.stageCount} stages` : ''}${event.roundCount ? ` | ~${event.roundCount} rounds` : ''}
+${goals?.sessionMinutesAvailable ? `Available: ${goals.sessionMinutesAvailable} min/session` : ''}
+
+Recent training:
+${sessionSummary}
+
+Available drills:
+${drillNames || 'Standard drills available.'}
+
+Write a focused 3-phase training plan (Build / Peak / Match Week). For each phase: what to emphasize, 2-3 specific drills, any dry fire focus. Be specific to the discipline and match type. Max 350 words.`;
+
+  return callClaude([{ role: 'user', content: prompt }], undefined, 'training_plan', 500);
+}
+
+/** Post-match AI debrief based on result entry + optional shooter responses. */
+export async function generateMatchDebrief(
+  result: CompetitionResult,
+  shooterNotes: string,
+): Promise<string> {
+  const placement = result.placement && result.totalCompetitors
+    ? `${result.placement} of ${result.totalCompetitors} (top ${Math.round(result.placement / result.totalCompetitors * 100)}%)`
+    : result.placement ? `${result.placement}th place` : 'placement not recorded';
+
+  const score = result.score != null ? `${result.score} ${result.scoreUnit || ''}`.trim() : 'not recorded';
+
+  const stageBreakdown = result.stageData?.length
+    ? '\nStage breakdown:\n' + result.stageData.map(s =>
+        `  Stage ${s.stage}: ${s.time != null ? s.time + 's' : ''}${s.pointsDown != null ? ' +' + s.pointsDown + ' down' : ''}${s.score != null ? ' ' + s.score + ' pts' : ''}`
+      ).join('\n')
+    : '';
+
+  const prompt = `You are a competitive shooting coach doing a post-match debrief.
+
+Match: ${result.eventName}
+Discipline: ${result.discipline} | Division: ${result.division}
+Date: ${result.date}
+Result: ${placement}
+Score: ${score}${stageBreakdown}
+${result.classifierScore != null ? `Classifier score: ${result.classifierScore}%` : ''}
+Shooter notes: ${shooterNotes || result.notes || 'None provided.'}
+
+Give a direct, honest 3-part debrief:
+1. What went well (be specific, not generic)
+2. What to work on before the next match (prioritized, actionable)
+3. One clear directive for the next training cycle
+
+Max 250 words. Direct tone. No fluff.`;
+
+  return callClaude([{ role: 'user', content: prompt }], undefined, 'match_debrief', 400);
 }

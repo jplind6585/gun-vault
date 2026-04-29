@@ -14,7 +14,7 @@ import { useState, useEffect, useRef } from 'react';
 import { theme } from './theme';
 import type { Gun, AmmoLot, IssueType, SessionPurpose } from './types';
 import { getAllGuns, getAllAmmo, getAllSessions, logSession, updateAmmo, updateGun } from './storage';
-import { parseSessionFromText } from './claudeApi';
+import { parseSessionFromText, getFeatureUsageCounts } from './claudeApi';
 import { haptic } from './haptic';
 
 type Screen = 'form' | 'mic' | 'review' | 'confirm';
@@ -74,6 +74,8 @@ interface Props {
   preselectedGun?: Gun | null;
   onSaved: () => void;
   onCancel: () => void;
+  isPro?: boolean;
+  onUpgrade?: (reason: string) => void;
 }
 
 const SpeechRecognition =
@@ -279,8 +281,11 @@ function ReviewField({
           {editing ? 'Done' : 'Edit'}
         </button>
       </div>
-      <div style={{ background: bgColor, border: `0.5px solid ${borderColor}`, borderRadius: '4px', padding: '11px 12px', fontFamily: mono, fontSize: '12px', color: value ? theme.textPrimary : theme.textMuted }}>
-        {editing ? editContent : (value || 'Not detected — tap Edit')}
+      <div
+        onClick={() => { if (!editing) setEditing(true); }}
+        style={{ background: bgColor, border: `0.5px solid ${borderColor}`, borderRadius: '4px', padding: '11px 12px', fontFamily: mono, fontSize: '12px', color: value ? theme.textPrimary : theme.textMuted, cursor: editing ? 'default' : 'text' }}
+      >
+        {editing ? editContent : (value || 'Not detected — tap to edit')}
       </div>
     </div>
   );
@@ -288,7 +293,7 @@ function ReviewField({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
+export function SessionEntry({ preselectedGun, onSaved, onCancel, isPro, onUpgrade }: Props) {
   const [guns] = useState<Gun[]>(() => getAllGuns());
   const [ammoLots] = useState<AmmoLot[]>(() => getAllAmmo());
 
@@ -447,11 +452,14 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
 
   // ── Mic / AI ──────────────────────────────────────────────────────────────
 
+  const stoppedIntentionallyRef = useRef(false);
+
   function startListening() {
     if (!SpeechRecognition) {
       setScreen('form');
       return;
     }
+    stoppedIntentionallyRef.current = false;
     const r = new SpeechRecognition();
     r.lang = 'en-US';
     r.continuous = true;
@@ -465,6 +473,11 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
     };
     r.onerror = () => { setMicPhase('idle'); };
     r.onend = () => {
+      if (!stoppedIntentionallyRef.current) {
+        // Browser stopped due to a breath pause — restart transparently
+        try { r.start(); } catch { /* recognition already restarting */ }
+        return;
+      }
       const text = acc.trim();
       if (text) processTranscript(text);
       else setMicPhase('idle');
@@ -476,6 +489,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
   }
 
   function stopListening() {
+    stoppedIntentionallyRef.current = true;
     recognitionRef.current?.stop();
     setMicPhase('processing');
     haptic('light');
@@ -780,7 +794,7 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
           padding: '18px 20px 14px', position: 'relative',
           borderBottom: `0.5px solid ${theme.border}`, flexShrink: 0,
         }}>
-          <button onClick={() => { recognitionRef.current?.stop(); setScreen('form'); setMicPhase('idle'); setTranscript(''); }} style={{
+          <button onClick={() => { stoppedIntentionallyRef.current = true; recognitionRef.current?.stop(); setScreen('form'); setMicPhase('idle'); setTranscript(''); }} style={{
             position: 'absolute', left: 16, background: 'none', border: 'none',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
             color: theme.accent, fontFamily: mono, fontSize: '11px', padding: '4px 0',
@@ -841,6 +855,23 @@ export function SessionEntry({ preselectedGun, onSaved, onCancel }: Props) {
             {micPhase === 'idle' && 'Tap to start'}
             {micPhase === 'listening' && 'Tap to stop'}
           </div>
+
+          {/* Free-tier usage indicator — shown when ≤2 debriefs remain this month */}
+          {micPhase === 'idle' && !isPro && (() => {
+            const used = getFeatureUsageCounts().narrative;
+            if (used < 3) return null;
+            const remaining = Math.max(0, 5 - used);
+            return (
+              <div style={{ marginTop: '20px', padding: '10px 14px', borderRadius: '8px', backgroundColor: theme.surface, border: `0.5px solid ${remaining === 0 ? theme.orange : theme.border}`, textAlign: 'center' }}>
+                <span style={{ fontFamily: mono, fontSize: '11px', color: remaining === 0 ? theme.orange : theme.textSecondary }}>
+                  {remaining === 0 ? '0 of 5 free AI debriefs left this month — ' : `${remaining} of 5 free AI debriefs left this month — `}
+                </span>
+                <button onClick={() => onUpgrade?.('narrative_limit')} style={{ background: 'none', border: 'none', padding: 0, fontFamily: mono, fontSize: '11px', color: theme.accent, cursor: 'pointer', textDecoration: 'underline' }}>
+                  Upgrade for unlimited
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );

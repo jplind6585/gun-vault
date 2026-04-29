@@ -26,6 +26,8 @@ const STATIC_URLS = [
   { loc: 'https://lindcottarmory.com/history',          changefreq: 'monthly', priority: '0.7' },
   { loc: 'https://lindcottarmory.com/military',         changefreq: 'monthly', priority: '0.7' },
   { loc: 'https://lindcottarmory.com/stolen',           changefreq: 'monthly', priority: '0.7' },
+  { loc: 'https://lindcottarmory.com/burn-rate',        changefreq: 'monthly', priority: '0.7' },
+  { loc: 'https://lindcottarmory.com/buying-checklist', changefreq: 'monthly', priority: '0.8' },
   { loc: 'https://lindcottarmory.com/privacy',          changefreq: 'yearly',  priority: '0.3' },
 ];
 

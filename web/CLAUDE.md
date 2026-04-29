@@ -153,7 +153,9 @@ src/
 | Caliber Database | Complete (198 cartridges) |
 | Field Guide | Complete — Cartridges, Platforms, Ballistics, Glossary, Optics sections live |
 | Reloading Bench | Complete (UI) — full redesign spec written April 2026; awaiting implementation |
-| Training Log | Built but hidden — needs full redesign (HIGH PRIORITY) |
+| Photo System | Complete — PhotoCapture.tsx, GradeAGun.tsx, photoService.ts, PhotoManager.tsx live in GunDetail |
+| Training Log | Built but hidden — FULL REDESIGN SCOPED (see project_armory_roadmap.md Training Module section) |
+| Competition Tracker | Not built — full spec at ~/Downloads/competition-tracker-spec.md, READY FOR BUILD after training module |
 | Gear Locker | Built but hidden — needs redesign (lower priority) |
 | Wishlist | Complete |
 | Armory Assistant (AI) | Complete |
@@ -166,7 +168,7 @@ src/
 | Gunsmithing / Work Orders | Coming Soon stub only |
 | Find Events | Coming Soon stub only |
 | Onboarding flow | Not built — pre-launch blocker |
-| Freemium gating (RevenueCat) | Not built — pre-launch blocker |
+| Freemium gating (RevenueCat) | Code-complete — gates held open by GRANT_ALL_PRO flag pending Play Store connection |
 
 Do not build into hidden or Coming Soon modules without an explicit task from James.
 
@@ -232,7 +234,7 @@ The `armory-assistant` edge function proxies Claude API calls. The system prompt
 
 ## Monetization tiers
 
-RevenueCat integration is not fully built yet — a pre-launch task. Respect tier rules now so no gated feature is accidentally exposed.
+RevenueCat project is configured. Gate architecture is code-complete — `GRANT_ALL_PRO = true` keeps all users on Pro until Play Store and App Store Connect are connected and products are live.
 
 | Tier | What's included |
 |---|---|
@@ -247,11 +249,15 @@ RevenueCat integration is not fully built yet — a pre-launch task. Respect tie
 - Target Analysis: `navigateTo('target-analysis')` blocked when `!isPro`
 - `isPro` state loaded via `getProStatus(userId)` in `billing.ts` after auth
 
-**RevenueCat (Android):**
-- SDK key: `test_EiWsEeRjBKxeByKZkXoybIhKLyS` (Test Store — skipped in production init)
-- Products set up: Monthly, Yearly, Lifetime (all linked to 1 entitlement)
-- Production key needed: connect Google Play Console app in RevenueCat → Apps & Providers → get real Android SDK key → add as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars
-- `billing.ts` skips init for `test_` prefixed keys; pro status falls back to Supabase check
+**RevenueCat — current state (2026-04-28):**
+- Project: "Lindcott Armory" at app.revenuecat.com/projects/629dff3b
+- Entitlements: `pro` and `premium` — identifiers match billing.ts checks exactly
+- Android app: "Lindcott Armory (Play Store)" registered, package `com.lindcottarmory.app`
+- Android SDK key: `goog_vHtC00czPBXR0FQRGqT0hNGrMfl` → add as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars and `.env.local`
+- iOS app: "Lindcott Armory (App Store)" — add as separate config, get `appl_` key → add as `VITE_REVENUECAT_APPLE_API_KEY`
+- billing.ts: platform-aware init — Android uses GOOGLE key, iOS uses APPLE key
+- billing.ts skips init for `test_` prefixed keys; falls back to Supabase check
+- **Still needed to go live:** service account JSON from Play Console + App Store Connect key; create subscription products; link to offerings; flip GRANT_ALL_PRO = false
 
 **Web claim flow:** `claim-pro` edge function deployed in Supabase. Free 30-day early access claim. `onUpgradeSuccess` callback in `UpgradeModal` sets `isPro(true)` in App.tsx without reload.
 
@@ -319,7 +325,7 @@ Fires automatically on `git push origin main`. No extra step needed. Live in ~60
 Netlify is configured to watch `main` — confirmed 2026-04-26. The `develop` branch exists but Netlify does not deploy from it.
 
 ### versionCode
-Must increment before every Play Store upload. **Current: 20** (v20 is live in Google Closed Testing and is the iOS v1 baseline). Play Store rejects any build ≤ last uploaded value.
+Must increment before every Play Store upload. **Current: 24** (v24 uploaded 2026-04-29). Play Store rejects any build ≤ last uploaded value.
 
 ### Branch strategy
 ```
@@ -334,8 +340,8 @@ feature/*        ← short-lived branches per phase, PR into develop
 ### Next store build checklist (v21)
 Before the next `fastlane internal` run:
 1. Phase 1 + Phase 2 features merged and tested on `develop`
-2. Get production RevenueCat Android SDK key (connect Google Play Console → RevenueCat → Apps & Providers)
-3. Add key as `VITE_REVENUECAT_GOOGLE_API_KEY` in Netlify env vars and `.env.local`
+2. Add `VITE_REVENUECAT_GOOGLE_API_KEY=goog_vHtC00czPBXR0FQRGqT0hNGrMfl` to Netlify env vars and `.env.local`
+3. Add `VITE_REVENUECAT_APPLE_API_KEY=appl_xxx` once iOS RC config is saved
 4. Bump versionCode to 21
 5. Run e2e tests, build, sync, fastlane internal
 
@@ -390,6 +396,30 @@ Reloading Bench V1 (Phase 3)
 - **Environmental data spec must be finalized before building Reloading Bench Module 3 or AA Feature 6** — retrofitting environmental fields later is expensive
 
 **Environmental data capture — capture strategy (revisit before building):** Phase 1 = manual entry fields (temp, altitude, humidity, density altitude) on SessionLoggingModal and reloading result screens. Phase 2 = auto-populate from device GPS + weather API. Phase 3 = Armory Assistant contextualizes load performance using environmental data. Do NOT skip to Phase 2 before Phase 1 exists — manual entry is low-effort and starts building real data immediately. Full schema additions documented in armory-roadmap.md Environmental Data section.
+
+### Long Horizon — Strategic Bets
+*Not scheduled. No build order. Require dedicated planning sessions before any code is written. Full specs in `project_armory_roadmap.md`.*
+
+| # | Name | One-line |
+|---|---|---|
+| 1 | **Predictive Maintenance Engine** | Component-level lifecycle tracking (barrel, spring, extractor) with round-count cascade and proactive service alerts |
+| 2 | **Jurisdiction Compliance Engine** | Federal/state/local law awareness for every vault gun; travel briefs across state lines; updates when laws change |
+| 3 | **Load Development Science** | Close the loop: reloading bench + sessions + environment + target analysis → ballistic laboratory with statistical modeling |
+| 4 | **Professional Valuation + Insurance/Estate Suite** | Insurance-grade documentation, replacement cost tracking, estate planning (beneficiary assignment per gun, FFL transfer notes) |
+| 5 | **Anonymized Community Intelligence** | Opt-in signal layer across all users: maintenance benchmarks, load performance comparisons, valuation social proof |
+| 6 | **Hardware Integration** | Chronographs (LabRadar, MagnetoSpeed, Garmin Xero), Kestrel weather meters, shot timers — real instrument data into the app via Bluetooth |
+| 7 | **Training Module Rebuild + Competition Tracker** | Full spec written (`~/Downloads/competition-tracker-spec.md`). Training = daily execution layer (drill library, programs, AI recs, progression). Competition = strategic layer (events, plans, results, classifier, post-match debrief, 1% Better). James's USPSA journey from zero is the anchor testimonial. |
+| 8 | **Gunsmithing Module + Restoration Project** | Skill tree, work orders, technique library, AI guidance (scoped). James's novice → proficient journey + museum-quality restoration as content/testimonial. |
+| 9 | **Video Drill Guides** | Instructional video per drill, in-app playback. Primarily a content creation effort. Long-term. |
+| 10 | **Video Form Analysis** | User records drill execution → AI reviews stance/grip/muzzle discipline/movement. Frame extraction + Claude Vision + coaching prompt. Elite tier. Long-term. |
+
+**James's personal projects (content + testimonials):**
+- USPSA: start from zero, use the training + competition modules, document progress in-app, share as content marketing. Anchor testimonial for both modules.
+- Gunsmithing: start from zero, use the gunsmithing module, restore an old gun to museum quality, document as a testimonial.
+
+**Competition Tracker spec:** fully written at `~/Downloads/competition-tracker-spec.md`. READY FOR BUILD when training module rebuild is complete.
+
+---
 
 ### Reloading data migration safety
 The existing `reloading_data` table has real user data. Before any schema changes:

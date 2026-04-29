@@ -28,6 +28,7 @@ const CaliberDatabase = lazy(() => import('./CaliberDatabase').then(m => ({ defa
 const BallisticCalculator = lazy(() => import('./BallisticCalculator').then(m => ({ default: m.BallisticCalculator })));
 const TargetAnalysis = lazy(() => import('./TargetAnalysis').then(m => ({ default: m.TargetAnalysis })));
 const TrainingLog = lazy(() => import('./TrainingLog').then(m => ({ default: m.TrainingLog })));
+const CompetitionTracker = lazy(() => import('./CompetitionTracker').then(m => ({ default: m.CompetitionTracker })));
 const ReloadingBench = lazy(() => import('./ReloadingBench').then(m => ({ default: m.ReloadingBench })));
 const GearLocker = lazy(() => import('./GearLocker').then(m => ({ default: m.GearLocker })));
 const Wishlist = lazy(() => import('./Wishlist').then(m => ({ default: m.Wishlist })));
@@ -52,7 +53,7 @@ import { shouldShowOnboarding } from './profileStorage';
 import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
 import './App.css';
 
-type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant';
+type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant' | 'competition';
 
 function App() {
   return (
@@ -363,6 +364,7 @@ function handleSaveGun(gunData: Partial<Gun>) {
     if (currentView === 'ballistics')   return <AppHeader title="Ballistics" onBack={navigateBack} backLabel="More" />;
     if (currentView === 'target-analysis') return <AppHeader title="Target Analysis" onBack={navigateBack} backLabel="More" />;
     if (currentView === 'training')     return <AppHeader title="Training Log" onBack={navigateBack} backLabel="More" />;
+    if (currentView === 'competition')  return <AppHeader title="Competition Tracker" onBack={navigateBack} backLabel="More" />;
     if (currentView === 'reloading')    return <AppHeader title="Reloading" onBack={navigateBack} backLabel="More" />;
     if (currentView === 'gear')         return <AppHeader title="Gear Locker" onBack={navigateBack} backLabel="More" />;
     if (currentView === 'wishlist')     return <AppHeader title="Wishlist" onBack={navigateBack} backLabel="More" />;
@@ -473,7 +475,8 @@ function handleSaveGun(gunData: Partial<Gun>) {
     if (currentView === 'caliber')     return <CaliberDatabase isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
     if (currentView === 'ballistics')  return <BallisticCalculator />;
     if (currentView === 'target-analysis') return <TargetAnalysis isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
-    if (currentView === 'training')    return <TrainingLog />;
+    if (currentView === 'training')    return <TrainingLog isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} />;
+    if (currentView === 'competition') return <CompetitionTracker isPro={isPro} />;
     if (currentView === 'reloading')   return <ReloadingBench />;
     if (currentView === 'gear')        return <GearLocker />;
     if (currentView === 'wishlist')    return <Wishlist isPro={isPro} onUpgrade={(reason) => { setUpgradeReason(reason); setShowUpgrade(true); }} onBuyIt={({ make, model, caliber, type }) => { setAddGunInitial({ make, model, caliber, type }); setShowAddForm(true); }} onAlertCountChange={setWishlistAlertCount} />;

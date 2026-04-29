@@ -293,6 +293,14 @@
     </div>
   </footer>
 
+  <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" style="position:fixed;bottom:28px;right:24px;z-index:900;display:none;width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;font-size:18px;color:#000;line-height:1;box-shadow:0 2px 12px rgba(0,0,0,0.4)">↑</button>
+  <script>
+    (function(){
+      const btn = document.getElementById('back-to-top');
+      window.addEventListener('scroll', () => { btn.style.display = window.scrollY > 400 ? 'block' : 'none'; }, {passive:true});
+    })();
+  </script>
+
   <script src="/js/supabase-loader.js"></script>
   <script src="/js/powder-detail.js"></script>
 

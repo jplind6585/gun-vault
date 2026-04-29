@@ -758,7 +758,7 @@ function RecipeForm({
                         key={i}
                         type="button"
                         onMouseDown={() => {
-                          setFormData(prev => ({ ...prev, powderType: p.productName }));
+                          setFormData(prev => ({ ...prev, powderType: p.name }));
                           setShowPowderSuggestions(false);
                         }}
                         style={{
@@ -768,9 +768,9 @@ function RecipeForm({
                           textAlign: 'left', cursor: 'pointer',
                         }}
                       >
-                        <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary }}>{p.productName}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary }}>{p.name}</span>
                         <span style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>
-                          {p.brand}{p.burnRateRank ? ` · Burn rate ${p.burnRateRank}` : ''}{p.powderType ? ` · ${p.powderType}` : ''}
+                          {p.manufacturer}{p.burnRateRank ? ` · Burn rate ${p.burnRateRank}` : ''}{p.burnRateCategory ? ` · ${p.burnRateCategory}` : ''}{!p.doubleChargeVisible ? ' · ⚠ Double-charge risk' : ''}
                         </span>
                       </button>
                     ))}

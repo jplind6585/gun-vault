@@ -1,5 +1,5 @@
 // LocalStorage-based data persistence + Supabase background sync
-import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero, DrillSession, TrainingGoals } from './types';
+import type { Gun, Session, AmmoLot, Cartridge, TargetAnalysisRecord, Optic, Mount, OpticAssignment, OpticZero, DrillSession, TrainingGoals, CompetitionEvent, CompetitionResult, ClassifierEntry } from './types';
 import { markObAction } from './onboardingProgress';
 import {
   syncGun, deleteGunFromSupabase,
@@ -892,6 +892,60 @@ export function getTrainingGoals(): TrainingGoals | null {
 
 export function saveTrainingGoals(goals: TrainingGoals): void {
   localStorage.setItem(TRAINING_GOALS_KEY, JSON.stringify(goals));
+}
+
+// ============================================================================
+// COMPETITION TRACKER
+// ============================================================================
+
+const COMP_EVENTS_KEY      = 'gunvault_competition_events';
+const COMP_RESULTS_KEY     = 'gunvault_competition_results';
+const CLASSIFIER_KEY       = 'gunvault_classifier_entries';
+
+export function getCompetitionEvents(): CompetitionEvent[] {
+  const d = localStorage.getItem(COMP_EVENTS_KEY);
+  return d ? JSON.parse(d) : [];
+}
+
+export function saveCompetitionEvent(event: CompetitionEvent): void {
+  const events = getCompetitionEvents().filter(e => e.id !== event.id);
+  events.push(event);
+  events.sort((a, b) => a.date.localeCompare(b.date));
+  localStorage.setItem(COMP_EVENTS_KEY, JSON.stringify(events));
+}
+
+export function deleteCompetitionEvent(id: string): void {
+  localStorage.setItem(COMP_EVENTS_KEY, JSON.stringify(getCompetitionEvents().filter(e => e.id !== id)));
+}
+
+export function getCompetitionResults(): CompetitionResult[] {
+  const d = localStorage.getItem(COMP_RESULTS_KEY);
+  return d ? JSON.parse(d) : [];
+}
+
+export function saveCompetitionResult(result: CompetitionResult): void {
+  const results = getCompetitionResults().filter(r => r.id !== result.id);
+  results.unshift(result);
+  localStorage.setItem(COMP_RESULTS_KEY, JSON.stringify(results));
+}
+
+export function deleteCompetitionResult(id: string): void {
+  localStorage.setItem(COMP_RESULTS_KEY, JSON.stringify(getCompetitionResults().filter(r => r.id !== id)));
+}
+
+export function getClassifierEntries(): ClassifierEntry[] {
+  const d = localStorage.getItem(CLASSIFIER_KEY);
+  return d ? JSON.parse(d) : [];
+}
+
+export function saveClassifierEntry(entry: ClassifierEntry): void {
+  const entries = getClassifierEntries().filter(e => e.id !== entry.id);
+  entries.unshift(entry);
+  localStorage.setItem(CLASSIFIER_KEY, JSON.stringify(entries));
+}
+
+export function deleteClassifierEntry(id: string): void {
+  localStorage.setItem(CLASSIFIER_KEY, JSON.stringify(getClassifierEntries().filter(e => e.id !== id)));
 }
 
 // ============================================================================

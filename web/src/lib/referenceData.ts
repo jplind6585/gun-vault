@@ -222,29 +222,44 @@ export async function checkGunModel(make: string, model: string): Promise<GunMod
 // ── Powder autocomplete ───────────────────────────────────────────────────────
 
 export interface PowderResult {
-  brand: string;
-  productName: string;
+  id: string;
+  name: string;
+  manufacturer: string;
   burnRateRank: number | null;
-  powderType: string | null;
+  burnRateCategory: string | null;
+  grainShape: string | null;
+  doubleChargeVisible: boolean;
   description: string | null;
+  typicalCalibers: string[] | null;
+  alternateNames: string[] | null;
 }
 
 export async function searchPowders(query: string): Promise<PowderResult[]> {
   if (!query.trim()) return [];
   try {
     const { data } = await supabase
-      .from('powder_brands')
-      .select('brand, product_name, burn_rate_rank, powder_type, description')
-      .or(`product_name.ilike.%${query}%,brand.ilike.%${query}%`)
-      .eq('discontinued', false)
+      .from('powders')
+      .select('id, name, manufacturer, burn_rate_rank, burn_rate_category, grain_shape, double_charge_visible, description, typical_calibers, alternate_names')
+      .or(`name.ilike.%${query}%,manufacturer.ilike.%${query}%`)
+      .neq('production_status', 'Discontinued')
       .order('burn_rate_rank', { ascending: true, nullsFirst: false })
       .limit(12);
-    return (data ?? []).map((r: { brand: string; product_name: string; burn_rate_rank: number; powder_type: string; description: string }) => ({
-      brand: r.brand,
-      productName: r.product_name,
+    return (data ?? []).map((r: {
+      id: string; name: string; manufacturer: string;
+      burn_rate_rank: number | null; burn_rate_category: string | null;
+      grain_shape: string | null; double_charge_visible: boolean;
+      description: string | null; typical_calibers: string[] | null; alternate_names: string[] | null;
+    }) => ({
+      id: r.id,
+      name: r.name,
+      manufacturer: r.manufacturer,
       burnRateRank: r.burn_rate_rank ?? null,
-      powderType: r.powder_type ?? null,
+      burnRateCategory: r.burn_rate_category ?? null,
+      grainShape: r.grain_shape ?? null,
+      doubleChargeVisible: r.double_charge_visible,
       description: r.description ?? null,
+      typicalCalibers: r.typical_calibers ?? null,
+      alternateNames: r.alternate_names ?? null,
     }));
   } catch {
     return [];

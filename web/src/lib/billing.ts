@@ -43,7 +43,11 @@ export async function initBilling(userId: string): Promise<void> {
   if (!isNativePlatform()) return;
   if (_initialized) return;
 
-  const apiKey = import.meta.env.VITE_REVENUECAT_GOOGLE_API_KEY as string | undefined;
+  const platform = Capacitor.getPlatform(); // 'android' | 'ios'
+  const apiKey = platform === 'ios'
+    ? import.meta.env.VITE_REVENUECAT_APPLE_API_KEY as string | undefined
+    : import.meta.env.VITE_REVENUECAT_GOOGLE_API_KEY as string | undefined;
+
   // Skip init if no key or if it's a test key without products configured yet
   if (!apiKey || apiKey.startsWith('test_')) {
     console.warn('[billing] RevenueCat skipped — configure production key before launch');

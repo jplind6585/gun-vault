@@ -206,6 +206,7 @@
           ${p.meteringGrade ? `<div class="spec-item"><div class="spec-label">METERING GRADE</div><div class="spec-value">${esc(p.meteringGrade)}</div></div>` : ''}
           ${p.muzzleFlashRating ? `<div class="spec-item"><div class="spec-label">MUZZLE FLASH</div><div class="spec-value">${esc(p.muzzleFlashRating)}</div></div>` : ''}
           ${p.countryOfOrigin ? `<div class="spec-item"><div class="spec-label">COUNTRY</div><div class="spec-value">${esc(p.countryOfOrigin)}</div></div>` : ''}
+          ${p.propellantBase ? `<div class="spec-item"><div class="spec-label">PROPELLANT BASE</div><div class="spec-value">${esc(p.propellantBase)}</div></div>` : ''}
         </div>
       </div>
 

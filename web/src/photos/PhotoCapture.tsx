@@ -318,8 +318,29 @@ export function PhotoCapture({
 
     // Background AI review
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      // Read token directly from localStorage — avoids getSession() network hang
+      const SUPABASE_SESSION_KEY = 'sb-joturvmcygdmpnhfsslu-auth-token';
+      let accessToken: string | null = null;
+      try {
+        const raw = localStorage.getItem(SUPABASE_SESSION_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const token = parsed?.access_token;
+          const expiresAt: number = parsed?.expires_at ?? 0;
+          if (token && expiresAt * 1000 > Date.now() + 60_000) accessToken = token;
+        }
+      } catch { /* ignore parse errors */ }
+      if (!accessToken) {
+        // Fallback: refreshSession with 8s timeout
+        try {
+          const result = await Promise.race([
+            supabase.auth.refreshSession(),
+            new Promise<null>(resolve => setTimeout(() => resolve(null), 8_000)),
+          ]);
+          accessToken = (result as any)?.data?.session?.access_token ?? null;
+        } catch { /* ignore */ }
+      }
+      if (!accessToken) {
         setRecords(prev => prev.map((r, i) => i === recordIndex ? { ...r, aiDone: true } : r));
         return;
       }
@@ -349,7 +370,7 @@ Keep warnings short and actionable (under 12 words each). If approved with no is
 
       const aiReview = fetch(`${SUPABASE_URL}/functions/v1/claude`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           feature: 'photo_review',
           messages: [{

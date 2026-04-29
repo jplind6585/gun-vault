@@ -129,6 +129,17 @@ function IconGunsmithing({ size = 26, muted = false }: { size?: number; muted?: 
   );
 }
 
+function IconCompetition({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
+  const c = muted ? theme.textMuted : theme.textPrimary;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 3L14.5 8.5L20 9L16 13.5L17.5 19L12 16L6.5 19L8 13.5L4 9L9.5 8.5L12 3Z" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M12 16V21" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M9 21H15" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 function IconLegal({ size = 26, muted = false }: { size?: number; muted?: boolean }) {
   const c = muted ? theme.textMuted : theme.textPrimary;
   return (
@@ -205,6 +216,14 @@ export function MoreMenu({ onNavigate, onFeedbackOpen, isPro }: MoreMenuProps) {
       sub: 'Drills, progression tracking, and skill development',
       available: true,
       onPress: () => onNavigate('training'),
+    },
+    {
+      id: 'competition',
+      Icon: IconCompetition,
+      label: 'Competition',
+      sub: 'Events, results, classifier tracking, and match prep',
+      available: true,
+      onPress: () => onNavigate('competition'),
     },
     {
       id: 'field-guide',

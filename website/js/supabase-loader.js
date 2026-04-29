@@ -76,6 +76,7 @@ function transformPowders(rows) {
     parentCompany:          p.parent_company         || '',
     manufacturer:           p.manufacturer           || '',
     distributor:            p.distributor            || '',
+    propellantBase:         p.propellant_base        || '',
   }));
 }
 

@@ -11,6 +11,7 @@ import {
   getAllGuns,
   getAllAmmo,
 } from './storage';
+import { callTrainingInsights, clearTrainingInsightsCache } from './claudeApi';
 import type {
   ShootingDrill,
   DrillSession,
@@ -1091,10 +1092,10 @@ function GoalsPanel({ goals, onChange, onClose }: GoalsPanelProps) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-type TrainingView = 'home' | 'browse' | 'detail';
+type TrainingView = 'home' | 'browse' | 'detail' | 'analytics';
 type DrillFilter = 'all' | 'pistol' | 'rifle' | 'shotgun' | 'dry-fire';
 
-export function TrainingLog() {
+export function TrainingLog({ isPro, onUpgrade }: { isPro?: boolean; onUpgrade?: (reason?: string) => void } = {}) {
   const [view, setView] = useState<TrainingView>('home');
   const [drills, setDrills] = useState<ShootingDrill[]>([]);
   const [sessions, setSessions] = useState<DrillSession[]>([]);
@@ -1125,6 +1126,7 @@ export function TrainingLog() {
     setShowSession(false);
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 2500);
+    clearTrainingInsightsCache();
   }
 
   function handleDeleteSession(id: string) {
@@ -1260,6 +1262,19 @@ export function TrainingLog() {
               {drills.filter(d => d.dry_fire_capable).length} drills
             </span>
           </button>
+          {sessions.length >= 3 && (
+            <button onClick={() => setView('analytics')} style={{
+              padding: '16px', backgroundColor: theme.surface,
+              border: `1px solid rgba(116, 192, 252, 0.4)`, borderRadius: '10px',
+              color: '#74c0fc', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', textAlign: 'center', gridColumn: '1 / -1',
+            }}>
+              ANALYTICS<br />
+              <span style={{ color: theme.textMuted, fontSize: '11px', fontWeight: 400 }}>
+                Plateau detection, skill coverage, AI feedback
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Save toast */}
@@ -1373,5 +1388,324 @@ export function TrainingLog() {
     );
   }
 
+  // ── Analytics view ──────────────────────────────────────────────────────────
+  if (view === 'analytics') {
+    return (
+      <AnalyticsView
+        sessions={sessions}
+        drills={drills}
+        goals={goals}
+        isPro={isPro}
+        onUpgrade={onUpgrade}
+        onBack={() => setView('home')}
+        onDrillSelect={(drill) => { setSelectedDrill(drill); setView('detail'); }}
+      />
+    );
+  }
+
   return null;
+}
+
+// ─── Analytics view ────────────────────────────────────────────────────────────
+
+interface AnalyticsViewProps {
+  sessions: DrillSession[];
+  drills: ShootingDrill[];
+  goals: TrainingGoals | null;
+  isPro?: boolean;
+  onUpgrade?: (reason?: string) => void;
+  onBack: () => void;
+  onDrillSelect: (drill: ShootingDrill) => void;
+}
+
+function AnalyticsView({ sessions, drills, goals, isPro, onUpgrade, onBack, onDrillSelect }: AnalyticsViewProps) {
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const now = Date.now();
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+  const recent30 = sessions.filter(s => s.timestamp >= thirtyDaysAgo);
+
+  // ── Plateau detection ─────────────────────────────────────────────────────
+  interface PlateauResult { drill: ShootingDrill; last5avg: number; prev5avg: number; pctChange: number; }
+  const plateaus: PlateauResult[] = [];
+  const drillMap = new Map(drills.map(d => [d.id, d]));
+
+  drills.forEach(drill => {
+    const ds = sessions
+      .filter(s => s.drillId === drill.id && s.totalTimeSeconds != null)
+      .sort((a, b) => b.timestamp - a.timestamp);
+    if (ds.length < 6) return;
+    const last5 = ds.slice(0, 5).map(s => s.totalTimeSeconds!);
+    const prev5 = ds.slice(5, 10).map(s => s.totalTimeSeconds!);
+    if (!prev5.length) return;
+    const last5avg = last5.reduce((a, b) => a + b, 0) / last5.length;
+    const prev5avg = prev5.reduce((a, b) => a + b, 0) / prev5.length;
+    // For timed drills: lower = better. Improvement = (prev - last) / prev
+    const pctChange = (prev5avg - last5avg) / prev5avg;
+    if (pctChange < 0.05) {
+      plateaus.push({ drill, last5avg, prev5avg, pctChange });
+    }
+  });
+
+  // ── Skill coverage (last 30 days) ─────────────────────────────────────────
+  const skillCounts = new Map<DrillSkillFocus, number>();
+  recent30.forEach(s => {
+    const drill = drillMap.get(s.drillId);
+    drill?.skill_focus.forEach(sf => {
+      skillCounts.set(sf, (skillCounts.get(sf) ?? 0) + 1);
+    });
+  });
+  const allSkills = Object.keys(SKILL_LABELS) as DrillSkillFocus[];
+  const maxSkillCount = Math.max(1, ...skillCounts.values());
+
+  // ── Mental correlation ────────────────────────────────────────────────────
+  const highSleep = sessions.filter(s => s.sleepRating != null && s.sleepRating >= 4 && s.totalTimeSeconds != null);
+  const lowSleep  = sessions.filter(s => s.sleepRating != null && s.sleepRating <= 2 && s.totalTimeSeconds != null);
+  const highSleepAvg = highSleep.length
+    ? highSleep.reduce((sum, s) => sum + s.totalTimeSeconds!, 0) / highSleep.length
+    : null;
+  const lowSleepAvg = lowSleep.length
+    ? lowSleep.reduce((sum, s) => sum + s.totalTimeSeconds!, 0) / lowSleep.length
+    : null;
+
+  // ── Gun breakdown ─────────────────────────────────────────────────────────
+  const gunCounts = new Map<string, { name: string; count: number }>();
+  sessions.forEach(s => {
+    const key = s.gunId ?? '__none__';
+    const name = s.gunName ?? 'No gun logged';
+    const prev = gunCounts.get(key) ?? { name, count: 0 };
+    gunCounts.set(key, { name, count: prev.count + 1 });
+  });
+  const gunBreakdown = [...gunCounts.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5);
+
+  async function handleGetAI() {
+    if (!isPro) { onUpgrade?.('AI training insights require Pro'); return; }
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const text = await callTrainingInsights(sessions, drills, goals);
+      setAiInsights(text);
+    } catch {
+      setAiError('Could not load AI insights. Try again later.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  const sectionLabel: React.CSSProperties = {
+    color: theme.textMuted, fontSize: '11px', letterSpacing: '1px',
+    marginBottom: '10px', marginTop: '24px',
+  };
+  const card: React.CSSProperties = {
+    backgroundColor: theme.surface, borderRadius: '10px',
+    border: `1px solid ${theme.border}`, padding: '14px 16px', marginBottom: '10px',
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 100px' }}>
+      {/* Back */}
+      <button onClick={onBack} style={{
+        background: 'none', border: 'none', color: theme.textSecondary,
+        fontSize: '13px', cursor: 'pointer', padding: '0 0 16px 0',
+        display: 'flex', alignItems: 'center', gap: '6px',
+      }}>
+        ← Back
+      </button>
+
+      <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px', color: theme.textMuted, marginBottom: '4px' }}>
+        TRAINING ANALYTICS
+      </div>
+      <div style={{ color: theme.textPrimary, fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>
+        {sessions.length} sessions logged
+      </div>
+
+      {/* ── AI Insights ── */}
+      <div style={sectionLabel}>AI COACHING INSIGHTS</div>
+      {aiInsights ? (
+        <div style={{ ...card, borderColor: 'rgba(116,192,252,0.3)' }}>
+          <div style={{ color: theme.textSecondary, fontSize: '14px', lineHeight: 1.6 }}>
+            {aiInsights}
+          </div>
+          <button onClick={() => { setAiInsights(null); clearTrainingInsightsCache(); }} style={{
+            marginTop: '12px', background: 'none', border: `1px solid ${theme.border}`,
+            borderRadius: '6px', padding: '6px 12px',
+            color: theme.textMuted, fontSize: '11px', cursor: 'pointer',
+          }}>
+            REFRESH
+          </button>
+        </div>
+      ) : (
+        <div style={card}>
+          <div style={{ color: theme.textMuted, fontSize: '13px', marginBottom: '12px' }}>
+            Get personalized coaching based on your drill history, patterns, and mental state data.
+          </div>
+          {aiError && <div style={{ color: theme.red, fontSize: '12px', marginBottom: '10px' }}>{aiError}</div>}
+          <button
+            onClick={handleGetAI}
+            disabled={aiLoading}
+            style={{
+              width: '100%', padding: '12px',
+              backgroundColor: isPro ? '#74c0fc' : theme.surface,
+              border: isPro ? 'none' : `1px solid ${theme.border}`,
+              borderRadius: '8px', color: isPro ? '#000' : theme.textSecondary,
+              fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              opacity: aiLoading ? 0.5 : 1,
+            }}
+          >
+            {aiLoading ? 'Analyzing...' : isPro ? 'GET AI FEEDBACK' : 'GET AI FEEDBACK  \u00b7  PRO'}
+          </button>
+        </div>
+      )}
+
+      {/* ── Plateau detection ── */}
+      <div style={sectionLabel}>PLATEAU DETECTION</div>
+      {plateaus.length === 0 ? (
+        <div style={{ ...card, color: theme.textMuted, fontSize: '13px' }}>
+          {sessions.length < 6
+            ? 'Log at least 6 sessions on a drill to detect plateaus.'
+            : 'No plateaus detected. Keep pushing.'}
+        </div>
+      ) : (
+        plateaus.map(({ drill, last5avg, prev5avg, pctChange }) => (
+          <button
+            key={drill.id}
+            onClick={() => onDrillSelect(drill)}
+            style={{ ...card, width: '100%', textAlign: 'left', cursor: 'pointer', borderColor: theme.orange + '66' }}
+          >
+            <div style={{ color: theme.orange, fontSize: '11px', letterSpacing: '0.8px', fontWeight: 700, marginBottom: '4px' }}>
+              PLATEAU DETECTED
+            </div>
+            <div style={{ color: theme.textPrimary, fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+              {drill.name}
+            </div>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div>
+                <div style={{ color: theme.textMuted, fontSize: '10px' }}>LAST 5 AVG</div>
+                <div style={{ fontFamily: 'monospace', color: theme.textSecondary, fontSize: '14px' }}>
+                  {formatTime(last5avg)}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: theme.textMuted, fontSize: '10px' }}>PRIOR 5 AVG</div>
+                <div style={{ fontFamily: 'monospace', color: theme.textSecondary, fontSize: '14px' }}>
+                  {formatTime(prev5avg)}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: theme.textMuted, fontSize: '10px' }}>CHANGE</div>
+                <div style={{ fontFamily: 'monospace', color: pctChange < 0 ? theme.red : theme.textSecondary, fontSize: '14px' }}>
+                  {pctChange >= 0 ? '+' : ''}{(pctChange * 100).toFixed(1)}%
+                </div>
+              </div>
+            </div>
+          </button>
+        ))
+      )}
+
+      {/* ── Skill coverage ── */}
+      <div style={sectionLabel}>SKILL COVERAGE — LAST 30 DAYS</div>
+      <div style={card}>
+        {allSkills.map(sf => {
+          const count = skillCounts.get(sf) ?? 0;
+          const pct = count / maxSkillCount;
+          return (
+            <div key={sf} style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span style={{ color: count > 0 ? theme.textSecondary : theme.textMuted, fontSize: '12px' }}>
+                  {SKILL_LABELS[sf]}
+                </span>
+                <span style={{ fontFamily: 'monospace', color: theme.textMuted, fontSize: '11px' }}>
+                  {count}
+                </span>
+              </div>
+              <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px' }}>
+                <div style={{
+                  height: '100%', borderRadius: '2px',
+                  width: `${pct * 100}%`,
+                  backgroundColor: count === 0 ? 'transparent' : count === maxSkillCount ? theme.accent : '#74c0fc',
+                }} />
+              </div>
+            </div>
+          );
+        })}
+        {recent30.length === 0 && (
+          <div style={{ color: theme.textMuted, fontSize: '13px' }}>No sessions in the last 30 days.</div>
+        )}
+      </div>
+
+      {/* ── Mental correlation ── */}
+      {(highSleep.length > 0 || lowSleep.length > 0) && (
+        <>
+          <div style={sectionLabel}>SLEEP vs. PERFORMANCE</div>
+          <div style={card}>
+            <div style={{ color: theme.textMuted, fontSize: '12px', marginBottom: '12px' }}>
+              Average time on timed drills by sleep rating
+            </div>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              {highSleepAvg != null && (
+                <div>
+                  <div style={{ color: theme.green, fontSize: '11px', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                    SLEEP 4–5 ({highSleep.length} sessions)
+                  </div>
+                  <div style={{ fontFamily: 'monospace', color: theme.textPrimary, fontSize: '16px', fontWeight: 700 }}>
+                    {formatTime(highSleepAvg)}
+                  </div>
+                </div>
+              )}
+              {lowSleepAvg != null && (
+                <div>
+                  <div style={{ color: theme.red, fontSize: '11px', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                    SLEEP 1–2 ({lowSleep.length} sessions)
+                  </div>
+                  <div style={{ fontFamily: 'monospace', color: theme.textPrimary, fontSize: '16px', fontWeight: 700 }}>
+                    {formatTime(lowSleepAvg)}
+                  </div>
+                </div>
+              )}
+            </div>
+            {highSleepAvg != null && lowSleepAvg != null && (
+              <div style={{ marginTop: '10px', color: theme.textMuted, fontSize: '12px' }}>
+                {highSleepAvg < lowSleepAvg
+                  ? `You run ${formatTime(lowSleepAvg - highSleepAvg)} faster on good sleep.`
+                  : 'Sleep rating has not clearly correlated with time yet — keep logging.'}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Gun breakdown ── */}
+      {gunBreakdown.length > 0 && (
+        <>
+          <div style={sectionLabel}>SESSIONS BY GUN</div>
+          <div style={card}>
+            {gunBreakdown.map(([gunId, { name, count }]) => {
+              const pct = count / sessions.length;
+              return (
+                <div key={gunId} style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: theme.textSecondary, fontSize: '13px' }}>{name}</span>
+                    <span style={{ fontFamily: 'monospace', color: theme.textMuted, fontSize: '12px' }}>
+                      {count} ({Math.round(pct * 100)}%)
+                    </span>
+                  </div>
+                  <div style={{ height: '4px', backgroundColor: theme.bg, borderRadius: '2px' }}>
+                    <div style={{
+                      height: '100%', borderRadius: '2px',
+                      width: `${pct * 100}%`,
+                      backgroundColor: theme.accent,
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

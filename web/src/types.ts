@@ -497,3 +497,72 @@ export interface TrainingGoals {
   sessionMinutesAvailable?: 15 | 30 | 60;
   primaryGunId?: string;
 }
+
+// ── Competition Tracker ───────────────────────────────────────────────────────
+
+export type CompetitionDiscipline =
+  | 'USPSA' | 'IDPA' | 'IPSC' | '3-Gun' | 'PRS' | 'NRL'
+  | 'Steel Challenge' | 'ICORE' | 'ATA Trap' | 'NSCA Sporting Clays'
+  | 'NSSA Skeet' | 'Bullseye' | 'Long Range' | 'Other';
+
+export type MatchPriority = 'A' | 'B' | 'C';
+
+export interface CompetitionEvent {
+  id: string;
+  name: string;
+  discipline: CompetitionDiscipline;
+  division: string;
+  date: string;           // ISO date YYYY-MM-DD
+  location: string;
+  priority: MatchPriority;
+  gunId?: string;
+  stageCount?: number;
+  roundCount?: number;
+  officialUrl?: string;
+  notes?: string;
+  trainingPlan?: string;  // AI-generated
+  createdAt: string;
+}
+
+export interface StageResult {
+  stage: number;
+  time?: number;
+  pointsDown?: number;
+  score?: number;
+  notes?: string;
+}
+
+export interface CompetitionResult {
+  id: string;
+  eventId?: string;
+  eventName: string;
+  discipline: CompetitionDiscipline;
+  division: string;
+  date: string;
+  placement?: number;
+  totalCompetitors?: number;
+  score?: number;
+  scoreUnit?: string;     // 'hit_factor' | 'points' | 'time' | 'count' | 'X-count'
+  gunId?: string;
+  ammoLotId?: string;
+  // Level 2 — advanced
+  stageData?: StageResult[];
+  classifierScore?: number;   // 0–100 percentage (USPSA)
+  notes?: string;
+  aiDebrief?: string;
+  createdAt: string;
+}
+
+export interface ClassifierEntry {
+  id: string;
+  discipline: CompetitionDiscipline;
+  classifierName: string;
+  classifierCode?: string;
+  date: string;
+  hitFactor?: number;
+  percentage?: number;
+  division?: string;
+  gunId?: string;
+  notes?: string;
+  createdAt: string;
+}

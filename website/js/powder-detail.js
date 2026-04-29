@@ -155,6 +155,7 @@
       p.meteringGrade    ? ['METERING GRADE',  p.meteringGrade]    : null,
       p.muzzleFlashRating? ['MUZZLE FLASH',    p.muzzleFlashRating]: null,
       p.countryOfOrigin  ? ['COUNTRY',         p.countryOfOrigin]  : null,
+      p.propellantBase   ? ['PROPELLANT BASE', p.propellantBase]   : null,
     ].filter(Boolean);
 
     document.getElementById('pd-specs').innerHTML = specRows.map(([label, val]) =>

@@ -5,7 +5,7 @@ body.stolen-page {
 }
 
 .breadcrumb {
-  color: var(--muted);
+  color: var(--accent);
   text-decoration: none;
   transition: color 0.15s;
 }

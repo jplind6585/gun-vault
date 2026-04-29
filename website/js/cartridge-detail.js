@@ -39,8 +39,12 @@
   const $content = document.getElementById('cd-content');
 
   try {
-    const rows       = await supabaseFetchAll('cartridges');
-    const cartridges = transformCartridges(rows);
+    const [cartridgeRows, powderRows] = await Promise.all([
+      supabaseFetchAll('cartridges'),
+      supabaseFetchAll('powder_brands'),
+    ]);
+    const cartridges = transformCartridges(cartridgeRows);
+    const powders    = transformPowders(powderRows);
     const c          = cartridges.find(cart => nameToSlug(cart.name) === slug);
 
     if (!c) {
@@ -168,6 +172,20 @@
           const simSlug = nameToSlug(s);
           return `<a href="/cartridge/${simSlug}" class="firearm-tag" style="text-decoration:none">${esc(s)}</a>`;
         }).join('')
+      }</div></div>`;
+    }
+
+    const cartridgeNames = new Set([c.name, ...(c.alternateNames || [])]);
+    const powderSlug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const compatiblePowders = powders
+      .filter(p => (p.recommendedCalibers || []).some(cal => cartridgeNames.has(cal)))
+      .sort((a, b) => (a.burnRateRank || 999) - (b.burnRateRank || 999))
+      .slice(0, 12);
+    if (compatiblePowders.length) {
+      rightHtml += `<div class="detail-section"><div class="detail-section-title">Compatible Reloading Powders</div><div class="firearms-list">${
+        compatiblePowders.map(p =>
+          `<a href="/powder/${powderSlug(p.productName)}" class="firearm-tag" style="text-decoration:none">${esc(p.productName)}<span style="opacity:0.4;font-size:9px;margin-left:4px">${esc(p.brand)}</span></a>`
+        ).join('')
       }</div></div>`;
     }
 

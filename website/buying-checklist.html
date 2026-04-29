@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buying a Gun Checklist — Every Scenario Covered | Lindcott Armory</title>
+  <meta name="description" content="Scenario-specific gun buying checklists for every purchase path: new or used from your LGS, online retailers, GunBroker, private party, C&R transfers, and NFA Form 4. The most complete gun buying checklist on the internet." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/field-guide.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png" />
+  <link rel="canonical" href="https://lindcottarmory.com/buying-checklist" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://lindcottarmory.com/buying-checklist" />
+  <meta property="og:title" content="Buying a Gun Checklist — Every Scenario Covered | Lindcott Armory" />
+  <meta property="og:description" content="Scenario-specific checklists for LGS, online, GunBroker, private party, C&R, and NFA. Tap to check off items. Progress saves automatically." />
+  <meta property="og:image" content="https://lindcottarmory.com/assets/images/screenshots/dashboard.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Buying a Gun Checklist — Every Scenario Covered | Lindcott Armory" />
+  <meta name="twitter:description" content="Scenario-specific checklists for LGS, online, GunBroker, private party, C&R, and NFA. Tap to check off items. Progress saves automatically." />
+  <meta name="twitter:image" content="https://lindcottarmory.com/assets/images/screenshots/dashboard.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Buy a Gun — Complete Checklist for Every Scenario",
+    "description": "Step-by-step gun buying checklists for every purchase scenario: new or used from LGS, online retailers, GunBroker, private party, C&R, and NFA items.",
+    "url": "https://lindcottarmory.com/buying-checklist",
+    "publisher": { "@type": "Organization", "name": "Lindcott Armory" },
+    "step": [
+      { "@type": "HowToStep", "name": "Confirm legal eligibility", "text": "Confirm you are legally eligible — no prohibited person status under 18 USC 922(g)" },
+      { "@type": "HowToStep", "name": "Set your budget", "text": "Total budget finalized: purchase price + transfer fees + first ammo purchase + accessories" },
+      { "@type": "HowToStep", "name": "Define your use case", "text": "Primary use case defined: EDC, home defense, range, hunting, competition, or collection" },
+      { "@type": "HowToStep", "name": "Compare alternatives", "text": "Compared at least 2-3 alternative models for the same role" }
+    ]
+  }
+  </script>
+
+  <style>
+    /* ── SCENARIO TABS ───────────────────────────────────────────────────────── */
+    .bc-tabs-wrap {
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-bottom: 16px;
+    }
+    .bc-tabs-wrap::-webkit-scrollbar { display: none; }
+    .bc-tabs {
+      display: flex;
+      gap: 8px;
+      min-width: max-content;
+    }
+    .bc-tab {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 0.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .bc-tab:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .bc-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; }
+
+    /* ── CONDITION TOGGLE ────────────────────────────────────────────────────── */
+    #bc-condition-row {
+      display: none;
+      gap: 8px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    .bc-cond {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      padding: 5px 18px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .bc-cond.active {
+      border-color: var(--accent);
+      background: rgba(255,212,59,0.08);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── PROGRESS ────────────────────────────────────────────────────────────── */
+    .bc-progress-wrap { margin-bottom: 32px; }
+    .bc-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .bc-progress-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .bc-progress-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .bc-progress-track {
+      height: 3px;
+      background: var(--surface);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .bc-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.25s ease, background 0.25s;
+    }
+
+    /* ── CHECKLIST ───────────────────────────────────────────────────────────── */
+    .bc-section { margin-bottom: 32px; }
+    .bc-section-heading {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: rgba(240,240,244,0.3);
+      padding-bottom: 10px;
+      margin-bottom: 2px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .bc-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 0.5px solid rgba(255,255,255,0.04);
+      padding: 12px 0;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.1s;
+      border-radius: 0;
+    }
+    .bc-item:last-child { border-bottom: none; }
+    .bc-item:hover { background: rgba(255,255,255,0.02); }
+    .bc-item:active { background: rgba(255,255,255,0.04); }
+
+    .bc-checkbox {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      transition: all 0.15s;
+    }
+    .bc-checkbox.checked {
+      background: #51cf66;
+      border-color: #51cf66;
+    }
+    .bc-checkbox.crit-border { border-color: #ff9f43; }
+
+    .bc-item-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(240,240,244,0.75);
+      transition: color 0.15s, text-decoration 0.15s;
+    }
+    .bc-item.done .bc-item-text {
+      color: rgba(240,240,244,0.25);
+      text-decoration: line-through;
+    }
+
+    .bc-critical-label {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: #ff9f43;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── RESET ───────────────────────────────────────────────────────────────── */
+    #bc-reset {
+      display: none;
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #bc-reset:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+    /* ── SCENARIO DESCRIPTION ────────────────────────────────────────────────── */
+    #bc-scenario-desc {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: rgba(240,240,244,0.3);
+      margin-bottom: 24px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── COMPLETE STATE ──────────────────────────────────────────────────────── */
+    .bc-complete-banner {
+      display: none;
+      background: rgba(81,207,102,0.08);
+      border: 0.5px solid rgba(81,207,102,0.25);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #51cf66;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body class="field-guide-page">
+
+  <!-- ── NAV ── -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="nav-logo-img">LINDCOTT ARMORY</a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a class="nav-active" href="/field-guide">Field Guide</a>
+      <a href="/#privacy">Privacy</a>
+      <a class="nav-cta" href="/#email-cta">Get Early Access</a>
+    </div>
+    <button class="nav-mobile-cta" onclick="location.href='/#email-cta'">Get Early Access</button>
+  </nav>
+
+  <!-- ── HEADER ── -->
+  <div class="fg-header">
+    <div class="container">
+      <div class="section-label"><a class='breadcrumb' href='/field-guide'>FIELD GUIDE</a> / HOW-TO GUIDE</div>
+      <h1 class="fg-title">Buying a Gun Checklist</h1>
+      <p class="fg-sub">Every purchase path covered — from picking up a Glock at your LGS to waiting 12 months on a Form 4. Select your scenario, check off items as you go. Progress saves automatically.</p>
+    </div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="container" style="padding-top: 48px; padding-bottom: 100px; max-width: 720px;">
+
+    <!-- Scenario tabs -->
+    <div class="bc-tabs-wrap">
+      <div class="bc-tabs" id="bc-tabs">
+        <button class="bc-tab active" data-source="lgs">Local Gun Store</button>
+        <button class="bc-tab" data-source="online">Online Retailer</button>
+        <button class="bc-tab" data-source="gunbroker">GunBroker</button>
+        <button class="bc-tab" data-source="private">Private Party</button>
+        <button class="bc-tab" data-source="cr">C&amp;R / 03 FFL</button>
+        <button class="bc-tab" data-source="nfa">NFA Item</button>
+      </div>
+    </div>
+
+    <!-- New / Used toggle -->
+    <div id="bc-condition-row">
+      <button class="bc-cond active" data-cond="new">NEW</button>
+      <button class="bc-cond" data-cond="used">USED</button>
+    </div>
+
+    <!-- Scenario description -->
+    <div id="bc-scenario-desc"></div>
+
+    <!-- Complete banner -->
+    <div class="bc-complete-banner" id="bc-complete-banner">
+      ALL ITEMS COMPLETE — you're ready to proceed with this purchase.
+    </div>
+
+    <!-- Progress -->
+    <div class="bc-progress-wrap">
+      <div class="bc-progress-meta">
+        <span class="bc-progress-label" id="bc-progress-label">PROGRESS</span>
+        <span class="bc-progress-count" id="bc-progress-count">0/0</span>
+      </div>
+      <div class="bc-progress-track">
+        <div class="bc-progress-bar" id="bc-progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- Checklist sections -->
+    <div id="bc-sections"></div>
+
+    <!-- Reset -->
+    <button id="bc-reset" onclick="resetChecklist()">RESET CHECKLIST</button>
+
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="assets/images/hashbrown-logo.png" alt="Hashbrown" class="footer-logo-img">LINDCOTT ARMORY</div>
+          <div class="footer-sub">A Lindcott Farms product</div>
+        </div>
+        <div class="footer-links">
+          <a href="/field-guide">Field Guide</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/privacy#terms">Terms of Service</a>
+          <a href="mailto:support@lindcottarmory.com">Support</a>
+        </div>
+      </div>
+      <div class="footer-copy">© 2026 Lindcott Armory LLC. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // ── CHECKLIST DATA ──────────────────────────────────────────────────────
+    const UNIVERSAL = {
+      heading: 'Before Any Purchase',
+      items: [
+        { id: 'u1', text: 'You\'re legally clear to own — no felonies, domestic violence convictions, or other 922(g) disqualifiers' },
+        { id: 'u2', text: 'Full cost is in your head: gun price + transfer fee + first ammo run + anything you need on day one' },
+        { id: 'u3', text: 'You know what it\'s for — EDC, home defense, range, hunting, competition, or collection. Pick a lane.' },
+        { id: 'u4', text: 'Looked at 2-3 other guns for the same job before landing here' },
+      ],
+    };
+
+    const CHECKLISTS = {
+      'new-lgs': [
+        { heading: 'In the Store', items: [
+          { id: 'nl1', text: 'Street price checked against MSRP — what\'s on the box and what the dealer charges are often different' },
+          { id: 'nl2', text: 'Held it. Grip angle, trigger reach, and controls all work for your hand' },
+          { id: 'nl3', text: 'Dry-fired with the dealer\'s OK — trigger resets clean, no grit in the travel' },
+          { id: 'nl4', text: 'No visible defects: finish is even, fitment is tight, controls move right' },
+          { id: 'nl5', text: 'Warranty is valid for this purchase — not every dealer is an authorized retailer' },
+          { id: 'nl6', text: 'Know the return or exchange policy before you sign anything' },
+        ]},
+        { heading: 'Transfer', items: [
+          { id: 'nl7', text: '4473 filled out right and without rushing — errors can kill the transfer' },
+          { id: 'nl8', text: 'NICS check done — know if your state tacks on a waiting period' },
+        ]},
+        { heading: 'Before You Leave', items: [
+          { id: 'nl9', text: 'Asked what ammo they carry for this caliber — good to know your local resupply before you need it' },
+          { id: 'nl10', text: 'Thought about a case or range bag before walking out' },
+          { id: 'nl11', text: 'Manual and everything from the box is accounted for' },
+        ]},
+      ],
+      'used-lgs': [
+        { heading: 'History & Provenance', items: [
+          { id: 'ul1', text: 'Got whatever history the dealer has — trade-in, consignment, estate, pawn' },
+          { id: 'ul2', text: 'Make, model, and caliber match what\'s actually stamped on the gun, not just the tag' },
+        ]},
+        { heading: 'Physical Inspection', items: [
+          { id: 'ul3', text: 'Bore checked with a bore light — no pitting, erosion, or dark fouling spots' },
+          { id: 'ul4', text: 'Crown is clean and intact — chips here hurt accuracy and you\'re not fixing it without a gunsmith' },
+          { id: 'ul5', text: 'Feed ramp, chamber mouth, extractor claw, and ejector are all there and intact' },
+          { id: 'ul6', text: 'Cycled the action slowly — smooth all the way through, no grinding or binding' },
+          { id: 'ul7', text: 'Dry-fired with permission — trigger resets clean, nothing unexpected in the pull' },
+          { id: 'ul8', text: 'Frame, slide, or receiver has no cracks, bubbling finish, or signs of someone\'s amateur repair work', critical: true },
+          { id: 'ul9', text: 'Serial number is there, legible, and not obviously messed with — possessing an obliterated serial is a federal crime', critical: true },
+          { id: 'ul10', text: 'If a magazine came with it: feeds smoothly, drops free on release' },
+        ]},
+        { heading: 'Transaction', items: [
+          { id: 'ul11', text: 'Negotiated the price — used guns at dealers are almost always negotiable' },
+          { id: 'ul12', text: 'Return policy is clear — consignment guns are often final sale' },
+          { id: 'ul13', text: '4473 done, NICS cleared' },
+        ]},
+      ],
+      'new-online': [
+        { heading: 'Before Ordering', items: [
+          { id: 'no1', text: 'Total landed price figured out: item + shipping + hazmat fee if it applies' },
+          { id: 'no2', text: 'Local FFL lined up — called ahead, confirmed they take transfers and know what they charge' },
+          { id: 'no3', text: 'Confirmed it ships to your state — CA, MA, NY, and others have model-specific restrictions' },
+          { id: 'no4', text: 'Dealer reputation checked on BBB, Google, and forums — legitimate dealers have a track record' },
+        ]},
+        { heading: 'After Ordering', items: [
+          { id: 'no5', text: 'Order confirmation and tracking number saved somewhere' },
+          { id: 'no6', text: 'FFL info sent to the dealer — most won\'t ship until they have it' },
+          { id: 'no7', text: 'Tracking shows active movement before you head to the FFL' },
+        ]},
+        { heading: 'At the FFL', items: [
+          { id: 'no8', text: '4473 filled out at the local FFL' },
+          { id: 'no9', text: 'Inspected it before completing the transfer — there is no recourse after you sign', critical: true },
+          { id: 'no10', text: 'Original box and everything included is accounted for' },
+          { id: 'no11', text: 'Warranty registered if the manufacturer requires it — some have 30-day windows' },
+        ]},
+      ],
+      'used-online': [
+        { heading: 'Vetting the Seller', items: [
+          { id: 'uo1', text: 'Seller feedback is 97%+ with at least 50 completed transactions' },
+          { id: 'uo2', text: 'Read the whole listing — "as-is", "no returns", "pictures show condition" all mean what they say' },
+          { id: 'uo3', text: 'Asked for more photos if the listing doesn\'t cover all angles' },
+        ]},
+        { heading: 'Logistics', items: [
+          { id: 'uo4', text: 'Shipping is via FedEx or UPS — USPS cannot legally ship handguns' },
+          { id: 'uo5', text: 'Local FFL confirmed they accept used transfers' },
+          { id: 'uo6', text: 'Full cost calculated: bid + buyer premium + shipping + FFL fee' },
+          { id: 'uo7', text: 'Payment method sorted — many private sellers won\'t take credit cards; money order or Zelle is common' },
+        ]},
+        { heading: 'Transaction', items: [
+          { id: 'uo8', text: 'Payment sent within the platform\'s required window' },
+          { id: 'uo9', text: 'Tracking is active before you head to the FFL' },
+          { id: 'uo10', text: 'Inspected it at the FFL before signing — once the 4473 is done, it\'s yours', critical: true },
+          { id: 'uo11', text: 'Serial number matches the listing and the shipping paperwork' },
+        ]},
+      ],
+      'new-gunbroker': [
+        { heading: 'Before Bidding or Buying', items: [
+          { id: 'ng1', text: 'Seller has the "FFL Dealer" badge on their GunBroker profile — verified it' },
+          { id: 'ng2', text: 'Confirmed it\'s actually new-in-box, not "like new" or "unfired"' },
+          { id: 'ng3', text: 'Total landed cost calculated: price + buyer premium + shipping + FFL fee' },
+          { id: 'ng4', text: 'Local FFL confirmed they accept GunBroker transfers' },
+          { id: 'ng5', text: 'Confirmed it ships to your state — CA, MA, NY, MD, NJ all have model-specific blocks' },
+        ]},
+        { heading: 'Auction / Purchase', items: [
+          { id: 'ng6', text: 'Auction end time noted — GunBroker gets sniped in the final seconds, that\'s just how it works' },
+          { id: 'ng7', text: 'Max bid is set and you\'re holding to it — don\'t chase it past your number' },
+          { id: 'ng8', text: 'Payment sent within 24-48 hours after winning' },
+          { id: 'ng9', text: 'FFL info sent to the seller — most require it before they\'ll ship' },
+        ]},
+        { heading: 'At the FFL', items: [
+          { id: 'ng10', text: '4473 done, NICS cleared' },
+          { id: 'ng11', text: 'Inspected before completing the transfer — make sure it matches the listing', critical: true },
+          { id: 'ng12', text: 'All included accessories are there: magazines, manual, lock' },
+        ]},
+      ],
+      'used-gunbroker': [
+        { heading: 'Vetting', items: [
+          { id: 'ug1', text: 'Seller feedback is 97%+ with 50+ completed transactions — treat this as a hard floor, not a guideline', critical: true },
+          { id: 'ug2', text: 'Read every word of the listing — "as-is" and "no returns" mean exactly that' },
+          { id: 'ug3', text: 'Asked for more photos on any angle the listing missed' },
+          { id: 'ug4', text: 'Serial number is visible in the photos or seller confirmed it directly' },
+        ]},
+        { heading: 'Logistics & Pricing', items: [
+          { id: 'ug5', text: 'Full cost figured: winning bid + buyer premium + shipping + FFL fee' },
+          { id: 'ug6', text: 'Checked recent sold listings for this exact model to know if the price is fair' },
+          { id: 'ug7', text: 'Local FFL called ahead — confirmed they accept GunBroker transfers' },
+          { id: 'ug8', text: 'Payment method sorted — money order, check, or Zelle; credit cards are often a no' },
+          { id: 'ug9', text: 'If it might be C&R eligible: your 03 FFL lets you take direct transfer without a local FFL' },
+        ]},
+        { heading: 'Closing the Deal', items: [
+          { id: 'ug10', text: 'Payment sent within 24-48 hours after winning' },
+          { id: 'ug11', text: 'Tracking is active before you go to the FFL' },
+          { id: 'ug12', text: 'Inspected it thoroughly at the FFL before signing — no recourse once the 4473 is done', critical: true },
+          { id: 'ug13', text: 'Serial number matches the listing and all the paperwork' },
+        ]},
+      ],
+      'used-private': [
+        { heading: 'Safety & Legal', items: [
+          { id: 'pp1', text: 'Meeting somewhere public — a police station parking lot is ideal and most will accommodate you', critical: true },
+          { id: 'pp2', text: 'Brought someone with you' },
+          { id: 'pp3', text: 'Checked the seller\'s photo ID in person' },
+          { id: 'pp4', text: 'Know your state\'s private transfer laws — some states require an FFL background check even on private sales', critical: true },
+          { id: 'pp5', text: 'If you\'re in a universal background check state: FFL is involved and both parties are present' },
+          { id: 'pp6', text: 'Serial number run through stolen property databases if your state has them' },
+        ]},
+        { heading: 'Physical Inspection', items: [
+          { id: 'pp7', text: 'Bore checked — no pitting, erosion, or anything in there that shouldn\'t be' },
+          { id: 'pp8', text: 'Cycled it and dry-fired — smooth action, clean reset' },
+          { id: 'pp9', text: 'Frame and slide or receiver checked for cracks, repairs, or anything that looks off' },
+          { id: 'pp10', text: 'Serial number is there and not obviously tampered with', critical: true },
+          { id: 'pp11', text: 'Make, model, and caliber confirmed from the rollmarks on the gun itself — not just what the seller says' },
+        ]},
+        { heading: 'Transaction', items: [
+          { id: 'pp12', text: 'Price agreed — have exact cash or a payment method you both settled on beforehand' },
+          { id: 'pp13', text: 'Bill of sale signed by both parties: date, names, serial number, make, model, price' },
+          { id: 'pp14', text: 'Your copy of the bill of sale goes somewhere permanent — it\'s your chain of custody proof', critical: true },
+          { id: 'pp15', text: 'If anything felt off, you walked away — no gun is worth a stolen firearm or a bad situation', critical: true },
+        ]},
+      ],
+      'cr': [
+        { heading: 'Eligibility & Compliance', items: [
+          { id: 'cr1', text: 'This specific gun is C&R eligible — 50+ years old, or confirmed on the ATF C&R list', critical: true },
+          { id: 'cr2', text: 'Your 03 FFL is current — check the expiration date before you order anything', critical: true },
+          { id: 'cr3', text: 'Seller will ship to an 03 FFL — not everyone does, worth confirming upfront' },
+          { id: 'cr4', text: 'Shipping address on the order exactly matches the address on your 03 FFL' },
+          { id: 'cr5', text: 'Acquisition goes in your Bound Book within 24 hours of receipt — federal requirement, not optional', critical: true },
+        ]},
+        { heading: 'Collector Evaluation', items: [
+          { id: 'cr6', text: 'Matching numbers checked — receiver, bolt, barrel, and stock should all share the same serial block' },
+          { id: 'cr7', text: 'Original finish assessed — re-blued or refinished guns are worth significantly less, and it\'s hard to spot in photos' },
+          { id: 'cr8', text: 'Import marks verified if it came in after 1968 — unmarked post-\'68 imports are a red flag' },
+          { id: 'cr9', text: 'Any provenance documentation gathered: import papers, unit markings, capture papers' },
+          { id: 'cr10', text: 'Price checked against recent sold listings on GunBroker, Rock Island Auction, or James D. Julia' },
+        ]},
+        { heading: 'Storage & Preservation', items: [
+          { id: 'cr11', text: 'No harsh solvents on the original finish — light oil only. The patina is most of the value.' },
+          { id: 'cr12', text: 'Stored at 40-50% humidity, stable temperature, out of direct light' },
+          { id: 'cr13', text: 'Photographed in detail for your records and insurance' },
+        ]},
+      ],
+      'nfa': [
+        { heading: 'Legal Eligibility', items: [
+          { id: 'nf1', text: 'NFA items are legal in your state — suppressors are banned in 8 states, and new civilian MG transfers are effectively closed', critical: true },
+          { id: 'nf2', text: 'This specific item type is legal in your state — some states ban SBRs or SBSs independently of suppressor laws' },
+          { id: 'nf3', text: 'You\'re not a prohibited person under any federal or state law' },
+        ]},
+        { heading: 'Ownership Structure', items: [
+          { id: 'nf4', text: 'Ownership structure decided: individual, NFA gun trust, or corporation. Trust is the most flexible.' },
+          { id: 'nf5', text: 'If using a trust: drafted by an attorney who actually knows NFA law, all Responsible Persons identified' },
+          { id: 'nf6', text: 'Class III dealer located — Type 07 or 08 FFL with SOT — and they have the item or can order it' },
+        ]},
+        { heading: 'Form 4 Process', items: [
+          { id: 'nf7', text: 'Full purchase price paid to the dealer — the item doesn\'t leave until the Form 4 comes back approved', critical: true },
+          { id: 'nf8', text: 'ATF Form 4 submitted with the right tax stamp: $200 for suppressor/SBR/SBS/MG, $5 for AOW' },
+          { id: 'nf9', text: 'Passport photos and fingerprint cards submitted for individual transfers or trust RP registrations' },
+          { id: 'nf10', text: 'CLEO notification handled where your jurisdiction requires it' },
+          { id: 'nf11', text: 'Item description and serial number on the Form 4 match the physical item exactly — verify this in person', critical: true },
+          { id: 'nf12', text: 'eFiled if it was an option — it\'s meaningfully faster than paper' },
+          { id: 'nf13', text: 'Current wait time looked up — Form 4s are running 6-18+ months right now, plan accordingly' },
+        ]},
+        { heading: 'Approval & Transfer', items: [
+          { id: 'nf14', text: 'Tax stamp in hand: the item number on the stamp matches the item before you accept transfer', critical: true },
+          { id: 'nf15', text: 'If SBR or SBS: firearm is engraved with your trust name (or your name) + city + state — ATF requires it', critical: true },
+          { id: 'nf16', text: 'Interstate transport rules are clear: NFA items can\'t cross state lines without prior ATF approval via Form 5320.20', critical: true },
+          { id: 'nf17', text: 'Original approved Form 4 stays with the firearm any time it\'s in transport' },
+        ]},
+      ],
+    };
+
+    const SCENARIO_DESCS = {
+      'new-lgs':       '11 items · Buying new from a local gun store',
+      'used-lgs':      '13 items · Buying used from a local gun store',
+      'new-online':    '11 items · Buying new from an online retailer',
+      'used-online':   '11 items · Buying used from an online marketplace',
+      'new-gunbroker': '12 items · Buying new on GunBroker',
+      'used-gunbroker':'13 items · Buying used on GunBroker',
+      'used-private':  '15 items · Buying from a private seller',
+      'cr':            '13 items · C&R direct transfer via 03 FFL',
+      'nfa':           '17 items · Suppressor, SBR, SBS, or machine gun via Form 4',
+    };
+
+    // ── STATE ──────────────────────────────────────────────────────────────
+    let source    = 'lgs';
+    let condition = 'new';
+
+    function scenarioKey() {
+      if (source === 'cr')      return 'cr';
+      if (source === 'nfa')     return 'nfa';
+      if (source === 'private') return 'used-private';
+      return condition + '-' + source;
+    }
+
+    function storageKey() {
+      return 'fieldguide_buying_checklist_' + scenarioKey();
+    }
+
+    function loadChecked() {
+      try {
+        const raw = localStorage.getItem(storageKey());
+        if (raw) return new Set(JSON.parse(raw));
+      } catch (e) {}
+      return new Set();
+    }
+
+    function saveChecked(checked) {
+      try {
+        localStorage.setItem(storageKey(), JSON.stringify([...checked]));
+      } catch (e) {}
+    }
+
+    let checked = loadChecked();
+
+    function esc(s) {
+      return String(s || '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function render() {
+      const key      = scenarioKey();
+      const sections = [UNIVERSAL, ...(CHECKLISTS[key] || [])];
+      const needsCond = ['lgs', 'online', 'gunbroker'].includes(source);
+
+      // Condition row
+      document.getElementById('bc-condition-row').style.display = needsCond ? 'flex' : 'none';
+
+      // Source tabs
+      document.querySelectorAll('.bc-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.source === source);
+      });
+
+      // Condition buttons
+      document.querySelectorAll('.bc-cond').forEach(b => {
+        b.classList.toggle('active', b.dataset.cond === condition);
+      });
+
+      // Scenario desc
+      document.getElementById('bc-scenario-desc').textContent = SCENARIO_DESCS[key] || '';
+
+      // Progress
+      const allItems = sections.flatMap(s => s.items);
+      const total    = allItems.length;
+      const done     = allItems.filter(i => checked.has(i.id)).length;
+      const pct      = total > 0 ? Math.round(done / total * 100) : 0;
+      const complete = done === total && total > 0;
+
+      document.getElementById('bc-progress-count').textContent = done + '/' + total;
+      document.getElementById('bc-progress-count').style.color = complete ? '#51cf66' : 'var(--muted)';
+      document.getElementById('bc-progress-bar').style.width      = pct + '%';
+      document.getElementById('bc-progress-bar').style.background = complete ? '#51cf66' : 'var(--accent)';
+      document.getElementById('bc-complete-banner').style.display = complete ? 'block' : 'none';
+
+      // Sections
+      document.getElementById('bc-sections').innerHTML = sections.map(section => {
+        const itemsHtml = section.items.map(item => {
+          const isDone = checked.has(item.id);
+          return `
+            <button class="bc-item${isDone ? ' done' : ''}" onclick="toggleItem('${item.id}')">
+              <div class="bc-checkbox${isDone ? ' checked' : ''}${item.critical && !isDone ? ' crit-border' : ''}">
+                ${isDone ? '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#07071a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+              </div>
+              <span class="bc-item-text">${item.critical && !isDone ? '<span class="bc-critical-label">CRITICAL</span>' : ''}${esc(item.text)}</span>
+            </button>`;
+        }).join('');
+        return `<div class="bc-section">
+          <div class="bc-section-heading">${esc(section.heading.toUpperCase())}</div>
+          ${itemsHtml}
+        </div>`;
+      }).join('');
+
+      // Reset button
+      document.getElementById('bc-reset').style.display = done > 0 ? 'block' : 'none';
+    }
+
+    function toggleItem(id) {
+      if (checked.has(id)) checked.delete(id);
+      else checked.add(id);
+      saveChecked(checked);
+      render();
+    }
+
+    function resetChecklist() {
+      checked = new Set();
+      saveChecked(checked);
+      render();
+    }
+
+    // ── EVENT LISTENERS ────────────────────────────────────────────────────
+    document.querySelectorAll('.bc-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        source = tab.dataset.source;
+        if (!['lgs','online','gunbroker'].includes(source)) condition = 'new';
+        checked = loadChecked();
+        render();
+      });
+    });
+
+    document.querySelectorAll('.bc-cond').forEach(btn => {
+      btn.addEventListener('click', () => {
+        condition = btn.dataset.cond;
+        checked = loadChecked();
+        render();
+      });
+    });
+
+    // ── INIT ───────────────────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>

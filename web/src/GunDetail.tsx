@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './theme';
 import type { Gun, Session, GunAccessories, TargetAnalysisRecord } from './types';
-import { getSessionsForGun, getAllAmmo, updateAmmo, updateGun, getAnalysesForGun } from './storage';
+import { getSessionsForGun, getAllAmmo, updateAmmo, updateGun, getAnalysesForGun, getDrillSessions } from './storage';
 import { getSettings } from './SettingsPanel';
 import { SessionLoggingModal } from './SessionLoggingModal';
 import { GunSilhouetteImage } from './SimpleSilhouettes';
@@ -27,7 +27,7 @@ interface GunDetailProps {
   onUpgrade?: (reason: string) => void;
 }
 
-type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline' | 'photos';
+type DetailTab = 'overview' | 'sessions' | 'maintenance' | 'ammo' | 'timeline' | 'photos' | 'training';
 type Period = 'week' | 'month' | 'year';
 
 const PURPOSE_LABELS = ['Plinking', 'Self Defense', 'EDC', 'Hunting', 'Competition', 'Home Defense', 'Duty', 'Collector'] as const;
@@ -516,6 +516,7 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
             ['ammo', 'AMMO'],
             ['timeline', 'TIMELINE'],
             ['photos', 'PHOTOS'],
+            ['training', 'TRAINING'],
           ] as [DetailTab, string][]).map(([t, label]) => (
             <button key={t} onClick={() => handleTabChange(t)} style={{
               flex: 1, padding: '10px 2px',
@@ -2178,6 +2179,74 @@ export function GunDetail({ gun: initialGun, onBack, onGunUpdated, onLogSession,
                   Sign in to use photo documentation
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* ══ TRAINING TAB ══ */}
+        {tab === 'training' && (() => {
+          const allDrillSessions = getDrillSessions().filter(s => s.gunId === gun.id);
+          if (allDrillSessions.length === 0) {
+            return (
+              <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                <div style={{ color: theme.textMuted, fontSize: '13px', marginBottom: '8px' }}>
+                  No training sessions logged with this gun yet.
+                </div>
+                <div style={{ color: theme.textMuted, fontSize: '12px' }}>
+                  Select this gun when logging a drill in Training Log.
+                </div>
+              </div>
+            );
+          }
+
+          // Group by drill name
+          const byDrill = new Map<string, { drillName: string; drillId: string; sessions: typeof allDrillSessions }>();
+          allDrillSessions.forEach(s => {
+            const prev = byDrill.get(s.drillId) ?? { drillName: s.drillName, drillId: s.drillId, sessions: [] };
+            prev.sessions.push(s);
+            byDrill.set(s.drillId, prev);
+          });
+
+          const grouped = [...byDrill.values()].sort((a, b) => b.sessions.length - a.sessions.length);
+
+          return (
+            <div style={{ paddingTop: '12px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1.2px', color: theme.textMuted, marginBottom: '14px' }}>
+                DRILL SESSIONS WITH THIS GUN — {allDrillSessions.length} TOTAL
+              </div>
+              {grouped.map(({ drillName, drillId, sessions: ds }) => {
+                const bestTime = ds
+                  .filter(s => s.totalTimeSeconds != null)
+                  .sort((a, b) => a.totalTimeSeconds! - b.totalTimeSeconds!)[0];
+                return (
+                  <div key={drillId} style={{
+                    backgroundColor: theme.surface, borderRadius: '10px',
+                    border: `1px solid ${theme.border}`,
+                    padding: '12px 14px', marginBottom: '10px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <div style={{ color: theme.textPrimary, fontSize: '14px', fontWeight: 600, flex: 1, paddingRight: '8px' }}>
+                        {drillName}
+                      </div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, flexShrink: 0 }}>
+                        {ds.length} session{ds.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    {bestTime && (
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>
+                        Best: <span style={{ color: theme.accent }}>
+                          {bestTime.totalTimeSeconds! < 60
+                            ? `${bestTime.totalTimeSeconds!.toFixed(2)}s`
+                            : `${Math.floor(bestTime.totalTimeSeconds! / 60)}:${(bestTime.totalTimeSeconds! % 60).toFixed(2).padStart(5, '0')}`}
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '4px' }}>
+                      Last: {ds.sort((a, b) => b.timestamp - a.timestamp)[0].date}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           );
         })()}
