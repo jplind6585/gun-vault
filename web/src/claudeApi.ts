@@ -57,15 +57,22 @@ export function getFeatureUsageCounts(): { targetAnalysis: number; narrative: nu
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>(resolve => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 async function getAccessToken(): Promise<string | null> {
   try {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token) return data.session.access_token;
+    const result = await withTimeout(supabase.auth.getSession(), 5_000);
+    if (result?.data?.session?.access_token) return result.data.session.access_token;
   } catch { /* ignore */ }
-  // Fallback: force a refresh, then try again
+  // Fallback: force a refresh
   try {
-    const { data } = await supabase.auth.refreshSession();
-    if (data.session?.access_token) return data.session.access_token;
+    const result = await withTimeout(supabase.auth.refreshSession(), 5_000);
+    if (result?.data?.session?.access_token) return result.data.session.access_token;
   } catch { /* ignore */ }
   return null;
 }
@@ -79,22 +86,34 @@ async function callClaude(
   let accessToken = await getAccessToken();
   if (!accessToken) throw new Error('Sign in to use AI features.');
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60_000);
+
   const doFetch = (token: string) => fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ messages, systemPrompt, feature, maxTokens }),
+    signal: controller.signal,
   });
 
-  let res = await doFetch(accessToken);
+  let res: Response;
+  try {
+    res = await doFetch(accessToken);
 
-  // On 401, force-refresh the session once and retry — handles stale tokens after long idle
-  if (res.status === 401) {
-    try {
-      const { data } = await supabase.auth.refreshSession();
-      const fresh = data.session?.access_token;
-      if (fresh) res = await doFetch(fresh);
-    } catch { /* fall through to error handling below */ }
+    // On 401, force-refresh the session once and retry — handles stale tokens after long idle
+    if (res.status === 401) {
+      try {
+        const { data } = await supabase.auth.refreshSession();
+        const fresh = data.session?.access_token;
+        if (fresh) res = await doFetch(fresh);
+      } catch { /* fall through to error handling below */ }
+    }
+  } catch (err) {
+    clearTimeout(timer);
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    throw new Error(isTimeout ? 'AI request timed out. Please try again.' : 'Network error — check your connection.');
   }
+  clearTimeout(timer);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -126,9 +145,11 @@ export interface AiConnectionStatus {
   error?: string;
 }
 
-export async function testAiConnection(): Promise<AiConnectionStatus> {
+export function testAiConnection(): Promise<AiConnectionStatus> {
   const start = Date.now();
+  const TIMEOUT_MS = 10_000;
 
+  const run = async (): Promise<AiConnectionStatus> => {
   // Step 1 — auth token
   const token = await getAccessToken();
   if (!token) {
@@ -137,15 +158,24 @@ export async function testAiConnection(): Promise<AiConnectionStatus> {
 
   // Step 2 — edge function + Claude (minimal ping, 10 tokens)
   try {
-    const res = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'Reply with exactly one word: PONG' }],
-        feature: 'ping',
-        maxTokens: 10,
-      }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+
+    let res: Response;
+    try {
+      res = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'Reply with exactly one word: PONG' }],
+          feature: 'ping',
+          maxTokens: 10,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const latencyMs = Date.now() - start;
 
     if (!res.ok) {
@@ -156,8 +186,20 @@ export async function testAiConnection(): Promise<AiConnectionStatus> {
     const data = await res.json();
     return { authOk: true, edgeFunctionOk: true, claudeOk: !!data.text, latencyMs, httpStatus: res.status };
   } catch (err) {
-    return { authOk: true, edgeFunctionOk: false, claudeOk: false, latencyMs: Date.now() - start, error: err instanceof Error ? err.message : 'Network error' };
+    const isTimeout = err instanceof Error && (err.name === 'AbortError' || err.message.includes('abort'));
+    return { authOk: true, edgeFunctionOk: false, claudeOk: false, latencyMs: Date.now() - start, error: isTimeout ? 'Timed out after 10s' : err instanceof Error ? err.message : 'Network error' };
   }
+  }; // end run
+
+  return Promise.race([
+    run(),
+    new Promise<AiConnectionStatus>(resolve =>
+      setTimeout(() => resolve({
+        authOk: false, edgeFunctionOk: false, claudeOk: false,
+        latencyMs: TIMEOUT_MS, error: 'Timed out — check network or Supabase status',
+      }), TIMEOUT_MS)
+    ),
+  ]);
 }
 
 // ── Session narrative ─────────────────────────────────────────────────────────
@@ -372,18 +414,25 @@ Rules:
 - null for any field you cannot determine
 - Return only the JSON`;
 
-  const raw = await callClaude(
-    [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg', data: imageBase64.replace(/^data:image\/\w+;base64,/, '') } },
-        { type: 'text', text: userPrompt },
-      ],
-    }],
-    systemPrompt,
-    'ammo_scan',
-    600,
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('SCAN_TIMEOUT')), 10_000)
   );
+
+  const raw = await Promise.race([
+    callClaude(
+      [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg', data: imageBase64.replace(/^data:image\/\w+;base64,/, '') } },
+          { type: 'text', text: userPrompt },
+        ],
+      }],
+      systemPrompt,
+      'ammo_scan',
+      600,
+    ),
+    timeout,
+  ]);
 
   try {
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -401,22 +450,54 @@ Rules:
 // ── UPC barcode lookup ───────────────────────────────────────────────────────
 
 export async function lookupUPC(upc: string): Promise<BoxScanResult> {
-  // 1. Try upcitemdb free tier first (fast, no token cost)
+  // 1. Check Supabase cache — instant, no token cost
+  try {
+    const { data } = await supabase
+      .from('upc_products')
+      .select('item_type, confidence, fields, field_confidence')
+      .eq('upc', upc)
+      .maybeSingle();
+    if (data) {
+      return {
+        itemType: data.item_type as BoxScanResult['itemType'],
+        confidence: data.confidence as BoxScanResult['confidence'],
+        fields: (data.fields as BoxScanResult['fields']) ?? {},
+        fieldConfidence: (data.field_confidence as BoxScanResult['fieldConfidence']) ?? {},
+        barcode: upc,
+      };
+    }
+  } catch { /* ignore — fall through */ }
+
+  // 2. Try upcitemdb free tier (fast, no token cost)
+  let hint: string | null = null;
   try {
     const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`);
     if (res.ok) {
       const data = await res.json();
       const item = data?.items?.[0];
       if (item?.title && (item.brand || item.title)) {
-        // upcitemdb returned something — pass to Claude to interpret as firearms fields
-        const hint = `Brand: ${item.brand ?? ''}, Title: ${item.title ?? ''}`;
-        return await askClaudeAboutUPC(upc, hint);
+        hint = `Brand: ${item.brand ?? ''}, Title: ${item.title ?? ''}`;
       }
     }
-  } catch { /* ignore — fall through to Claude */ }
+  } catch { /* ignore */ }
 
-  // 2. Ask Claude directly — knows common firearm/ammo SKUs from training data
-  return await askClaudeAboutUPC(upc, null);
+  // 3. Ask Claude — knows common firearm/ammo SKUs from training data
+  const result = await askClaudeAboutUPC(upc, hint);
+
+  // 4. Cache result in Supabase for future lookups (fire-and-forget)
+  // Upsert so stale unverified rows get refreshed. DB trigger silently
+  // blocks any overwrite of verified=true rows.
+  supabase.from('upc_products').upsert({
+    upc,
+    item_type: result.itemType,
+    confidence: result.confidence,
+    fields: result.fields,
+    field_confidence: result.fieldConfidence,
+    source: 'claude',
+    verified: false,
+  }, { onConflict: 'upc' }).then(() => {}).catch(() => {});
+
+  return result;
 }
 
 async function askClaudeAboutUPC(upc: string, hint: string | null): Promise<BoxScanResult> {

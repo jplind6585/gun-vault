@@ -212,15 +212,27 @@ Deno.serve(async (req: Request) => {
   };
   if (systemPrompt) anthropicBody.system = systemPrompt;
 
-  const anthropicRes = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(anthropicBody),
-  });
+  const anthropicController = new AbortController();
+  const anthropicTimer = setTimeout(() => anthropicController.abort(), 25_000);
+
+  let anthropicRes: Response;
+  try {
+    anthropicRes = await fetch(ANTHROPIC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(anthropicBody),
+      signal: anthropicController.signal,
+    });
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    return json({ error: isTimeout ? 'AI request timed out' : 'AI service unreachable' }, 504);
+  } finally {
+    clearTimeout(anthropicTimer);
+  }
 
   const anthropicData = await anthropicRes.json();
 
