@@ -8,13 +8,14 @@ import { useState, useRef } from 'react';
 import { theme } from './theme';
 import { scanBox, lookupUPC, type BoxScanResult, type BoxScanItemType } from './claudeApi';
 import { LiveBarcodeScanner } from './LiveBarcodeScanner';
+import { supabase } from './lib/supabase';
 
 interface Props {
   onResult: (result: BoxScanResult) => void;
   onCancel: () => void;
 }
 
-type Step = 'idle' | 'barcode-scan' | 'barcode-lookup' | 'label-processing' | 'result' | 'error';
+type Step = 'idle' | 'barcode-scan' | 'barcode-detected' | 'barcode-lookup' | 'label-processing' | 'result' | 'error';
 
 const TYPE_LABELS: Record<BoxScanItemType, string> = {
   gun: 'Firearm',
@@ -72,12 +73,23 @@ export function BoxScanner({ onResult, onCancel }: Props) {
   const [result, setResult] = useState<BoxScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [scannedBarcode, setScannedBarcode] = useState('');
+  const [reported, setReported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleReport() {
+    if (!result?.barcode || reported) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('upc_reports').insert({ upc: result.barcode, user_id: user.id });
+    setReported(true);
+  }
 
   // ── Barcode path ─────────────────────────────────────────────────────────
 
   async function handleBarcodeDetected(barcode: string) {
     setScannedBarcode(barcode);
+    setStep('barcode-detected');
+    await new Promise(resolve => setTimeout(resolve, 1800));
     setStep('barcode-lookup');
     try {
       const r = await lookupUPC(barcode);
@@ -128,6 +140,8 @@ export function BoxScanner({ onResult, onCancel }: Props) {
       const msg = err instanceof Error ? err.message : 'Scan failed';
       if (msg === 'BUDGET_EXCEEDED') {
         setErrorMsg('AI usage limit reached for this month.');
+      } else if (msg === 'SCAN_TIMEOUT') {
+        setErrorMsg('Scan timed out. Try a clearer photo or use the barcode scanner instead.');
       } else {
         setErrorMsg('Could not read the box. Try better lighting or a closer shot.');
       }
@@ -227,7 +241,7 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                   Scan Box Label
                 </div>
                 <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, lineHeight: 1.6, marginBottom: '12px' }}>
-                  Take a photo of the box. AI reads the label text and extracts fields.
+                  No barcode? Photograph the label text. AI reads and extracts fields. Takes a few seconds.
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={openCamera} style={{ ...outlineBtn, fontSize: '11px', padding: '11px' }}>
@@ -240,6 +254,14 @@ export function BoxScanner({ onResult, onCancel }: Props) {
               </div>
             </div>
           </>
+        )}
+
+        {/* ── Barcode detected — brief pause before lookup ── */}
+        {step === 'barcode-detected' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.green, letterSpacing: '2px' }}>BARCODE DETECTED</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '15px', color: theme.textPrimary, letterSpacing: '2px', fontWeight: 700 }}>{scannedBarcode}</div>
+          </div>
         )}
 
         {/* ── Barcode lookup in progress ── */}
@@ -333,9 +355,23 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                     USE THESE FIELDS
                   </button>
                 )}
-                <button onClick={() => { setStep('idle'); setResult(null); setScannedBarcode(''); }} style={outlineBtn}>
+                <button onClick={() => { setStep('idle'); setResult(null); setScannedBarcode(''); setReported(false); }} style={outlineBtn}>
                   SCAN AGAIN
                 </button>
+                {result.barcode && (
+                  <button
+                    onClick={handleReport}
+                    disabled={reported}
+                    style={{
+                      background: 'none', border: 'none', cursor: reported ? 'default' : 'pointer',
+                      fontFamily: 'monospace', fontSize: '10px', letterSpacing: '0.5px',
+                      color: reported ? theme.textMuted : theme.textSecondary,
+                      padding: '4px', textAlign: 'center',
+                    }}
+                  >
+                    {reported ? 'Flagged for review' : 'Wrong result? Flag it'}
+                  </button>
+                )}
               </div>
             </>
           );
