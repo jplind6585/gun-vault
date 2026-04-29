@@ -398,6 +398,75 @@ Rules:
   }
 }
 
+// ── UPC barcode lookup ───────────────────────────────────────────────────────
+
+export async function lookupUPC(upc: string): Promise<BoxScanResult> {
+  // 1. Try upcitemdb free tier first (fast, no token cost)
+  try {
+    const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`);
+    if (res.ok) {
+      const data = await res.json();
+      const item = data?.items?.[0];
+      if (item?.title && (item.brand || item.title)) {
+        // upcitemdb returned something — pass to Claude to interpret as firearms fields
+        const hint = `Brand: ${item.brand ?? ''}, Title: ${item.title ?? ''}`;
+        return await askClaudeAboutUPC(upc, hint);
+      }
+    }
+  } catch { /* ignore — fall through to Claude */ }
+
+  // 2. Ask Claude directly — knows common firearm/ammo SKUs from training data
+  return await askClaudeAboutUPC(upc, null);
+}
+
+async function askClaudeAboutUPC(upc: string, hint: string | null): Promise<BoxScanResult> {
+  const systemPrompt = `You are an expert on firearms, ammunition, optics, and accessories. You have deep knowledge of manufacturer SKUs and UPC codes for these products.`;
+
+  const hintLine = hint ? `\nAdditional product data from UPC registry: ${hint}` : '';
+
+  const userPrompt = `UPC/EAN barcode: ${upc}${hintLine}
+
+Identify this product. It is likely a firearm, ammunition, optic, or accessory.
+
+Return this exact JSON (null for any field you cannot determine):
+{
+  "itemType": "gun|optic|ammo|accessory|unknown",
+  "confidence": "high|medium|low",
+  "fields": {
+    "make": null, "model": null, "caliber": null, "action": null, "type": null,
+    "brand": null, "magnificationMin": null, "magnificationMax": null, "objectiveMM": null, "reticle": null, "opticType": null,
+    "grainWeight": null, "bulletType": null, "quantity": null, "productLine": null,
+    "name": null, "manufacturer": null, "category": null
+  },
+  "fieldConfidence": {}
+}
+
+Rules:
+- caliber format: "9mm Luger", ".308 Winchester", "5.56x45mm NATO"
+- gun type: "Pistol", "Rifle", "Shotgun"
+- action: "Semi-Auto", "Bolt", "Lever", "Pump", "Revolver"
+- If you don't recognize this UPC, set itemType to "unknown" and confidence to "low"
+- Return only the JSON`;
+
+  try {
+    const raw = await callClaude(
+      [{ role: 'user', content: userPrompt }],
+      systemPrompt,
+      'ammo_scan',
+      400,
+    );
+    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = match ? match[1].trim() : raw.trim();
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.fields) {
+      Object.keys(parsed.fields).forEach(k => { if (parsed.fields[k] === null) delete parsed.fields[k]; });
+    }
+    return { ...parsed, barcode: upc } as BoxScanResult;
+  } catch {
+    return { itemType: 'unknown', confidence: 'low', fields: {}, fieldConfidence: {}, barcode: upc };
+  }
+}
+
 // ── Maintenance alerts ───────────────────────────────────────────────────────
 
 export function getMaintenanceAlerts(

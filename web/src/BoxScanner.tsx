@@ -1,19 +1,20 @@
 /**
- * BoxScanner — Universal box / barcode scanner.
- * Point camera at a box or barcode. Claude detects item type and extracts fields.
- * If a barcode is found, also tries UPC lookup for additional data.
+ * BoxScanner — Two-path scanner: live barcode decode OR Claude Vision label scan.
+ * Primary path: real barcode decoder (html5-qrcode ZXing) → Claude UPC lookup.
+ * Fallback path: photo of box label → Claude Vision extracts fields.
  */
 
 import { useState, useRef } from 'react';
 import { theme } from './theme';
-import { scanBox, type BoxScanResult, type BoxScanItemType } from './claudeApi';
+import { scanBox, lookupUPC, type BoxScanResult, type BoxScanItemType } from './claudeApi';
+import { LiveBarcodeScanner } from './LiveBarcodeScanner';
 
 interface Props {
   onResult: (result: BoxScanResult) => void;
   onCancel: () => void;
 }
 
-type ScanStep = 'idle' | 'processing' | 'result' | 'error';
+type Step = 'idle' | 'barcode-scan' | 'barcode-lookup' | 'label-processing' | 'result' | 'error';
 
 const TYPE_LABELS: Record<BoxScanItemType, string> = {
   gun: 'Firearm',
@@ -48,22 +49,6 @@ function formatFieldValue(key: string, value: unknown): string {
   return String(value);
 }
 
-async function tryUpcLookup(barcode: string): Promise<Record<string, string> | null> {
-  try {
-    const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const item = data?.items?.[0];
-    if (!item) return null;
-    return {
-      name: item.title ?? '',
-      brand: item.brand ?? '',
-    };
-  } catch {
-    return null;
-  }
-}
-
 async function resizeForScan(blob: Blob): Promise<string> {
   return new Promise(resolve => {
     const img = new Image();
@@ -83,10 +68,34 @@ async function resizeForScan(blob: Blob): Promise<string> {
 }
 
 export function BoxScanner({ onResult, onCancel }: Props) {
-  const [step, setStep] = useState<ScanStep>('idle');
+  const [step, setStep] = useState<Step>('idle');
   const [result, setResult] = useState<BoxScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [scannedBarcode, setScannedBarcode] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Barcode path ─────────────────────────────────────────────────────────
+
+  async function handleBarcodeDetected(barcode: string) {
+    setScannedBarcode(barcode);
+    setStep('barcode-lookup');
+    try {
+      const r = await lookupUPC(barcode);
+      if (r.itemType === 'unknown' || Object.keys(r.fields).length === 0) {
+        // Lookup came back empty — tell user and offer label scan
+        setErrorMsg(`Barcode ${barcode} not recognized. Try scanning the box label instead.`);
+        setStep('error');
+      } else {
+        setResult(r);
+        setStep('result');
+      }
+    } catch {
+      setErrorMsg('Lookup failed. Try scanning the box label instead.');
+      setStep('error');
+    }
+  }
+
+  // ── Label photo path ──────────────────────────────────────────────────────
 
   function openCamera() {
     const input = fileInputRef.current;
@@ -107,29 +116,12 @@ export function BoxScanner({ onResult, onCancel }: Props) {
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setStep('processing');
+    setStep('label-processing');
     setErrorMsg('');
 
     try {
       const dataUrl = await resizeForScan(file);
       const scanResult = await scanBox(dataUrl);
-
-      // If barcode found, try UPC lookup to enrich fields
-      if (scanResult.barcode) {
-        const upcData = await tryUpcLookup(scanResult.barcode);
-        if (upcData) {
-          // Merge UPC data — only fill fields that Claude didn't already find
-          if (upcData.brand && !scanResult.fields.brand && !scanResult.fields.make) {
-            scanResult.fields.brand = upcData.brand;
-            scanResult.fieldConfidence.brand = 'high';
-          }
-          if (upcData.name && !scanResult.fields.name && !scanResult.fields.model) {
-            scanResult.fields.name = upcData.name;
-            scanResult.fieldConfidence.name = 'high';
-          }
-        }
-      }
-
       setResult(scanResult);
       setStep('result');
     } catch (err: unknown) {
@@ -143,6 +135,8 @@ export function BoxScanner({ onResult, onCancel }: Props) {
     }
   }
 
+  // ── Styles ────────────────────────────────────────────────────────────────
+
   const container: React.CSSProperties = {
     position: 'fixed', inset: 0, zIndex: 2000,
     backgroundColor: theme.bg,
@@ -155,6 +149,7 @@ export function BoxScanner({ onResult, onCancel }: Props) {
     backgroundColor: theme.accent, border: 'none', borderRadius: '10px',
     color: theme.bg, fontFamily: 'monospace', fontSize: '13px',
     fontWeight: 700, letterSpacing: '1.5px', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   };
 
   const outlineBtn: React.CSSProperties = {
@@ -164,6 +159,16 @@ export function BoxScanner({ onResult, onCancel }: Props) {
     fontFamily: 'monospace', fontSize: '13px',
     fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
   };
+
+  // ── Live barcode scanner overlay ──────────────────────────────────────────
+  if (step === 'barcode-scan') {
+    return (
+      <LiveBarcodeScanner
+        onDetected={handleBarcodeDetected}
+        onCancel={() => setStep('idle')}
+      />
+    );
+  }
 
   return (
     <div style={container}>
@@ -193,31 +198,64 @@ export function BoxScanner({ onResult, onCancel }: Props) {
         {/* ── Idle ── */}
         {step === 'idle' && (
           <>
-            <div style={{ backgroundColor: theme.surface, borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>[ ]</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textPrimary, fontWeight: 700, marginBottom: '8px' }}>
-                Point at the box or barcode
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, lineHeight: 1.7 }}>
-                Works on gun boxes, ammo boxes, optic boxes, and accessories.{'\n'}
-                Can scan barcodes or read the whole box label.
-              </div>
-            </div>
+            {/* Option cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
 
-            <div style={{ flex: 1 }} />
+              {/* Barcode — primary */}
+              <div style={{ backgroundColor: theme.surface, border: `0.5px solid ${theme.accent}30`, borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.accent, letterSpacing: '1px', marginBottom: '4px' }}>
+                  RECOMMENDED
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary, marginBottom: '4px' }}>
+                  Scan Barcode
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, lineHeight: 1.6, marginBottom: '12px' }}>
+                  Point at the UPC or EAN barcode on the box. Instantly decodes and looks up the product.
+                </div>
+                <button onClick={() => setStep('barcode-scan')} style={accentBtn}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                    <line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="17" y1="12" x2="17" y2="12.01"/>
+                  </svg>
+                  SCAN BARCODE
+                </button>
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button onClick={openCamera} style={accentBtn}>SCAN WITH CAMERA</button>
-              <button onClick={openGallery} style={outlineBtn}>UPLOAD PHOTO</button>
+              {/* Label photo — secondary */}
+              <div style={{ backgroundColor: theme.surface, border: `0.5px solid ${theme.border}`, borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary, marginBottom: '4px' }}>
+                  Scan Box Label
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted, lineHeight: 1.6, marginBottom: '12px' }}>
+                  Take a photo of the box. AI reads the label text and extracts fields.
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={openCamera} style={{ ...outlineBtn, fontSize: '11px', padding: '11px' }}>
+                    CAMERA
+                  </button>
+                  <button onClick={openGallery} style={{ ...outlineBtn, fontSize: '11px', padding: '11px' }}>
+                    GALLERY
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}
 
-        {/* ── Processing ── */}
-        {step === 'processing' && (
+        {/* ── Barcode lookup in progress ── */}
+        {step === 'barcode-lookup' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
             <div style={{ fontFamily: 'monospace', fontSize: '28px', opacity: 0.4 }}>. . .</div>
-            <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>Reading box...</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>Looking up barcode...</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted, letterSpacing: '1px' }}>{scannedBarcode}</div>
+          </div>
+        )}
+
+        {/* ── Label processing ── */}
+        {step === 'label-processing' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '28px', opacity: 0.4 }}>. . .</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '13px', color: theme.textSecondary }}>Reading label...</div>
             <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>This takes a few seconds</div>
           </div>
         )}
@@ -230,7 +268,6 @@ export function BoxScanner({ onResult, onCancel }: Props) {
 
           return (
             <>
-              {/* Type badge */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <div style={{
                   padding: '4px 10px', borderRadius: '20px',
@@ -245,7 +282,6 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                 </div>
               </div>
 
-              {/* Barcode found */}
               {result.barcode && (
                 <div style={{ backgroundColor: theme.surface, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>BARCODE</div>
@@ -253,7 +289,6 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                 </div>
               )}
 
-              {/* Extracted fields */}
               {fieldEntries.length > 0 && (
                 <div style={{ backgroundColor: theme.surface, borderRadius: '10px', overflow: 'hidden', marginBottom: '12px' }}>
                   {fieldEntries.map(([key, value], i) => {
@@ -266,9 +301,7 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                       }}>
                         <div style={{ fontFamily: 'monospace', fontSize: '10px', color: theme.textMuted }}>{FIELD_LABELS[key] ?? key}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {isLowConf && (
-                            <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.orange, padding: '2px 5px', border: `1px solid ${theme.orange}40`, borderRadius: '4px' }}>verify</div>
-                          )}
+                          {isLowConf && <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.orange, padding: '2px 5px', border: `1px solid ${theme.orange}40`, borderRadius: '4px' }}>verify</div>}
                           <div style={{ fontFamily: 'monospace', fontSize: '12px', color: theme.textPrimary, fontWeight: isLowConf ? 400 : 700 }}>
                             {formatFieldValue(key, value)}
                           </div>
@@ -279,7 +312,6 @@ export function BoxScanner({ onResult, onCancel }: Props) {
                 </div>
               )}
 
-              {/* Serial number — show but note user must confirm */}
               {serialEntry && (
                 <div style={{ backgroundColor: `${theme.orange}10`, border: `1px solid ${theme.orange}40`, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
                   <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.orange, letterSpacing: '0.5px', marginBottom: '4px' }}>SERIAL — VERIFY BEFORE SAVING</div>
@@ -298,13 +330,10 @@ export function BoxScanner({ onResult, onCancel }: Props) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {result.itemType !== 'unknown' && fieldEntries.length > 0 && (
                   <button onClick={() => onResult(result)} style={accentBtn}>
-                    ADD TO {result.itemType === 'gun' ? 'GUN VAULT' : result.itemType === 'optic' ? 'OPTICS' : result.itemType === 'ammo' ? 'INVENTORY' : 'GEAR LOCKER'}
+                    USE THESE FIELDS
                   </button>
                 )}
-                <button
-                  onClick={() => { setStep('idle'); setResult(null); }}
-                  style={outlineBtn}
-                >
+                <button onClick={() => { setStep('idle'); setResult(null); setScannedBarcode(''); }} style={outlineBtn}>
                   SCAN AGAIN
                 </button>
               </div>
@@ -321,7 +350,7 @@ export function BoxScanner({ onResult, onCancel }: Props) {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button onClick={() => { setStep('idle'); setErrorMsg(''); }} style={accentBtn}>TRY AGAIN</button>
+              <button onClick={() => { setStep('idle'); setErrorMsg(''); setScannedBarcode(''); }} style={accentBtn}>TRY AGAIN</button>
             </div>
           </>
         )}
