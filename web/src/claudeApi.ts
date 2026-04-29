@@ -64,16 +64,29 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
+const SUPABASE_SESSION_KEY = 'sb-joturvmcygdmpnhfsslu-auth-token';
+
 async function getAccessToken(): Promise<string | null> {
+  // Fast path: read directly from localStorage — no network call needed
   try {
-    const result = await withTimeout(supabase.auth.getSession(), 5_000);
+    const raw = localStorage.getItem(SUPABASE_SESSION_KEY);
+    if (raw) {
+      const session = JSON.parse(raw);
+      const token = session?.access_token;
+      const expiresAt: number = session?.expires_at ?? 0; // Unix seconds
+      // Use token if it's valid for at least another 60 seconds
+      if (token && expiresAt * 1000 > Date.now() + 60_000) {
+        return token;
+      }
+    }
+  } catch { /* ignore */ }
+
+  // Slow path: token missing or expired — try async refresh (with timeout)
+  try {
+    const result = await withTimeout(supabase.auth.refreshSession(), 8_000);
     if (result?.data?.session?.access_token) return result.data.session.access_token;
   } catch { /* ignore */ }
-  // Fallback: force a refresh
-  try {
-    const result = await withTimeout(supabase.auth.refreshSession(), 5_000);
-    if (result?.data?.session?.access_token) return result.data.session.access_token;
-  } catch { /* ignore */ }
+
   return null;
 }
 
