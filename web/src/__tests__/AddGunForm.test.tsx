@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AddGunForm } from '../AddGunForm';
+import { AddGunForm } from '../modules/vault/AddGunForm';
 
 // Disable autocomplete and sense-check so tests aren't affected by gun database lookups
 vi.mock('../gunDatabase', () => ({

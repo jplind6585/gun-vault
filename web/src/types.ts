@@ -98,6 +98,12 @@ export interface SessionString {
   notes?: string;
 }
 
+export interface MalfunctionEntry {
+  type: IssueType;
+  roundNumber?: number;
+  notes?: string;
+}
+
 export interface Session {
   id: string;
   gunId: string;           // primary gun (first string's gun for backwards compat)
@@ -110,6 +116,9 @@ export interface Session {
   issues?: boolean;
   issueTypes?: IssueType[];
   issueDescription?: string;
+  malfunctions?: MalfunctionEntry[];  // structured malfunction log
+  isDryFire?: boolean;               // dry fire session — no ammo decrement, no round count
+  shotCount?: number;                // shot count for dry fire (not live rounds)
   notes?: string;
   aiNarrative?: string;
   ammoLotId?: string;

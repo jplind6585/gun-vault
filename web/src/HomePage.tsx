@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { theme } from './theme';
 import { getAllGuns, getAllSessions, getAllAmmo, updateGun } from './storage';
-import { getSettings } from './SettingsPanel';
+import { getSettings } from './modules/settings/SettingsPanel';
 import type { Gun, Session, AmmoLot } from './types';
-import { ShooterProfileCard } from './ShooterProfileCard';
-import { MilestoneNotification } from './MilestoneNotification';
+import { ShooterProfileCard } from './components/ShooterProfileCard';
+import { MilestoneNotification } from './components/MilestoneNotification';
 import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
-import { OnboardingChecklist } from './OnboardingChecklist';
+import { OnboardingChecklist } from './components/OnboardingChecklist';
 import { isChecklistVisible } from './onboardingProgress';
 
 interface HomePageProps {
@@ -177,6 +177,69 @@ export function HomePage({
   // Idle/neglected gun detection lives in RANGE INSIGHTS only.
 
   const topArmoryAlerts = armoryAlerts.slice(0, 3);
+
+  // ── Quick Stats (Intel) ───────────────────────────────────────────────────
+  interface IntelCard { label: string; value: string; sub?: string; }
+  const intelCards: IntelCard[] = [];
+
+  // 1. Ammo stock in sessions-worth for most recently used caliber
+  if (recentlyUsedCalibers.size > 0) {
+    const primaryCal = [...recentlyUsedCalibers][0];
+    const primaryCalN = normCal(primaryCal);
+    const onHand = ammo.reduce((s, l) => {
+      const n = normCal(l.caliber);
+      return (n.includes(primaryCalN) || primaryCalN.includes(n)) ? s + l.quantity : s;
+    }, 0);
+    const sessionsUsing = sessions.filter(s => {
+      const g = guns.find(x => x.id === s.gunId);
+      return g && normCal(g.caliber).includes(primaryCalN);
+    });
+    const avgPerSession = sessionsUsing.length > 0
+      ? Math.round(sessionsUsing.reduce((s, x) => s + x.roundsExpended, 0) / sessionsUsing.length)
+      : 0;
+    const sessionsWorth = avgPerSession > 0 ? Math.floor(onHand / avgPerSession) : null;
+    if (sessionsWorth !== null) {
+      intelCards.push({
+        label: primaryCal,
+        value: `${onHand.toLocaleString()} rds`,
+        sub: `~${sessionsWorth} sessions at your avg`,
+      });
+    }
+  }
+
+  // 2. Cleaning proximity — gun closest to threshold without exceeding it
+  const approachingClean = activeGuns
+    .map(g => {
+      const shotsSinceClean = g.roundCount != null
+        ? g.roundCount - (g.lastCleanedRoundCount ?? 0)
+        : 0;
+      const toThreshold = cfg.cleanThresholdRounds - shotsSinceClean;
+      return { g, shotsSinceClean, toThreshold };
+    })
+    .filter(x => x.toThreshold > 0 && x.toThreshold <= 200 && x.shotsSinceClean > 0)
+    .sort((a, b) => a.toThreshold - b.toThreshold)[0];
+  if (approachingClean) {
+    const name = approachingClean.g.displayName || `${approachingClean.g.make} ${approachingClean.g.model}`;
+    intelCards.push({
+      label: name,
+      value: `${approachingClean.toThreshold} rds`,
+      sub: 'until cleaning threshold',
+    });
+  }
+
+  // 3. Longest inactive gun in vault (only if enough data and not already in alerts)
+  if (intelCards.length < 2 && activeGuns.length > 0) {
+    const neverShotGuns = activeGuns.filter(g => (g.roundCount ?? 0) === 0);
+    if (neverShotGuns.length > 0) {
+      intelCards.push({
+        label: `${neverShotGuns.length} gun${neverShotGuns.length > 1 ? 's' : ''} never fired`,
+        value: neverShotGuns[0].make + ' ' + neverShotGuns[0].model,
+        sub: 'get it to the range',
+      });
+    }
+  }
+
+  const topIntelCards = intelCards.slice(0, 2);
 
   // ── Smart RANGE recommendations ───────────────────────────────────────────
   interface RangeRec { label: string; }
@@ -517,6 +580,30 @@ export function HomePage({
                   >
                     + SESSION
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── INTEL ── */}
+      {topIntelCards.length > 0 && (
+        <div style={{ ...card, marginBottom: '10px' }}>
+          <div style={sectionLabel}>INTEL</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {topIntelCards.map((card2, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 10px',
+                backgroundColor: theme.bg,
+                borderLeft: `2px solid ${theme.textMuted}`,
+                borderRadius: '0 4px 4px 0',
+              }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: theme.textMuted }}>{card2.label}</div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: theme.textPrimary }}>{card2.value}</div>
+                  {card2.sub && <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted }}>{card2.sub}</div>}
                 </div>
               </div>
             ))}

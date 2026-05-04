@@ -80,7 +80,9 @@ export function GunVault({ onGunSelect, onAddGun, onImportRequest, refreshKey, i
           make: g.make, model: g.model,
           caliber: g.caliber, condition: g.condition ?? 'Very Good',
         });
-        updateGun(g.id, { estimatedFMV: result.median, fmvUpdated: result.timestamp });
+        const updates: Record<string, unknown> = { estimatedFMV: result.median, fmvUpdated: result.timestamp };
+        if (!g.insuranceValue) updates.insuranceValue = result.median;
+        updateGun(g.id, updates);
         done++;
         setValuingProgress({ done, total: activeGuns.length });
         await new Promise(r => setTimeout(r, 500));
@@ -1078,7 +1080,18 @@ function GunListRow({ gun, lastShot, sessionCount, onClick, onQuickLog, onLongPr
             </span>
           )}
         </div>
-        {neverShot && (
+        {/* Value delta */}
+        {gun.estimatedFMV != null && gun.acquiredPrice != null && (() => {
+          const delta = gun.estimatedFMV - gun.acquiredPrice;
+          const pct = Math.round((delta / gun.acquiredPrice) * 100);
+          const color = delta >= 0 ? theme.green : theme.red;
+          return (
+            <div style={{ fontFamily: 'monospace', fontSize: '9px', color, marginTop: '3px' }}>
+              {delta >= 0 ? '+' : ''}{delta < 0 ? '-' : ''}${Math.abs(delta).toLocaleString()} ({delta >= 0 ? '+' : ''}{pct}%)
+            </div>
+          );
+        })()}
+        {neverShot && !gun.estimatedFMV && (
           <div style={{ fontFamily: 'monospace', fontSize: '9px', color: theme.textMuted, marginTop: '3px', letterSpacing: '0.3px' }}>
             No sessions logged yet
           </div>

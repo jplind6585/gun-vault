@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { theme } from './theme';
-import { getTargetAnalyses, saveTargetAnalysis, updateTargetAnalysis, deleteTargetAnalysis, getAllGuns, getAllAmmo, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from './storage';
-import { callTargetCoach, hasClaudeApiKey, getFeatureUsageCounts } from './claudeApi';
-import type { TargetAnalysisRecord } from './types';
-import { haptic } from './haptic';
-import { getSettings } from './SettingsPanel';
-import { AssistantContextPrompt } from './lib/AssistantContextPrompt';
+import { theme } from '../../theme';
+import { getTargetAnalyses, saveTargetAnalysis, updateTargetAnalysis, deleteTargetAnalysis, getAllGuns, getAllAmmo, getActiveAssignmentForGun, getOpticById, getAnalysesForGun } from '../../storage';
+import { callTargetCoach, hasClaudeApiKey, getFeatureUsageCounts } from '../../claudeApi';
+import type { TargetAnalysisRecord } from '../../types';
+import { haptic } from '../../haptic';
+import { getSettings } from '../settings/SettingsPanel';
+import { AssistantContextPrompt } from '../../lib/AssistantContextPrompt';
 
 type Step = 1 | 2 | 3 | 4;
 type MarkMode = 'calib' | 'poa' | 'shots';

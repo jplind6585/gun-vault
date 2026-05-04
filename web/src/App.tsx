@@ -7,50 +7,51 @@ import { getGunValuation } from './lib/valuationService';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { LoginScreen } from './auth/LoginScreen';
 import { LandingPage } from './auth/LandingPage';
-import { WelcomeScreen } from './WelcomeScreen';
+import { PasscodeGate, isUnlocked } from './auth/PasscodeGate';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import type { Gun } from './types';
-import { GunVault } from './GunVault';
-import { GunDetail } from './GunDetail';
+import { GunVault } from './modules/vault/GunVault';
+import { GunDetail } from './modules/vault/GunDetail';
 import { HomePage } from './HomePage';
-import { MobileNav } from './MobileNav';
-import { AppHeader } from './AppHeader';
-import { Toast, useToast } from './Toast';
+import { MobileNav } from './components/MobileNav';
+import { AppHeader } from './components/AppHeader';
+import { Toast, useToast } from './components/Toast';
 import { useUndo } from './useUndo';
-import { AddGunForm } from './AddGunForm';
-import { SessionRecaps } from './SessionRecaps';
-import { SessionEntry } from './SessionEntry';
-import { DevToolbar } from './DevToolbar';
-import { exportInsuranceClaim } from './GunVault';
+import { AddGunForm } from './modules/vault/AddGunForm';
+import { SessionRecaps } from './modules/sessions/SessionRecaps';
+import { SessionEntry } from './modules/sessions/SessionEntry';
+import { DevToolbar } from './components/DevToolbar';
+import { exportInsuranceClaim } from './modules/vault/GunVault';
 
 // Secondary views — lazy loaded, not in the initial bundle
-const Arsenal = lazy(() => import('./Arsenal').then(m => ({ default: m.Arsenal })));
-const CaliberDatabase = lazy(() => import('./CaliberDatabase').then(m => ({ default: m.CaliberDatabase })));
-const BallisticCalculator = lazy(() => import('./BallisticCalculator').then(m => ({ default: m.BallisticCalculator })));
-const TargetAnalysis = lazy(() => import('./TargetAnalysis').then(m => ({ default: m.TargetAnalysis })));
-const TrainingLog = lazy(() => import('./TrainingLog').then(m => ({ default: m.TrainingLog })));
-const CompetitionTracker = lazy(() => import('./CompetitionTracker').then(m => ({ default: m.CompetitionTracker })));
-const ReloadingBench = lazy(() => import('./ReloadingBench').then(m => ({ default: m.ReloadingBench })));
-const GearLocker = lazy(() => import('./GearLocker').then(m => ({ default: m.GearLocker })));
-const Wishlist = lazy(() => import('./Wishlist').then(m => ({ default: m.Wishlist })));
-const SmartSearch = lazy(() => import('./SmartSearch').then(m => ({ default: m.SmartSearch })));
-const StyleDemo = lazy(() => import('./StyleDemo').then(m => ({ default: m.StyleDemo })));
-const SettingsPanel = lazy(() => import('./SettingsPanel').then(m => ({ default: m.SettingsPanel })));
-const CSVImportModal = lazy(() => import('./CSVImportModal').then(m => ({ default: m.CSVImportModal })));
-const MoreMenu = lazy(() => import('./MoreMenu').then(m => ({ default: m.MoreMenu })));
-const ArmoryAssistant = lazy(() => import('./ArmoryAssistant').then(m => ({ default: m.ArmoryAssistant })));
-const FieldGuide = lazy(() => import('./FieldGuide').then(m => ({ default: m.FieldGuide })));
-const OpticsList = lazy(() => import('./OpticsList').then(m => ({ default: m.OpticsList })));
-const OpticDetail = lazy(() => import('./OpticDetail').then(m => ({ default: m.OpticDetail })));
-const LegalDocs = lazy(() => import('./LegalDocs').then(m => ({ default: m.LegalDocs })));
-const OnboardingConversation = lazy(() => import('./OnboardingConversation').then(m => ({ default: m.OnboardingConversation })));
-const FeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
-const UpgradeModal = lazy(() => import('./UpgradeModal').then(m => ({ default: m.UpgradeModal })));
+const Arsenal = lazy(() => import('./modules/arsenal/Arsenal').then(m => ({ default: m.Arsenal })));
+const CaliberDatabase = lazy(() => import('./modules/caliber/CaliberDatabase').then(m => ({ default: m.CaliberDatabase })));
+const BallisticCalculator = lazy(() => import('./modules/targets/BallisticCalculator').then(m => ({ default: m.BallisticCalculator })));
+const TargetAnalysis = lazy(() => import('./modules/targets/TargetAnalysis').then(m => ({ default: m.TargetAnalysis })));
+const TrainingLog = lazy(() => import('./modules/training/TrainingLog').then(m => ({ default: m.TrainingLog })));
+const CompetitionTracker = lazy(() => import('./modules/competition/CompetitionTracker').then(m => ({ default: m.CompetitionTracker })));
+const ReloadingBench = lazy(() => import('./modules/reloading/ReloadingBench').then(m => ({ default: m.ReloadingBench })));
+const GearLocker = lazy(() => import('./modules/gear/GearLocker').then(m => ({ default: m.GearLocker })));
+const Wishlist = lazy(() => import('./modules/wishlist/Wishlist').then(m => ({ default: m.Wishlist })));
+const SmartSearch = lazy(() => import('./components/SmartSearch').then(m => ({ default: m.SmartSearch })));
+const StyleDemo = lazy(() => import('./components/StyleDemo').then(m => ({ default: m.StyleDemo })));
+const SettingsPanel = lazy(() => import('./modules/settings/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const CSVImportModal = lazy(() => import('./components/CSVImportModal').then(m => ({ default: m.CSVImportModal })));
+const MoreMenu = lazy(() => import('./components/MoreMenu').then(m => ({ default: m.MoreMenu })));
+const ArmoryAssistant = lazy(() => import('./modules/assistant/ArmoryAssistant').then(m => ({ default: m.ArmoryAssistant })));
+const FieldGuide = lazy(() => import('./modules/field-guide/FieldGuide').then(m => ({ default: m.FieldGuide })));
+const OpticsList = lazy(() => import('./modules/optics/OpticsList').then(m => ({ default: m.OpticsList })));
+const OpticDetail = lazy(() => import('./modules/optics/OpticDetail').then(m => ({ default: m.OpticDetail })));
+const LegalDocs = lazy(() => import('./modules/legal/LegalDocs').then(m => ({ default: m.LegalDocs })));
+const OnboardingConversation = lazy(() => import('./components/OnboardingConversation').then(m => ({ default: m.OnboardingConversation })));
+const FeedbackModal = lazy(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+const UpgradeModal = lazy(() => import('./components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 import { useShooterProfile } from './useShooterProfile';
 import { initBilling, getProStatus, getPremiumStatus } from './lib/billing';
 // SplashScreen imported dynamically to avoid Android bundle export error
 import { shouldShowOnboarding } from './profileStorage';
-import { GoalQuestion, hasAnsweredGoalQuestion } from './GoalQuestion';
+import { GoalQuestion, hasAnsweredGoalQuestion } from './components/GoalQuestion';
 import './App.css';
 
 type AppView = 'home' | 'vault' | 'gun-detail' | 'arsenal' | 'sessions' | 'session-log' | 'caliber' | 'ballistics' | 'target-analysis' | 'training' | 'reloading' | 'gear' | 'wishlist' | 'optics' | 'optic-detail' | 'style-demo' | 'more' | 'field-guide' | 'legal' | 'assistant' | 'competition';
@@ -124,6 +125,7 @@ function AppCore() {
   const [upgradeReason, setUpgradeReason] = useState<string | undefined>();
   const [sessionFilterGunId, setSessionFilterGunId] = useState<string | null>(null);
   const [goalAnswered, setGoalAnswered] = useState(hasAnsweredGoalQuestion);
+  const [unlocked, setUnlocked] = useState(isUnlocked);
   const { profile, refresh: refreshProfile } = useShooterProfile();
 
   // Initialize seed data before first render
@@ -266,6 +268,10 @@ function AppCore() {
     return <LoginScreen />;
   }
 
+  if (!unlocked) {
+    return <PasscodeGate onUnlock={() => setUnlocked(true)} />;
+  }
+
   if (!goalAnswered) {
     return <GoalQuestion onComplete={() => setGoalAnswered(true)} />;
   }
@@ -334,7 +340,7 @@ function handleSaveGun(gunData: Partial<Gun>) {
             make: newGun.make, model: newGun.model,
             caliber: newGun.caliber, condition: newGun.condition ?? 'Very Good',
           });
-          updateGun(newGunId, { estimatedFMV: result.median, fmvUpdated: result.timestamp });
+          updateGun(newGunId, { estimatedFMV: result.median, fmvUpdated: result.timestamp, insuranceValue: result.median });
           loadGuns();
           setGunRefreshKey(k => k + 1);
         } catch { /* silent — FMV is best-effort */ }
